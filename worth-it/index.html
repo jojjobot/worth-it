@@ -1,0 +1,3077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worth It? — How many hours do you really need to work?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --bg-soft: #161616;
+    --bg-card: #1a1a1a;
+    --line: #2a2a2a;
+    --line-soft: #1f1f1f;
+    --text: #f2f2f2;
+    --muted: #888;
+    --dim: #555;
+    --accent: #b6ff00;
+    --accent-dim: #6f9c00;
+    --warn: #ffb300;
+    --error: #ff4040;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', monospace; min-height: 100%; }
+  body {
+    padding: 0;
+    line-height: 1.5;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(circle at 20% -10%, rgba(182,255,0,0.06), transparent 50%),
+      radial-gradient(circle at 100% 110%, rgba(255,179,0,0.04), transparent 60%);
+    min-height: 100vh;
+  }
+
+  /* Top bar */
+  .topbar {
+    border-bottom: 1px solid var(--line);
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(13,13,13,0.92);
+    backdrop-filter: blur(8px);
+  }
+  .brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+  }
+  .brand .dot { color: var(--accent); }
+  .topbar .meta {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .topbar nav { display: flex; gap: 8px; }
+  .navbtn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .navbtn:hover { color: var(--accent); border-color: var(--accent-dim); }
+  .navbtn.active { color: #000; background: var(--accent); border-color: var(--accent); }
+
+  /* Dashboard */
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .dash-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 30px;
+  }
+  @media (max-width: 720px) { .dash-stats { grid-template-columns: repeat(2, 1fr); } }
+  .dash-stats .cell {
+    background: var(--bg-card);
+    padding: 22px 18px;
+  }
+  .dash-stats .cell .label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .dash-stats .cell .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .dash-stats .cell .sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  .goal-list {
+    display: grid;
+    gap: 14px;
+  }
+  .goal-row {
+    position: relative;
+    background: var(--bg-card);
+    padding: 18px 22px 18px 26px;
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 20px;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .goal-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.55;
+    border-radius: 6px 0 0 6px;
+  }
+  .goal-row:hover {
+    background: #202020;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  }
+  .goal-row:hover::before { opacity: 1; }
+  .goal-row .name { font-size: 16px; font-weight: 700; color: var(--text); }
+  .goal-row .name .job { color: var(--muted); font-size: 11px; font-weight: 400; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .goal-row .price { font-family: 'JetBrains Mono', monospace; color: var(--muted); font-size: 14px; }
+  .goal-row .time { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 18px; font-weight: 800; }
+  .goal-row .time .unit { color: var(--muted); font-size: 11px; font-weight: 400; margin-left: 4px; }
+  .goal-row .del {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--dim);
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .goal-row .del:hover { color: var(--error); border-color: var(--error); }
+  .goal-row .picks {
+    grid-column: 1 / -1;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .goal-row .picks .picks-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-right: 4px;
+  }
+  .goal-row .picks .pick-chip {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .goal-row .picks .pick-chip .ic { font-size: 13px; line-height: 1; }
+  .goal-row .compare {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .goal-row .compare .col {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 10px 14px;
+  }
+  .goal-row .compare .col .label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .goal-row .compare .col .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+  }
+  .goal-row .compare .col .val .unit {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .goal-row .compare .col.with .val { color: var(--accent); }
+  .goal-row .compare .saving {
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .goal-row .compare .saving .label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .goal-row .compare .saving .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .goal-row .compare .saving .val .unit {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  @media (max-width: 600px) {
+    .goal-row { grid-template-columns: 1fr auto; }
+    .goal-row .price { display: none; }
+    .goal-row .compare { grid-template-columns: 1fr; }
+    .goal-row .compare .saving { align-items: flex-start; }
+  }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    border: 1px dashed var(--line);
+  }
+  .empty .big {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  /* Progress */
+  .progress-wrap {
+    height: 3px;
+    width: 100%;
+    background: var(--line-soft);
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+    transition: width 0.5s cubic-bezier(.2,.8,.2,1);
+  }
+
+  /* Layout */
+  .stage {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 60px 24px 120px;
+  }
+
+  .step-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .step-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(34px, 6vw, 64px);
+    line-height: 1.05;
+    margin-bottom: 14px;
+    letter-spacing: -0.5px;
+  }
+  .step-title em { font-style: italic; color: var(--accent); }
+  .step-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 36px;
+    max-width: 60ch;
+  }
+
+  /* Step container with reveal */
+  .step {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.45s ease, transform 0.5s cubic-bezier(.2,.8,.2,1);
+    pointer-events: none;
+    position: absolute;
+    width: calc(100% - 48px);
+    max-width: 880px;
+  }
+  .step.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+    position: relative;
+  }
+
+  /* Question card */
+  .q {
+    margin-bottom: 28px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    max-height: 0;
+    overflow: hidden;
+  }
+  .q.show {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 1000px;
+  }
+  .q label {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .q .hint {
+    color: var(--dim);
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  /* Inputs */
+  input[type="text"],
+  input[type="number"],
+  select {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--line);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    padding: 10px 0;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  select:focus {
+    border-bottom-color: var(--accent);
+  }
+  input::placeholder { color: var(--dim); }
+  select { appearance: none; cursor: pointer; background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%), linear-gradient(135deg, var(--accent) 50%, transparent 50%); background-position: calc(100% - 18px) 22px, calc(100% - 12px) 22px; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; padding-right: 30px; }
+  select option { background: var(--bg-soft); color: var(--text); }
+
+  /* Inline rows */
+  .row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+
+  /* Pay type chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 12px 20px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+  }
+  .chip:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .chip.active {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(182,255,0,0.35);
+  }
+
+  /* Slider */
+  .slider-row { display: flex; align-items: center; gap: 18px; }
+  .slider-row .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    color: var(--accent);
+    min-width: 80px;
+    text-align: right;
+    font-weight: 700;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--line);
+    outline: none;
+    border-radius: 2px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border: 0;
+    cursor: pointer;
+    border-radius: 50%;
+    box-shadow: 0 0 14px rgba(182,255,0,0.5);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px; height: 22px;
+    background: var(--accent);
+    border: 0;
+    cursor: pointer;
+    border-radius: 50%;
+  }
+
+  /* Buttons */
+  .actions {
+    margin-top: 44px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    background: var(--accent);
+    color: #000;
+    border: 0;
+    padding: 16px 28px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 800;
+    transition: all 0.2s ease;
+  }
+  .btn:hover { box-shadow: 0 0 24px rgba(182,255,0,0.5); transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn.ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--line);
+  }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); box-shadow: none; }
+
+  /* Note */
+  .note {
+    background: var(--bg-card);
+    border-left: 2px solid var(--warn);
+    padding: 12px 16px;
+    color: var(--muted);
+    font-size: 12px;
+    margin: 18px 0;
+  }
+
+  /* Results */
+  .result-eyebrow {
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .result-headline {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 7vw, 80px);
+    line-height: 1.02;
+    letter-spacing: -1px;
+    margin-bottom: 28px;
+  }
+  .result-headline .item { color: var(--accent); font-style: italic; }
+  .result-headline .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-style: normal;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow: 0 0 24px rgba(182,255,0,0.45);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--line);
+    margin: 30px 0 20px;
+    border: 1px solid var(--line);
+  }
+  @media (max-width: 720px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .cell {
+    background: var(--bg-card);
+    padding: 22px 18px;
+    text-align: left;
+  }
+  .cell .label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .cell .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+  }
+  .cell.hero {
+    background: var(--accent);
+    color: #000;
+  }
+  .cell.hero .label { color: #000; opacity: 0.7; }
+  .cell.hero .num { color: #000; }
+
+
+  .compare {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 20px 22px;
+    margin: 16px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .compare .tag {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--warn);
+    text-transform: uppercase;
+  }
+  .compare .text {
+    font-size: 16px;
+    color: var(--text);
+  }
+  .compare .text strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+
+  .breakdown {
+    margin-top: 18px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    color: var(--muted);
+    font-size: 13px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 30px;
+  }
+  @media (max-width: 600px) { .breakdown { grid-template-columns: 1fr; } }
+  .breakdown .k { color: var(--muted); }
+  .breakdown .v { color: var(--text); float: right; font-family: 'JetBrains Mono', monospace; }
+
+  /* Lifestyle grid */
+  .lifestyle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 22px;
+  }
+  @media (max-width: 600px) { .lifestyle-grid { grid-template-columns: 1fr; } }
+  .life-cell {
+    background: var(--bg-card);
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .life-cell .ic { font-size: 22px; line-height: 1; }
+  .life-cell .body { flex: 1; }
+  .life-cell .lbl {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .life-cell .input-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .life-cell .pre {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .life-cell input[type="number"] {
+    width: 80px;
+    border-bottom: 1px solid var(--line);
+    font-size: 18px;
+    padding: 4px 0;
+  }
+  .life-cell input[type="number"]:focus { border-bottom-color: var(--accent); }
+  .life-cell .suffix {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .lifestyle-summary {
+    padding: 16px 20px;
+    background: var(--bg-card);
+    border-left: 2px solid var(--accent);
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .lifestyle-summary strong {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Ideas */
+  /* "How to get this quicker" navigation button (sits under the verdict) */
+  .quicker-wrap { margin: 28px 0 8px; text-align: center; }
+  .quicker-btn {
+    width: 100%;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+  .quicker-hint {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* Faster-path page (step 7) */
+  .quicker-page-sub {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 8px 0 24px;
+    max-width: 720px;
+  }
+  .quicker-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin: 14px 0 10px;
+    padding: 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+  }
+  .quicker-filter-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .quicker-filters .chip { padding: 8px 14px; font-size: 11px; }
+  .quicker-summary {
+    margin: 14px 0 18px;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .quicker-summary strong {
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .quicker-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    border: 1px dashed var(--line);
+    background: var(--bg-card);
+  }
+  .ideas {
+    margin-top: 24px;
+    border-top: 1px solid var(--line);
+    padding-top: 28px;
+  }
+  .ideas h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  .ideas h3 em { color: var(--accent); font-style: italic; }
+  .ideas .sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .idea-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+  @media (max-width: 700px) { .idea-grid { grid-template-columns: 1fr; } }
+  .idea {
+    background: var(--bg-card);
+    padding: 20px 22px;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+  }
+  .idea:hover { background: #1f1f1f; }
+  .idea.selected {
+    background: #1c2410;
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+  .idea .pick {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 18px; height: 18px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .idea.selected .pick {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  .combo-bar {
+    border: 1px solid var(--accent-dim);
+    background: linear-gradient(180deg, #1a2410 0%, #14180a 100%);
+    padding: 16px 18px;
+    margin: 0 0 16px 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 14px;
+  }
+  .combo-bar.empty { opacity: 0.55; }
+  .combo-bar .ctitle {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .combo-bar .cline {
+    font-size: 14px;
+    color: var(--text);
+  }
+  .combo-bar .cline strong {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+  .combo-bar .cclear {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .combo-bar .cclear:hover { color: var(--accent); border-color: var(--accent-dim); }
+  .combo-bar .cclear[disabled] { opacity: 0.4; cursor: default; }
+  .idea .icon { font-size: 22px; margin-bottom: 8px; }
+  .idea .title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: 0.3px;
+  }
+  .idea .desc {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .idea .saving {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .idea .saving .unit {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 400;
+    margin-left: 4px;
+  }
+  .idea .new-time {
+    color: var(--dim);
+    font-size: 11px;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+  /* Faster-path card layout (used on step 7) */
+  .idea .ic { font-size: 26px; margin-bottom: 10px; }
+  .idea .body { display: flex; flex-direction: column; gap: 6px; }
+  .idea .meta {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+  .idea .meta .cash {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    font-weight: 700;
+  }
+  .idea .meta .tag {
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--dim);
+  }
+  .idea .impact {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .idea .impact .saved {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .idea .impact .saved strong { font-weight: 800; }
+  .idea .impact .newtotal {
+    color: var(--dim);
+    font-size: 11px;
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  .disclaimer {
+    margin-top: 30px;
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(40px);
+    background: var(--accent);
+    color: #000;
+    padding: 12px 22px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 800;
+    opacity: 0;
+    transition: all 0.35s ease;
+    z-index: 100;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Currency split */
+  .price-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 600px) { .price-row { grid-template-columns: 1fr; } }
+
+  .error-msg {
+    color: var(--error);
+    font-size: 12px;
+    margin-top: 8px;
+    min-height: 16px;
+  }
+
+  /* Reuse profile banner */
+  .reuse-banner {
+    background: var(--bg-card);
+    border: 1px solid var(--accent-dim);
+    padding: 18px 22px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    justify-content: space-between;
+  }
+  .reuse-banner .rb-text { flex: 1; min-width: 240px; }
+  .reuse-banner .rb-title {
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .reuse-banner .rb-summary {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .reuse-banner .rb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .reuse-banner .rb-clear {
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+  .reuse-banner .rb-clear:hover { color: var(--error); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">WORTH<span class="dot">.</span>IT<span class="dot">?</span></div>
+  <nav>
+    <button class="navbtn active" id="navDash">Dashboard</button>
+  </nav>
+  <div class="meta" id="metaStep">Step 1 / 4</div>
+</div>
+<div class="progress-wrap"><div class="progress-bar" id="progress"></div></div>
+
+<main class="stage">
+
+  <!-- ─── DASHBOARD ───────────────────────────────────── -->
+  <section class="step" data-step="0">
+    <div class="step-label">Dashboard</div>
+    <div class="dash-header">
+      <h1 class="step-title">Your <em>goals</em>.</h1>
+    </div>
+
+    <div class="dash-stats" id="dashStats"></div>
+
+    <div id="goalList"></div>
+
+    <div class="actions">
+      <button class="btn" id="addGoalBtn">+ Add new goal</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 1 ──────────────────────────────────────── -->
+  <section class="step active" data-step="1">
+    <div class="step-label">Step 01 — The Object of Desire</div>
+    <h1 class="step-title">What do you actually <em>want</em>?</h1>
+    <p class="step-sub">Be specific. The more concrete the dream, the harder this'll hit.</p>
+
+    <div class="reuse-banner" id="reuseBanner" style="display:none;">
+      <div class="rb-text">
+        <div class="rb-title">⚡ We saved your last setup</div>
+        <div class="rb-summary" id="reuseSummary">—</div>
+      </div>
+      <div class="rb-actions">
+        <button class="btn" id="reuseSkip">Skip ahead with this →</button>
+        <button class="rb-clear" id="reuseClear">Forget my saved info</button>
+      </div>
+    </div>
+
+    <div class="q show">
+      <label for="itemName">The thing you're eyeing</label>
+      <input type="text" id="itemName" placeholder="e.g. Ferrari 488, PS5, round-trip to Tokyo" autocomplete="off">
+    </div>
+
+    <div class="q show">
+      <label>How much does it cost?</label>
+      <div class="price-row">
+        <input type="number" id="itemPrice" placeholder="299,000" min="0" step="any">
+        <select id="currency" aria-label="Currency">
+          <option value="USD">$ USD</option>
+          <option value="EUR">€ EUR</option>
+          <option value="GBP">£ GBP</option>
+          <option value="CAD">$ CAD</option>
+          <option value="AUD">$ AUD</option>
+          <option value="JPY">¥ JPY</option>
+          <option value="CHF">CHF</option>
+          <option value="SEK">kr SEK</option>
+          <option value="NOK">kr NOK</option>
+          <option value="DKK">kr DKK</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="q show">
+      <label for="existingSavings">Already saved toward this (optional)</label>
+      <input type="number" id="existingSavings" placeholder="0" min="0" step="any">
+      <div class="hint">Money you've already set aside for this specific thing. Counts as a head start.</div>
+    </div>
+
+    <div class="error-msg" id="err1"></div>
+    <div class="actions">
+      <button class="btn" id="next1">Next →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 2 ──────────────────────────────────────── -->
+  <section class="step" data-step="2">
+    <div class="step-label">Step 02 — The Grind</div>
+    <h1 class="step-title">Now tell us about <em>your hustle</em>.</h1>
+    <p class="step-sub">We need the boring stuff. One question at a time.</p>
+
+    <div class="q show" data-q="job">
+      <label for="jobTitle">Your job / profession</label>
+      <input type="text" id="jobTitle" placeholder="e.g. Software engineer, barista, surgeon" autocomplete="off">
+    </div>
+
+    <div class="q" data-q="paytype">
+      <label>How are you paid?</label>
+      <div class="chips" id="payChips">
+        <button class="chip" data-pay="hourly">Hourly</button>
+        <button class="chip" data-pay="annual">Annual salary</button>
+        <button class="chip" data-pay="monthly">Monthly salary</button>
+      </div>
+    </div>
+
+    <div class="q" data-q="rate">
+      <label id="rateLabel" for="payAmount">Hourly rate</label>
+      <input type="number" id="payAmount" placeholder="0" min="0" step="any">
+    </div>
+
+    <div class="q" data-q="hours">
+      <label for="hoursPerWeek">Hours worked per week</label>
+      <input type="number" id="hoursPerWeek" value="40" min="1" max="168" step="1">
+    </div>
+
+    <div class="q" data-q="breaks">
+      <label for="breakMinutesPerDay">Unpaid break minutes per work day</label>
+      <input type="number" id="breakMinutesPerDay" value="60" min="0" max="480" step="5">
+      <div class="hint">Lunch + coffee breaks you're at work but not getting paid for. Used to show your real time on the job.</div>
+    </div>
+
+    <div class="q" data-q="vacation">
+      <label for="vacationWeeks">Weeks of vacation per year</label>
+      <input type="number" id="vacationWeeks" value="2" min="0" max="52" step="1">
+    </div>
+
+    <div class="error-msg" id="err2"></div>
+    <div class="actions">
+      <button class="btn ghost" data-back="1">← Back</button>
+      <button class="btn" id="next2" disabled>Next →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 3 ──────────────────────────────────────── -->
+  <section class="step" data-step="3">
+    <div class="step-label">Step 03 — Reality Check</div>
+    <h1 class="step-title">Taxes & <em>fixed costs</em>.</h1>
+    <p class="step-sub">The part nobody likes.</p>
+
+    <div class="q show">
+      <label for="country">Country of residence</label>
+      <select id="country"></select>
+      <div class="hint" id="countryHint">Pick a country to estimate your effective tax.</div>
+    </div>
+
+    <div class="q show">
+      <label for="taxRate">Effective tax rate (%)</label>
+      <input type="number" id="taxRate" value="22" min="0" max="80" step="0.1">
+      <div class="hint">Auto-filled from country. Override if you know yours.</div>
+    </div>
+
+    <div class="q show">
+      <label for="monthlyDeductions">Other monthly fixed costs (optional)</label>
+      <input type="number" id="monthlyDeductions" placeholder="rent, loans, subscriptions…" min="0" step="any">
+      <div class="hint">Money that's already spoken for every month.</div>
+    </div>
+
+    <div class="q show">
+      <label for="inflationPct">Yearly inflation (%)</label>
+      <input type="number" id="inflationPct" value="3" min="0" max="50" step="0.1">
+      <div class="hint">How much faster the price gets each year. Long-run average is ~3%.</div>
+    </div>
+
+    <div class="q show">
+      <label for="wageGrowthPct">Yearly raise (%)</label>
+      <input type="number" id="wageGrowthPct" value="3" min="-10" max="50" step="0.1">
+      <div class="hint">Annual pay bump you realistically expect. 0 if you don't.</div>
+    </div>
+
+    <div class="q show">
+      <label for="investReturnPct">Return on savings (%)</label>
+      <input type="number" id="investReturnPct" value="5" min="-50" max="50" step="0.1">
+      <div class="hint">Where's the money parked? HYSA ~4, index fund ~7, mattress 0.</div>
+    </div>
+
+    <div class="note">Tax rates are rough national averages. Override with your real number for accuracy.</div>
+
+    <div class="actions">
+      <button class="btn ghost" data-back="2">← Back</button>
+      <button class="btn" id="next3">Next →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 4 — LIFESTYLE ──────────────────────────── -->
+  <section class="step" data-step="4">
+    <div class="step-label">Step 04 — Lifestyle Spending</div>
+    <h1 class="step-title">Where does <em>the rest</em> go?</h1>
+    <p class="step-sub">Roughly per month. Leave 0 if it doesn't apply. We use this to build smarter side-hustle suggestions.</p>
+
+    <div class="lifestyle-grid">
+      <div class="life-cell">
+        <div class="ic">☕</div>
+        <div class="body">
+          <div class="lbl">Coffee out</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeCoffee" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+      <div class="life-cell">
+        <div class="ic">🥪</div>
+        <div class="body">
+          <div class="lbl">Lunches bought out</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeLunch" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+      <div class="life-cell">
+        <div class="ic">🍽️</div>
+        <div class="body">
+          <div class="lbl">Takeout / dining out</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeTakeout" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+      <div class="life-cell">
+        <div class="ic">📺</div>
+        <div class="body">
+          <div class="lbl">Streaming subscriptions</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeStreaming" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+      <div class="life-cell">
+        <div class="ic">🏋️</div>
+        <div class="body">
+          <div class="lbl">Gym / fitness</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeGym" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+      <div class="life-cell">
+        <div class="ic">🍻</div>
+        <div class="body">
+          <div class="lbl">Bars / nights out</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeBars" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+      <div class="life-cell">
+        <div class="ic">🚖</div>
+        <div class="body">
+          <div class="lbl">Rideshare / Uber</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeRideshare" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+      <div class="life-cell">
+        <div class="ic">🛒</div>
+        <div class="body">
+          <div class="lbl">Online shopping (impulse)</div>
+          <div class="input-row"><span class="pre">$</span><input type="number" id="lifeShopping" min="0" step="any" placeholder="0"><span class="suffix">/ mo</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lifestyle-summary" id="lifeSummary">Total discretionary spending: <strong>$0 / month</strong> — fill in what applies.</div>
+
+    <div class="actions">
+      <button class="btn ghost" data-back="3">← Back</button>
+      <button class="btn ghost" id="skipLife">Skip — none apply</button>
+      <button class="btn" id="next4">Next →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 5 — SAVINGS RATE ───────────────────────── -->
+  <section class="step" data-step="5">
+    <div class="step-label">Step 05 — The Commitment</div>
+    <h1 class="step-title">How much can you <em>actually</em> save?</h1>
+    <p class="step-sub">Of the money left after taxes and fixed costs.</p>
+
+    <div class="q show">
+      <label for="savings">% of take-home pay you'd dedicate to this</label>
+      <div class="slider-row">
+        <input type="range" id="savings" min="1" max="100" value="20">
+        <div class="val"><span id="savingsVal">20</span>%</div>
+      </div>
+      <div class="hint">Be honest. 20% is already aggressive.</div>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" data-back="4">← Back</button>
+      <button class="btn" id="calc">Reveal the verdict →</button>
+    </div>
+  </section>
+
+  <!-- ─── RESULTS ─────────────────────────────────────── -->
+  <section class="step" data-step="6">
+    <div class="result-eyebrow">The Verdict</div>
+    <h1 class="result-headline" id="headline">—</h1>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="compare" id="compareLine">
+      <span class="tag">Reality check</span>
+      <span class="text" id="compareText"></span>
+    </div>
+
+    <div class="compare">
+      <span class="tag">Save monthly</span>
+      <span class="text" id="monthlyText"></span>
+    </div>
+
+    <div class="compare">
+      <span class="tag">Save weekly</span>
+      <span class="text" id="weeklyText"></span>
+    </div>
+
+    <div class="compare">
+      <span class="tag">% of annual net</span>
+      <span class="text" id="percentText"></span>
+    </div>
+
+    <div class="compare">
+      <span class="tag">ETA</span>
+      <span class="text" id="etaText"></span>
+    </div>
+
+    <div class="quicker-wrap">
+      <button type="button" class="btn quicker-btn" id="quickerOpen">
+        ⚡ How to get this quicker →
+      </button>
+      <p class="quicker-hint">See every option ranked by how much time it would shave off your goal.</p>
+    </div>
+
+    <div class="breakdown" id="breakdown"></div>
+
+    <p class="disclaimer">Tax rates are estimates. Results are for entertainment / planning purposes only.</p>
+
+    <div class="actions">
+      <button class="btn" id="saveGoal">★ Save to dashboard</button>
+      <button class="btn ghost" id="restart">↻ Recalculate</button>
+      <button class="btn ghost" id="share">⧉ Copy summary</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 7 — FASTER PATH ────────────────────────── -->
+  <section class="step" data-step="7">
+    <div class="result-eyebrow">Faster Path</div>
+    <h1 class="result-headline">How to <em>get this quicker</em>.</h1>
+    <p class="quicker-page-sub" id="quickerPageSub">Every option ranked by how much time it would shave off — stack any of them on top of your current grind.</p>
+
+    <div class="quicker-filters">
+      <div class="quicker-filter-label">Filter</div>
+      <div class="chips" id="quickerTypeChips">
+        <button class="chip active" data-qtype="all">All</button>
+        <button class="chip" data-qtype="gig">Gigs</button>
+        <button class="chip" data-qtype="freelance">Freelance</button>
+        <button class="chip" data-qtype="skill">Skills</button>
+        <button class="chip" data-qtype="passive">Passive</button>
+        <button class="chip" data-qtype="sell">Sell stuff</button>
+        <button class="chip" data-qtype="saving">Cut spending</button>
+      </div>
+      <div class="quicker-filter-label">Effort</div>
+      <div class="chips" id="quickerLoadChips">
+        <button class="chip active" data-qload="all">Any</button>
+        <button class="chip" data-qload="none">No effort</button>
+        <button class="chip" data-qload="low">Low</button>
+        <button class="chip" data-qload="med">Medium</button>
+      </div>
+    </div>
+
+    <div class="quicker-summary" id="quickerSummary"></div>
+
+    <div class="combo-bar empty" id="comboBar">
+      <div>
+        <div class="ctitle">Stack picks</div>
+        <div class="cline" id="comboLine">Tap any cards below to combine them. The new ETA updates as you pick.</div>
+      </div>
+      <button type="button" class="cclear" id="comboClear" disabled>Clear</button>
+    </div>
+
+    <div class="idea-grid" id="quickerGrid"></div>
+    <div class="quicker-empty" id="quickerEmpty" hidden>No ideas match those filters. Try widening them.</div>
+
+    <div class="actions">
+      <button class="btn ghost" id="quickerBack">← Back to verdict</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+'use strict';
+
+// ── State ───────────────────────────────────────────────────────────────
+const state = {
+  step: 1,
+  item: '',
+  price: 0,
+  currency: 'USD',
+  job: '',
+  payType: null,   // 'hourly' | 'annual' | 'monthly'
+  payAmount: 0,
+  hoursPerWeek: 40,
+  breakMinutesPerDay: 60,
+  vacationWeeks: 2,
+  country: 'US',
+  taxRate: 22,
+  marginalRate: 30,        // FICA + 22% top bracket at default US salary; recomputed live
+  taxOverridden: false,    // true once user manually edits the tax-rate field
+  monthlyDeductions: 0,
+  savingsPct: 20,
+  existingSavings: 0,
+  inflationPct: 3,
+  wageGrowthPct: 3,
+  investReturnPct: 5,
+  // Lifestyle (monthly)
+  lifeCoffee: 0,
+  lifeLunch: 0,
+  lifeTakeout: 0,
+  lifeStreaming: 0,
+  lifeGym: 0,
+  lifeBars: 0,
+  lifeRideshare: 0,
+  lifeShopping: 0,
+};
+
+const CURRENCY_SYMBOLS = {
+  USD: '$', EUR: '€', GBP: '£', CAD: 'CA$', AUD: 'A$',
+  JPY: '¥', CHF: 'CHF ', SEK: 'kr ', NOK: 'kr ', DKK: 'kr '
+};
+
+// Progressive tax brackets, single filer, ~2024 figures.
+// `allowance` is subtracted from gross before brackets apply (standard deduction / personal allowance).
+// `payroll` is a flat employee-side rate for social security / NI / FICA / etc., added on top.
+// `brackets[i].upTo` is the *taxable income* (post-allowance) ceiling; null = top bracket.
+// `rate` is a fallback flat all-in rate used when brackets aren't available (Other).
+const COUNTRIES = [
+  { code:'US', name:'United States',  rate:22, allowance:14600, payroll:7.65, brackets:[
+    { upTo: 11600,  rate: 10 },
+    { upTo: 47150,  rate: 12 },
+    { upTo: 100525, rate: 22 },
+    { upTo: 191950, rate: 24 },
+    { upTo: 243725, rate: 32 },
+    { upTo: 609350, rate: 35 },
+    { upTo: null,   rate: 37 },
+  ]},
+  { code:'UK', name:'United Kingdom', rate:20, allowance:12570, payroll:10, brackets:[
+    { upTo: 37700,  rate: 20 },
+    { upTo: 125140, rate: 40 },
+    { upTo: null,   rate: 45 },
+  ]},
+  { code:'DE', name:'Germany',        rate:30, allowance:11604, payroll:20, brackets:[
+    { upTo: 17005,  rate: 14 },
+    { upTo: 66760,  rate: 30 },
+    { upTo: 277825, rate: 42 },
+    { upTo: null,   rate: 45 },
+  ]},
+  { code:'FR', name:'France',         rate:28, allowance:11294, payroll:22, brackets:[
+    { upTo: 28797,  rate: 11 },
+    { upTo: 82341,  rate: 30 },
+    { upTo: 177106, rate: 41 },
+    { upTo: null,   rate: 45 },
+  ]},
+  { code:'CA', name:'Canada',         rate:23, allowance:15705, payroll:7, brackets:[
+    { upTo: 55867,  rate: 15 },
+    { upTo: 111733, rate: 20.5 },
+    { upTo: 173205, rate: 26 },
+    { upTo: 246752, rate: 29 },
+    { upTo: null,   rate: 33 },
+  ]},
+  { code:'AU', name:'Australia',      rate:24, allowance:18200, payroll:2, brackets:[
+    { upTo: 26800,  rate: 16 },
+    { upTo: 116800, rate: 30 },
+    { upTo: 171800, rate: 37 },
+    { upTo: null,   rate: 45 },
+  ]},
+  { code:'SE', name:'Sweden',         rate:35, allowance:22700, payroll:7, brackets:[
+    { upTo: 592600, rate: 32 },
+    { upTo: null,   rate: 52 },
+  ]},
+  { code:'NO', name:'Norway',         rate:28, allowance:88250, payroll:8, brackets:[
+    { upTo: 205000, rate: 22 },
+    { upTo: 670000, rate: 26 },
+    { upTo: null,   rate: 40 },
+  ]},
+  { code:'DK', name:'Denmark',        rate:36, allowance:49700, payroll:8, brackets:[
+    { upTo: 568900, rate: 37 },
+    { upTo: null,   rate: 52 },
+  ]},
+  { code:'CH', name:'Switzerland',    rate:15, allowance:14500, payroll:12, brackets:[
+    { upTo: 60000,  rate: 7 },
+    { upTo: 120000, rate: 15 },
+    { upTo: null,   rate: 22 },
+  ]},
+  { code:'JP', name:'Japan',          rate:20, allowance:1030000, payroll:15, brackets:[
+    { upTo: 1950000,  rate: 5 },
+    { upTo: 3300000,  rate: 10 },
+    { upTo: 6950000,  rate: 20 },
+    { upTo: 9000000,  rate: 23 },
+    { upTo: 18000000, rate: 33 },
+    { upTo: 40000000, rate: 40 },
+    { upTo: null,     rate: 45 },
+  ]},
+  { code:'OT', name:'Other',          rate:20, brackets: null },
+];
+
+function countryByCode(code) {
+  return COUNTRIES.find(c => c.code === code) || COUNTRIES[COUNTRIES.length - 1];
+}
+function incomeTaxOn(gross, country) {
+  if (!country.brackets) return gross * ((country.rate || 0) / 100);
+  const taxable = Math.max(0, gross - (country.allowance || 0));
+  let tax = 0, prev = 0;
+  for (const b of country.brackets) {
+    const up = b.upTo == null ? Infinity : b.upTo;
+    const slice = Math.max(0, Math.min(taxable, up) - prev);
+    tax += slice * (b.rate / 100);
+    if (taxable <= up) break;
+    prev = up;
+  }
+  return tax;
+}
+function effectiveTaxRate(gross, country) {
+  if (gross <= 0) return country.rate || 0;
+  const income = incomeTaxOn(gross, country);
+  const payroll = gross * ((country.payroll || 0) / 100);
+  return ((income + payroll) / gross) * 100;
+}
+// Marginal = rate on the *next* dollar earned. Used to value side income honestly.
+function marginalTaxRate(gross, country) {
+  if (!country.brackets) return country.rate || 0;
+  const taxable = Math.max(0, gross - (country.allowance || 0));
+  let topRate = country.brackets[0].rate;
+  for (const b of country.brackets) {
+    const up = b.upTo == null ? Infinity : b.upTo;
+    topRate = b.rate;
+    if (taxable <= up) break;
+  }
+  return topRate + (country.payroll || 0);
+}
+// Estimate gross from whatever the user has entered so far (pay type + amount + hours/vacation).
+function estimateAnnualGross() {
+  const workWeeks = Math.max(1, 52 - (state.vacationWeeks || 0));
+  const annualHours = (state.hoursPerWeek || 40) * workWeeks;
+  if (state.payType === 'hourly')  return (state.payAmount || 0) * annualHours;
+  if (state.payType === 'annual')  return state.payAmount || 0;
+  if (state.payType === 'monthly') return (state.payAmount || 0) * 12;
+  return 0;
+}
+// Refresh state.taxRate (unless user overrode it) + state.marginalRate from the current country + gross.
+function recomputeTaxFromCountry() {
+  const country = countryByCode(state.country);
+  const gross = estimateAnnualGross();
+  state.marginalRate = Math.round(marginalTaxRate(gross, country) * 10) / 10;
+  if (!state.taxOverridden) {
+    const eff = effectiveTaxRate(gross, country);
+    state.taxRate = Math.round(eff * 10) / 10;
+    const el = document.getElementById('taxRate');
+    if (el) el.value = state.taxRate;
+  }
+  const hint = document.getElementById('countryHint');
+  if (hint) {
+    if (gross > 0 && country.brackets) {
+      hint.textContent = `Effective ${state.taxRate.toFixed(1)}% (income + social) · marginal ${state.marginalRate.toFixed(1)}% on the next dollar.`;
+    } else if (country.brackets) {
+      hint.textContent = `Enter your pay above and we'll compute your bracket. Override below if needed.`;
+    } else {
+      hint.textContent = `Flat ${state.taxRate}% estimate. Override below if needed.`;
+    }
+  }
+}
+
+// ── Utilities ───────────────────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+const fmtMoney = (n, cur = state.currency) => {
+  const sym = CURRENCY_SYMBOLS[cur] || '';
+  if (!isFinite(n)) return '∞';
+  return sym + Math.round(n).toLocaleString('en-US');
+};
+const fmtNum = (n, decimals = 0) => {
+  if (!isFinite(n)) return '∞';
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
+
+// ── Step navigation ─────────────────────────────────────────────────────
+function setStep(n) {
+  state.step = n;
+  $$('.step').forEach(s => {
+    s.classList.toggle('active', Number(s.dataset.step) === n);
+  });
+  if (n === 1) refreshReuseBanner();
+  const total = 5;
+  if (n === 0) {
+    $('#metaStep').textContent = 'Dashboard';
+    $('#progress').style.width = '0%';
+  } else if (n <= total) {
+    $('#metaStep').textContent = `Step ${n} / ${total}`;
+    $('#progress').style.width = ((n - 1) / total) * 100 + '%';
+  } else {
+    $('#metaStep').textContent = 'Result';
+    $('#progress').style.width = '100%';
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Profile storage (reuse personal info across goals) ─────────────────
+const PROFILE_KEY = 'worthit.profile.v1';
+const PROFILE_FIELDS = [
+  'job','payType','payAmount','hoursPerWeek','breakMinutesPerDay','vacationWeeks',
+  'country','taxRate','marginalRate','taxOverridden','monthlyDeductions','savingsPct',
+  'inflationPct','wageGrowthPct','investReturnPct',
+  'lifeCoffee','lifeLunch','lifeTakeout','lifeStreaming',
+  'lifeGym','lifeBars','lifeRideshare','lifeShopping',
+];
+function loadProfile() {
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null'); }
+  catch { return null; }
+}
+function saveProfile() {
+  // Only save if the user actually filled enough out
+  if (!state.payType || !state.payAmount) return;
+  const p = {};
+  PROFILE_FIELDS.forEach(k => p[k] = state[k]);
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch {}
+}
+function clearProfile() {
+  try { localStorage.removeItem(PROFILE_KEY); } catch {}
+}
+function applyProfileToState(p) {
+  if (!p) return;
+  PROFILE_FIELDS.forEach(k => { if (p[k] != null) state[k] = p[k]; });
+  // Profiles saved before progressive brackets existed don't have a `taxOverridden` flag.
+  // Treat their stored taxRate as intentional so the bracket math doesn't quietly replace it.
+  if (p.taxOverridden == null && p.taxRate != null) state.taxOverridden = true;
+}
+function applyProfileToDom() {
+  // Step 2 — job
+  $('#jobTitle').value = state.job || '';
+  // Pay-type chip + label
+  $$('#payChips .chip').forEach(c => c.classList.toggle('active', c.dataset.pay === state.payType));
+  if (state.payType) {
+    const labels = { hourly:'Hourly rate', annual:'Annual gross salary', monthly:'Monthly gross salary' };
+    $('#rateLabel').textContent = labels[state.payType];
+    revealUpTo('vacation');
+  }
+  $('#payAmount').value = state.payAmount || '';
+  $('#hoursPerWeek').value = state.hoursPerWeek || 40;
+  $('#breakMinutesPerDay').value = state.breakMinutesPerDay ?? 60;
+  $('#vacationWeeks').value = state.vacationWeeks ?? 2;
+  checkStep2();
+
+  // Step 3 — taxes
+  if ($('#country').options.length) $('#country').value = state.country || 'US';
+  $('#taxRate').value = state.taxRate ?? 22;
+  $('#monthlyDeductions').value = state.monthlyDeductions || '';
+  $('#inflationPct').value = state.inflationPct ?? 3;
+  $('#wageGrowthPct').value = state.wageGrowthPct ?? 3;
+  $('#investReturnPct').value = state.investReturnPct ?? 5;
+
+  // Step 4 — lifestyle
+  LIFE_FIELDS.forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = state[k] ? state[k] : '';
+  });
+  if (typeof updateLifeSummary === 'function') updateLifeSummary();
+
+  // Step 5 — savings
+  $('#savings').value = state.savingsPct || 20;
+  $('#savingsVal').textContent = state.savingsPct || 20;
+
+  // Refresh marginal rate from current country + restored gross. Respects taxOverridden.
+  recomputeTaxFromCountry();
+}
+function profileSummaryText(p) {
+  const country = (COUNTRIES.find(c => c.code === p.country) || {}).name || p.country;
+  const amount = fmtNum(p.payAmount, 0);
+  const payDesc = {
+    hourly:  `${amount}/hr`,
+    annual:  `${amount}/yr`,
+    monthly: `${amount}/mo`,
+  }[p.payType] || '';
+  return `${p.job || '—'} · ${payDesc} · ${country} · ${p.taxRate}% tax · ${p.savingsPct}% savings`;
+}
+function refreshReuseBanner() {
+  const p = loadProfile();
+  const banner = $('#reuseBanner');
+  if (!p) { banner.style.display = 'none'; return; }
+  $('#reuseSummary').textContent = profileSummaryText(p);
+  banner.style.display = '';
+}
+
+// ── Goal storage ────────────────────────────────────────────────────────
+const STORAGE_KEY = 'worthit.goals.v1';
+function loadGoals() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function saveGoals(arr) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch {}
+}
+function addGoal(snapshot, result, selectedIdeas = []) {
+  const goals = loadGoals();
+  const id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  goals.push({
+    id,
+    createdAt: Date.now(),
+    state: snapshot,
+    result,
+    selectedIdeas,
+  });
+  saveGoals(goals);
+  return id;
+}
+function removeGoal(id) {
+  saveGoals(loadGoals().filter(g => g.id !== id));
+}
+
+// Tracks which saved goal the current step-7 picks belong to.
+// Set when a goal is opened from the dashboard or saved fresh; cleared on restart.
+let activeGoalId = null;
+
+// Year → human-friendly [number, unit] tuple. Mirrors the formatter on step 7
+// so dashboard rows speak the same language as the Faster Path page.
+function fmtYearsDuration(yrs) {
+  if (!isFinite(yrs)) return ['∞', ''];
+  if (yrs <= 0) return ['0', 'days'];
+  if (yrs >= 1)      return [fmtNum(yrs, 1),         yrs >= 2 ? 'years' : 'year'];
+  if (yrs * 12 >= 1) return [fmtNum(yrs * 12, 1),    'months'];
+  if (yrs * 52 >= 1) return [fmtNum(yrs * 52, 1),    'weeks'];
+  return [fmtNum(yrs * 365, 0), 'days'];
+}
+
+// Compute baseline years and the with-picks years for a saved goal so the
+// dashboard row can show "if you do X" vs "if you don't" side-by-side.
+function computeGoalCompare(goal) {
+  const r = goal.result;
+  const s = goal.state;
+  const annualToward = r.annualToward || 0;
+  const baselineYears = annualToward > 0 ? s.price / annualToward : Infinity;
+
+  const ids = goal.selectedIdeas || [];
+  if (ids.length === 0) return null;
+
+  // Rebuild the same scoring context renderQuickerPage uses, from saved state.
+  // Use marginal — extra income stacks on top of existing pay, so it's taxed at the top bracket.
+  const marginal = s.marginalRate != null ? s.marginalRate : (s.taxRate || 0);
+  const taxMul = 1 - marginal / 100;
+  const life = {
+    coffee:    s.lifeCoffee || 0,
+    lunch:     s.lifeLunch || 0,
+    takeout:   s.lifeTakeout || 0,
+    streaming: s.lifeStreaming || 0,
+    gym:       s.lifeGym || 0,
+    bars:      s.lifeBars || 0,
+    rideshare: s.lifeRideshare || 0,
+    shopping:  s.lifeShopping || 0,
+  };
+  life.total = life.coffee + life.lunch + life.takeout + life.streaming
+             + life.gym + life.bars + life.rideshare + life.shopping;
+  const ctx = {
+    taxMul, cur: s.currency,
+    hourlyGross: r.hourlyGross,
+    hourlyNet: r.hourlyNet,
+    hoursPerWeek: s.hoursPerWeek,
+    jobLower: (s.job || '').toLowerCase(),
+    deductionPressure: r.annualNet > 0 ? r.annualDeductions / r.annualNet : 0,
+    life,
+  };
+
+  let extraRecurring = 0;
+  let extraOneTime = 0;
+  ids.forEach(id => {
+    const idea = IDEA_POOL.find(i => i.id === id);
+    if (!idea) return;
+    const extra = idea.extra(ctx);
+    if (idea.oneTime) extraOneTime += extra;
+    else extraRecurring += extra;
+  });
+
+  const remaining = Math.max(0, s.price - extraOneTime);
+  const annualCombined = annualToward + extraRecurring;
+  const newYears = annualCombined > 0
+    ? remaining / annualCombined
+    : (remaining > 0 ? Infinity : 0);
+  const savedYears = isFinite(baselineYears) && isFinite(newYears)
+    ? Math.max(0, baselineYears - newYears)
+    : 0;
+  return { baselineYears, newYears, savedYears };
+}
+
+function updateGoalPicks(id, ids) {
+  const goals = loadGoals();
+  const g = goals.find(x => x.id === id);
+  if (!g) return false;
+  g.selectedIdeas = ids;
+  saveGoals(goals);
+  return true;
+}
+
+// Called whenever the user toggles a card on step 7. Ensures picks survive a reload.
+// If there's no active saved goal yet, auto-saves the current verdict so picks have a home.
+function persistQuickerSelections() {
+  const ids = [...quickerSelected];
+  if (activeGoalId && updateGoalPicks(activeGoalId, ids)) return;
+  if (!lastResult) return;
+  const snapshot = JSON.parse(JSON.stringify(state));
+  delete snapshot.step;
+  activeGoalId = addGoal(snapshot, lastResult, ids);
+  showToast('Saved to dashboard');
+}
+
+// ── Dashboard render ────────────────────────────────────────────────────
+function renderDashboard() {
+  const goals = loadGoals();
+  const statsEl = $('#dashStats');
+  const listEl = $('#goalList');
+
+  if (goals.length === 0) {
+    statsEl.innerHTML = '';
+    statsEl.style.display = 'none';
+    listEl.innerHTML = `
+      <div class="empty">
+        <div class="big">No goals yet.</div>
+        <div>Calculate one and save it to see your full grind on a single screen.</div>
+      </div>`;
+    return;
+  }
+
+  statsEl.style.display = '';
+
+  // Aggregate totals across all goals
+  const totals = goals.reduce((a, g) => {
+    a.hours  += g.result.workHoursNeeded || 0;
+    a.days   += g.result.workDaysNeeded || 0;
+    a.weeks  += g.result.workWeeksNeeded || 0;
+    a.months += g.result.monthsNeeded || 0;
+    a.years  += g.result.yearsNeeded || 0;
+    a.price  += Number(g.state.price) || 0;
+    return a;
+  }, { hours: 0, days: 0, weeks: 0, months: 0, years: 0, price: 0 });
+
+  const cur = goals[0].state.currency;
+
+  statsEl.innerHTML = `
+    <div class="cell"><div class="label">Total goals</div><div class="num">${goals.length}</div><div class="sub">tracked</div></div>
+    <div class="cell"><div class="label">Total cost</div><div class="num">${fmtMoney(totals.price, cur)}</div><div class="sub">across all goals</div></div>
+    <div class="cell"><div class="label">Total work hours</div><div class="num">${fmtNum(totals.hours, 0)}</div><div class="sub">${fmtNum(totals.weeks, 1)} work weeks</div></div>
+    <div class="cell"><div class="label">Total years</div><div class="num">${fmtNum(totals.years, 1)}</div><div class="sub">${fmtNum(totals.months, 1)} months</div></div>
+  `;
+
+  // Sort: longest grind first
+  goals.sort((a, b) => b.result.workHoursNeeded - a.result.workHoursNeeded);
+
+  listEl.innerHTML = `<div class="goal-list">` +
+    goals.map(g => {
+      const r = g.result;
+      const s = g.state;
+      const heroUnit = pickHero(r);
+      const heroVal = {
+        hours:  [fmtNum(r.workHoursNeeded, 0), 'hours'],
+        days:   [fmtNum(r.workDaysNeeded, 1),  'days'],
+        weeks:  [fmtNum(r.workWeeksNeeded, 1), 'weeks'],
+        months: [fmtNum(r.monthsNeeded, 1),    'months'],
+        years:  [fmtNum(r.yearsNeeded, 1),     'years'],
+      }[heroUnit];
+      const pickedIdeas = (g.selectedIdeas || [])
+        .map(id => IDEA_POOL.find(i => i.id === id))
+        .filter(Boolean);
+      const picksHtml = pickedIdeas.length === 0 ? '' : `
+          <div class="picks">
+            <span class="picks-label">⚡ Faster path</span>
+            ${pickedIdeas.map(i =>
+              `<span class="pick-chip"><span class="ic">${i.icon || '•'}</span>${escapeHtml(i.title)}</span>`
+            ).join('')}
+          </div>`;
+      const cmp = computeGoalCompare(g);
+      const compareHtml = !cmp ? '' : (() => {
+        const [baseN, baseU] = fmtYearsDuration(cmp.baselineYears);
+        const [newN, newU]   = fmtYearsDuration(cmp.newYears);
+        const [saveN, saveU] = fmtYearsDuration(cmp.savedYears);
+        return `
+          <div class="compare">
+            <div class="col without">
+              <div class="label">If you don't</div>
+              <div class="val">${baseN}<span class="unit">${baseU}</span></div>
+            </div>
+            <div class="col with">
+              <div class="label">If you do</div>
+              <div class="val">${newN}<span class="unit">${newU}</span></div>
+            </div>
+            <div class="saving">
+              <div class="label">You save</div>
+              <div class="val">−${saveN}<span class="unit">${saveU}</span></div>
+            </div>
+          </div>`;
+      })();
+      return `
+        <div class="goal-row" data-id="${g.id}">
+          <div class="name">
+            ${escapeHtml(s.item)}
+            <div class="job">${escapeHtml(s.job || '—')} · ${s.payType}</div>
+          </div>
+          <div class="price">${fmtMoney(s.price, s.currency)}</div>
+          <div class="time">${heroVal[0]}<span class="unit">${heroVal[1]}</span></div>
+          <button class="del" data-del="${g.id}" title="Delete">✕</button>
+          ${picksHtml}
+          ${compareHtml}
+        </div>`;
+    }).join('') +
+    `</div>`;
+
+  // Wire up rows
+  listEl.querySelectorAll('.goal-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.dataset.del) return;
+      openGoal(row.dataset.id);
+    });
+  });
+  listEl.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      removeGoal(btn.dataset.del);
+      renderDashboard();
+      showToast('Goal deleted');
+    });
+  });
+}
+
+function openGoal(id) {
+  const goal = loadGoals().find(g => g.id === id);
+  if (!goal) return;
+  // Restore state so headline / breakdown reads correctly
+  Object.assign(state, goal.state);
+  // Backwards-compat: ensure lifestyle fields exist for goals saved before this step
+  LIFE_FIELDS.forEach(([k]) => { if (state[k] == null) state[k] = 0; });
+  // Backwards-compat: goals saved before the progressive-bracket pass have no
+  // marginalRate. Treat the saved taxRate as the user's intentional rate (sticky override)
+  // and derive a marginalRate from it so step 7 still gets a sensible number.
+  if (goal.state.marginalRate == null) {
+    state.taxOverridden = true;
+    state.marginalRate = state.taxRate;
+  }
+  // Restore previously-picked Faster Path activities so they're still highlighted on step 7
+  quickerSelected.clear();
+  (goal.selectedIdeas || []).forEach(pid => quickerSelected.add(pid));
+  activeGoalId = id;
+  renderResults(goal.result);
+  setStep(6);
+}
+
+document.querySelectorAll('[data-back]').forEach(btn => {
+  btn.addEventListener('click', () => setStep(Number(btn.dataset.back)));
+});
+
+// ── Step 1 ──────────────────────────────────────────────────────────────
+$('#next1').addEventListener('click', () => {
+  const item = $('#itemName').value.trim();
+  const price = parseFloat($('#itemPrice').value);
+  const err = $('#err1');
+  if (!item) { err.textContent = 'Tell us what you want.'; return; }
+  if (!price || price <= 0) { err.textContent = 'A price greater than zero, please.'; return; }
+  err.textContent = '';
+  state.item = item;
+  state.price = price;
+  state.currency = $('#currency').value;
+  state.existingSavings = Math.max(0, parseFloat($('#existingSavings').value) || 0);
+  setStep(2);
+  // Reveal first sub-q if not already
+  revealNextQ('job');
+});
+
+// ── Step 2 — progressive reveal ────────────────────────────────────────
+const Q_ORDER = ['job', 'paytype', 'rate', 'hours', 'breaks', 'vacation'];
+function revealNextQ(name) {
+  const el = document.querySelector(`[data-q="${name}"]`);
+  if (el) el.classList.add('show');
+}
+function revealUpTo(name) {
+  const idx = Q_ORDER.indexOf(name);
+  for (let i = 0; i <= idx; i++) revealNextQ(Q_ORDER[i]);
+}
+
+$('#jobTitle').addEventListener('input', e => {
+  state.job = e.target.value.trim();
+  if (state.job.length >= 1) revealNextQ('paytype');
+});
+
+$$('#payChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    $$('#payChips .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.payType = chip.dataset.pay;
+    const labels = {
+      hourly:  'Hourly rate',
+      annual:  'Annual gross salary',
+      monthly: 'Monthly gross salary',
+    };
+    $('#rateLabel').textContent = labels[state.payType];
+    revealUpTo('rate');
+    setTimeout(() => $('#payAmount').focus(), 200);
+    recomputeTaxFromCountry();
+    checkStep2();
+  });
+});
+
+$('#payAmount').addEventListener('input', e => {
+  state.payAmount = parseFloat(e.target.value) || 0;
+  if (state.payAmount > 0) {
+    revealNextQ('hours');
+    revealNextQ('breaks');
+    revealNextQ('vacation');
+  }
+  recomputeTaxFromCountry();
+  checkStep2();
+});
+$('#hoursPerWeek').addEventListener('input', e => {
+  state.hoursPerWeek = parseFloat(e.target.value) || 0;
+  recomputeTaxFromCountry();
+  checkStep2();
+});
+$('#breakMinutesPerDay').addEventListener('input', e => {
+  state.breakMinutesPerDay = parseFloat(e.target.value) || 0;
+  checkStep2();
+});
+$('#vacationWeeks').addEventListener('input', e => {
+  state.vacationWeeks = parseFloat(e.target.value) || 0;
+  recomputeTaxFromCountry();
+  checkStep2();
+});
+
+function checkStep2() {
+  const ok =
+    state.job &&
+    state.payType &&
+    state.payAmount > 0 &&
+    state.hoursPerWeek > 0 &&
+    state.vacationWeeks >= 0 &&
+    state.vacationWeeks < 52;
+  $('#next2').disabled = !ok;
+  return ok;
+}
+
+$('#next2').addEventListener('click', () => {
+  if (!checkStep2()) { $('#err2').textContent = 'Fill out the missing fields.'; return; }
+  $('#err2').textContent = '';
+  setStep(3);
+});
+
+// ── Step 3 ──────────────────────────────────────────────────────────────
+const countrySel = $('#country');
+COUNTRIES.forEach(c => {
+  const o = document.createElement('option');
+  o.value = c.code;
+  o.textContent = c.name;
+  countrySel.appendChild(o);
+});
+countrySel.addEventListener('change', () => {
+  state.country = countrySel.value;
+  state.taxOverridden = false; // changing country means trust the new bracket math
+  recomputeTaxFromCountry();
+});
+$('#taxRate').addEventListener('input', e => {
+  state.taxRate = parseFloat(e.target.value) || 0;
+  state.taxOverridden = true;  // sticky once the user manually edits the field
+});
+$('#monthlyDeductions').addEventListener('input', e => {
+  state.monthlyDeductions = parseFloat(e.target.value) || 0;
+});
+$('#inflationPct').addEventListener('input', e => {
+  state.inflationPct = parseFloat(e.target.value) || 0;
+});
+$('#wageGrowthPct').addEventListener('input', e => {
+  state.wageGrowthPct = parseFloat(e.target.value) || 0;
+});
+$('#investReturnPct').addEventListener('input', e => {
+  state.investReturnPct = parseFloat(e.target.value) || 0;
+});
+
+$('#next3').addEventListener('click', () => setStep(4));
+
+// ── Step 4 — lifestyle ─────────────────────────────────────────────────
+const LIFE_FIELDS = [
+  ['lifeCoffee', 'lifeCoffee'],
+  ['lifeLunch', 'lifeLunch'],
+  ['lifeTakeout', 'lifeTakeout'],
+  ['lifeStreaming', 'lifeStreaming'],
+  ['lifeGym', 'lifeGym'],
+  ['lifeBars', 'lifeBars'],
+  ['lifeRideshare', 'lifeRideshare'],
+  ['lifeShopping', 'lifeShopping'],
+];
+function lifeTotalMonthly() {
+  return LIFE_FIELDS.reduce((sum, [k]) => sum + (parseFloat(state[k]) || 0), 0);
+}
+function updateLifeSummary() {
+  const m = lifeTotalMonthly();
+  const y = m * 12;
+  const cur = state.currency;
+  $('#lifeSummary').innerHTML = m === 0
+    ? `Total discretionary spending: <strong>${fmtMoney(0, cur)} / month</strong> — fill in what applies.`
+    : `Total discretionary spending: <strong>${fmtMoney(m, cur)} / month</strong> &nbsp;·&nbsp; <strong>${fmtMoney(y, cur)} / year</strong> potentially redirectable.`;
+}
+LIFE_FIELDS.forEach(([key, id]) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', e => {
+    state[key] = parseFloat(e.target.value) || 0;
+    updateLifeSummary();
+  });
+});
+$('#skipLife').addEventListener('click', () => {
+  LIFE_FIELDS.forEach(([key, id]) => {
+    state[key] = 0;
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  updateLifeSummary();
+  setStep(5);
+});
+$('#next4').addEventListener('click', () => setStep(5));
+
+// ── Step 4 ──────────────────────────────────────────────────────────────
+$('#savings').addEventListener('input', e => {
+  state.savingsPct = parseInt(e.target.value, 10);
+  $('#savingsVal').textContent = state.savingsPct;
+});
+
+// ── Calculation ─────────────────────────────────────────────────────────
+function calculate() {
+  // Resync the all-in effective rate + marginal rate to whatever the user has
+  // entered for pay/country at this moment. Skipped silently if they manually overrode.
+  recomputeTaxFromCountry();
+
+  const workWeeks = Math.max(1, 52 - state.vacationWeeks);
+  const annualHours = state.hoursPerWeek * workWeeks;
+
+  let annualGross;
+  let hourlyGross;
+  if (state.payType === 'hourly') {
+    hourlyGross = state.payAmount;
+    annualGross = state.payAmount * annualHours;
+  } else if (state.payType === 'annual') {
+    annualGross = state.payAmount;
+    hourlyGross = annualGross / annualHours;
+  } else { // monthly
+    annualGross = state.payAmount * 12;
+    hourlyGross = annualGross / annualHours;
+  }
+
+  const annualNet = annualGross * (1 - state.taxRate / 100);
+  const annualDeductions = state.monthlyDeductions * 12;
+  const annualDisposable = Math.max(0, annualNet - annualDeductions);
+  const annualToward = annualDisposable * (state.savingsPct / 100);
+
+  const hourlyNet = annualNet / annualHours;       // post-tax per work hour
+  const hourlyToward = annualToward / annualHours; // savings per work hour
+
+  // Existing savings act as a head start: the user only needs to earn the *remainder*.
+  const existingSavings = Math.max(0, state.existingSavings || 0);
+  const remainingPrice = Math.max(0, state.price - existingSavings);
+
+  // How many *work hours* of total earning the item costs (post-tax savings rate).
+  // All five units below share ONE definition so the math is linearly derivable:
+  //   1 work year  = 52 work weeks
+  //               = 12 work months
+  //               = 260 work days   (5 per week × 52)
+  //               = 52 × hoursPerWeek work hours
+  // (Vacation weeks still affect annual income above, but not these cell ratios.)
+  const workHoursNeeded = remainingPrice / Math.max(hourlyToward, 1e-9);
+  const workDaysNeeded  = workHoursNeeded / (state.hoursPerWeek / 5);
+  const workWeeksNeeded = workHoursNeeded / state.hoursPerWeek;
+  const monthsNeeded    = workWeeksNeeded * 12 / 52;
+  const yearsNeeded     = workWeeksNeeded / 52;
+
+  // Real time on the job (paid work hours + unpaid breaks). Assumes a 5-day work week.
+  const paidHoursPerDay = state.hoursPerWeek / 5;
+  const breakHoursPerDay = (state.breakMinutesPerDay || 0) / 60;
+  const realHoursPerDay = paidHoursPerDay + breakHoursPerDay;
+  const realHoursPerWeek = state.hoursPerWeek + breakHoursPerDay * 5;
+  const breakRatio = paidHoursPerDay > 0 ? breakHoursPerDay / paidHoursPerDay : 0;
+  const realHoursNeeded = workHoursNeeded * (1 + breakRatio);
+  const realDaysNeeded = workDaysNeeded; // same shifts, just longer per day
+  const realWeeksNeeded = workWeeksNeeded;
+  const breakHoursNeeded = realHoursNeeded - workHoursNeeded;
+
+  const monthlySave = annualToward / 12;
+  const weeklySave = annualToward / 52;
+  const pctOfAnnualNet = annualNet > 0 ? (state.price / annualNet) * 100 : 0;
+
+  // Realistic ETA: simulate year by year with inflation eating the goal,
+  // raises growing the contribution, and investment return compounding savings.
+  const infl = (state.inflationPct || 0) / 100;
+  const wage = (state.wageGrowthPct || 0) / 100;
+  const ret  = (state.investReturnPct || 0) / 100;
+  let adjustedYearsNeeded = Infinity;
+  let adjustedFinalPrice = state.price;
+  let adjustedTotalContributed = existingSavings;
+  if (existingSavings >= state.price) {
+    adjustedYearsNeeded = 0;
+  } else if (annualToward > 0 || existingSavings > 0) {
+    let saved = existingSavings;
+    let yearly = annualToward;
+    let priceNow = state.price;
+    const MAX = 200;
+    for (let y = 1; y <= MAX; y++) {
+      const prevSaved = saved;
+      const prevPrice = priceNow;
+      saved = saved * (1 + ret) + yearly;
+      priceNow = priceNow * (1 + infl);
+      adjustedTotalContributed += yearly;
+      if (saved >= priceNow) {
+        // Linear-interpolate the crossover inside year y for a fractional answer.
+        const deficitStart = prevPrice - prevSaved;
+        const deficitEnd   = priceNow - saved; // <= 0
+        const frac = deficitStart / Math.max(1e-9, (deficitStart - deficitEnd));
+        adjustedYearsNeeded = (y - 1) + Math.max(0, Math.min(1, frac));
+        adjustedFinalPrice = prevPrice + (priceNow - prevPrice) * frac;
+        break;
+      }
+      yearly = yearly * (1 + wage);
+    }
+  }
+
+  return {
+    annualGross, annualNet, annualDeductions, annualDisposable, annualToward,
+    hourlyGross, hourlyNet, hourlyToward,
+    workHoursNeeded, workDaysNeeded, workWeeksNeeded, monthsNeeded, yearsNeeded,
+    realHoursNeeded, realDaysNeeded, realWeeksNeeded,
+    realHoursPerDay, realHoursPerWeek, breakHoursPerDay, breakHoursNeeded, breakRatio,
+    monthlySave, weeklySave, pctOfAnnualNet,
+    annualHours, workWeeks,
+    existingSavings, remainingPrice,
+    adjustedYearsNeeded, adjustedFinalPrice, adjustedTotalContributed,
+    effectiveTaxRate: state.taxRate, marginalTaxRate: state.marginalRate
+  };
+}
+
+// ── Results render ──────────────────────────────────────────────────────
+$('#calc').addEventListener('click', () => {
+  const r = calculate();
+  renderResults(r);
+  saveProfile();
+  setStep(6);
+});
+
+// ── Reuse profile buttons ──────────────────────────────────────────────
+$('#reuseSkip').addEventListener('click', () => {
+  const p = loadProfile();
+  if (!p) return;
+  // Make sure they've filled item + price first
+  const item = $('#itemName').value.trim();
+  const price = parseFloat($('#itemPrice').value);
+  const err = $('#err1');
+  if (!item) { err.textContent = 'Tell us what you want first.'; return; }
+  if (!price || price <= 0) { err.textContent = 'Enter a price first.'; return; }
+  err.textContent = '';
+  state.item = item;
+  state.price = price;
+  state.currency = $('#currency').value;
+  applyProfileToState(p);
+  applyProfileToDom();
+  const r = calculate();
+  renderResults(r);
+  setStep(6);
+});
+
+$('#reuseClear').addEventListener('click', () => {
+  if (!confirm('Forget your saved job/income/lifestyle info?')) return;
+  clearProfile();
+  refreshReuseBanner();
+  showToast('Saved info cleared');
+});
+
+function pickHero(r) {
+  // Most relatable unit
+  if (r.yearsNeeded >= 1)  return 'years';
+  if (r.monthsNeeded >= 1) return 'months';
+  if (r.workWeeksNeeded >= 1) return 'weeks';
+  if (r.workDaysNeeded >= 1) return 'days';
+  return 'hours';
+}
+
+function comparisonLine(r) {
+  const lines = [];
+  lines.push(`That's <strong>${fmtNum(r.workWeeksNeeded, 1)}</strong> full work weeks.`);
+  // Netflix at $15.49/mo
+  const netflixMonths = state.price / 15.49;
+  lines.push(`Or <strong>${fmtNum(netflixMonths / 12, 1)}</strong> Netflix years (at $15.49/mo).`);
+  // Lunch at $15
+  const lunches = state.price / 15;
+  lines.push(`Or <strong>${fmtNum(lunches, 0)}</strong> $15 lunches skipped.`);
+  // Coffees at $5
+  const coffees = state.price / 5;
+  lines.push(`Or <strong>${fmtNum(coffees, 0)}</strong> $5 coffees foregone.`);
+  // Pick one "spicy" line based on duration
+  if (r.yearsNeeded >= 5) {
+    return `That's basically a degree's worth of grinding — <strong>${fmtNum(r.yearsNeeded, 1)}</strong> years dedicated to one purchase.`;
+  }
+  if (r.workWeeksNeeded >= 4) {
+    return lines[0];
+  }
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function etaLine(r) {
+  const now = new Date();
+  const dateOpts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+  const timeOpts = { hour: '2-digit', minute: '2-digit' };
+  const startStr = `${now.toLocaleDateString(undefined, dateOpts)} · ${now.toLocaleTimeString(undefined, timeOpts)}`;
+
+  // Baseline (flat) projection — what the price implies at today's pay, no inflation/raises/returns.
+  const baseDays = Math.max(1, Math.ceil((r.workWeeksNeeded || 0) * 7));
+  const baseEta  = new Date(now.getTime() + baseDays * 86400000);
+  const baseEtaStr = baseEta.toLocaleDateString(undefined, dateOpts);
+
+  let line = `Started <strong>${startStr}</strong> — flat projection done by <strong>${baseEtaStr}</strong> (${fmtNum(baseDays, 0)} calendar days).`;
+
+  // Realistic projection — folds in inflation, raises, and investment return.
+  const adj = r.adjustedYearsNeeded;
+  if (isFinite(adj) && adj >= 0) {
+    const adjDays = Math.max(1, Math.round(adj * 365.25));
+    const adjEta  = new Date(now.getTime() + adjDays * 86400000);
+    const adjStr  = adjEta.toLocaleDateString(undefined, dateOpts);
+    const diffDays = adjDays - baseDays;
+    const sign = diffDays === 0 ? '' : (diffDays > 0 ? ` (${fmtNum(Math.abs(diffDays), 0)} days later than flat)` : ` (${fmtNum(Math.abs(diffDays), 0)} days sooner than flat)`);
+    line += `<br>Realistic projection (raises + inflation + returns): <strong>${adjStr}</strong>${sign}.`;
+    if (isFinite(r.adjustedFinalPrice) && r.adjustedFinalPrice > state.price * 1.01) {
+      line += ` Price by then ≈ <strong>${fmtMoney(r.adjustedFinalPrice)}</strong>.`;
+    }
+  } else if (!isFinite(adj)) {
+    line += `<br><span style="opacity:0.7">Inflation outpaces your savings — at these settings you never catch up. Try a higher savings rate or return.</span>`;
+  }
+  return line;
+}
+
+function renderResults(r) {
+  // Backfill break-time fields for goals saved before this feature existed.
+  if (r.realHoursNeeded == null) {
+    const paidPerDay = state.hoursPerWeek > 0 ? state.hoursPerWeek / 5 : 0;
+    const breakPerDay = (state.breakMinutesPerDay || 0) / 60;
+    const ratio = paidPerDay > 0 ? breakPerDay / paidPerDay : 0;
+    r.breakHoursPerDay = breakPerDay;
+    r.realHoursPerDay = paidPerDay + breakPerDay;
+    r.realHoursPerWeek = state.hoursPerWeek + breakPerDay * 5;
+    r.realHoursNeeded = (r.workHoursNeeded || 0) * (1 + ratio);
+    r.realDaysNeeded = r.workDaysNeeded;
+    r.realWeeksNeeded = r.workWeeksNeeded;
+    r.breakHoursNeeded = r.realHoursNeeded - (r.workHoursNeeded || 0);
+    r.breakRatio = ratio;
+  }
+  // Backfill realistic-ETA fields for goals saved before this feature existed.
+  if (r.adjustedYearsNeeded == null) {
+    r.existingSavings = r.existingSavings || 0;
+    r.remainingPrice = r.remainingPrice ?? state.price;
+    r.adjustedYearsNeeded = r.yearsNeeded;
+    r.adjustedFinalPrice = state.price;
+    r.adjustedTotalContributed = state.price;
+  }
+  const hero = pickHero(r);
+  const heroNumbers = {
+    hours:  { n: fmtNum(r.workHoursNeeded, 0), unit: 'work hours' },
+    days:   { n: fmtNum(r.workDaysNeeded, 1),  unit: 'work days' },
+    weeks:  { n: fmtNum(r.workWeeksNeeded, 1), unit: 'work weeks' },
+    months: { n: fmtNum(r.monthsNeeded, 1),    unit: 'work months' },
+    years:  { n: fmtNum(r.yearsNeeded, 1),     unit: 'work years' },
+  };
+  const h = heroNumbers[hero];
+
+  $('#headline').innerHTML =
+    `To buy a <span class="item">${escapeHtml(state.item)}</span>, you need to work <span class="num">${h.n}</span> ${h.unit}.`;
+
+  // Grid — all units are *work* units (vacation excluded). Months/years are
+  // calendar months/years of working at the user's normal schedule.
+  const cells = [
+    { k: 'Work hours',  v: fmtNum(r.workHoursNeeded, 0), key: 'hours' },
+    { k: 'Work days',   v: fmtNum(r.workDaysNeeded, 1),  key: 'days' },
+    { k: 'Work weeks',  v: fmtNum(r.workWeeksNeeded, 1), key: 'weeks' },
+    { k: 'Work months', v: fmtNum(r.monthsNeeded, 1),    key: 'months' },
+    { k: 'Work years',  v: fmtNum(r.yearsNeeded, 1),     key: 'years' },
+  ];
+  $('#grid').innerHTML = cells.map(c =>
+    `<div class="cell ${c.key === hero ? 'hero' : ''}">
+       <div class="label">${c.k}</div>
+       <div class="num">${c.v}</div>
+     </div>`
+  ).join('');
+
+  $('#compareText').innerHTML = comparisonLine(r);
+  $('#monthlyText').innerHTML = `Set aside <strong>${fmtMoney(r.monthlySave)}</strong> every month.`;
+  $('#weeklyText').innerHTML  = `Or <strong>${fmtMoney(r.weeklySave)}</strong> a week.`;
+  $('#percentText').innerHTML = `This item is <strong>${fmtNum(r.pctOfAnnualNet, 1)}%</strong> of your annual net income.`;
+  $('#etaText').innerHTML = etaLine(r);
+
+
+  // Breakdown
+  const cur = state.currency;
+  const rows = [
+    ['Job',                    state.job || '—'],
+    ['Pay type',               state.payType],
+    ['Annual gross',           fmtMoney(r.annualGross, cur)],
+    ['Effective tax rate',     `${fmtNum(state.taxRate, 1)}% (income + payroll)`],
+    ['Marginal rate',          `${fmtNum(state.marginalRate ?? state.taxRate, 1)}% on the next dollar`],
+    ['Annual net',             fmtMoney(r.annualNet, cur)],
+    ['Fixed costs / year',     fmtMoney(r.annualDeductions, cur)],
+    ['Annual disposable',      fmtMoney(r.annualDisposable, cur)],
+    ['Savings rate',           `${state.savingsPct}%`],
+    ['Annual toward this',     fmtMoney(r.annualToward, cur)],
+    ['Already saved',          fmtMoney(r.existingSavings || 0, cur)],
+    ['Remaining to earn',      fmtMoney(r.remainingPrice ?? state.price, cur)],
+    ['Inflation assumed',      `${state.inflationPct ?? 0}% / yr`],
+    ['Raise assumed',          `${state.wageGrowthPct ?? 0}% / yr`],
+    ['Return on savings',      `${state.investReturnPct ?? 0}% / yr`],
+    ['Realistic years',        isFinite(r.adjustedYearsNeeded) ? fmtNum(r.adjustedYearsNeeded, 1) : '∞'],
+    ['Net per work hour',      fmtMoney(r.hourlyNet, cur)],
+    ['Saved per work hour',    fmtMoney(r.hourlyToward, cur)],
+    ['Work hours / year',      fmtNum(r.annualHours, 0)],
+    ['Unpaid breaks / day',    `${fmtNum(state.breakMinutesPerDay || 0, 0)} min`],
+    ['Real hours on the job',  fmtNum(r.realHoursNeeded, 0)],
+    ['Real hours / week',      fmtNum(r.realHoursPerWeek, 1)],
+  ];
+  $('#breakdown').innerHTML = rows.map(([k, v]) =>
+    `<div><span class="k">${k}</span><span class="v">${v}</span></div>`
+  ).join('');
+
+  // Cache result so the dedicated "Faster path" page can render without recomputing.
+  lastResult = r;
+}
+
+// ── Faster-path page (step 7) ──────────────────────────────────────────
+let lastResult = null;
+const quickerFilters = { type: 'all', load: 'all' };
+const quickerSelected = new Set();
+let lastQuickerAll = []; // last computed { idea, extra, ... } for current result
+
+function openQuickerPage() {
+  if (!lastResult) return;
+  renderQuickerPage(lastResult);
+  setStep(7);
+}
+
+function renderQuickerPage(r) {
+  // Side income lands on top of regular pay, so price it at the marginal bracket — not the
+  // (lower) average effective rate. For old goals without marginalRate, fall back to taxRate.
+  const marginal = state.marginalRate != null ? state.marginalRate : state.taxRate;
+  const taxMul = 1 - marginal / 100;
+  const cur = state.currency;
+
+  const life = {
+    coffee:    state.lifeCoffee || 0,
+    lunch:     state.lifeLunch || 0,
+    takeout:   state.lifeTakeout || 0,
+    streaming: state.lifeStreaming || 0,
+    gym:       state.lifeGym || 0,
+    bars:      state.lifeBars || 0,
+    rideshare: state.lifeRideshare || 0,
+    shopping:  state.lifeShopping || 0,
+  };
+  life.total = life.coffee + life.lunch + life.takeout + life.streaming
+             + life.gym + life.bars + life.rideshare + life.shopping;
+
+  const ctx = {
+    taxMul, cur,
+    hourlyGross: r.hourlyGross,
+    hourlyNet: r.hourlyNet,
+    hoursPerWeek: state.hoursPerWeek,
+    jobLower: (state.job || '').toLowerCase(),
+    deductionPressure: r.annualNet > 0 ? r.annualDeductions / r.annualNet : 0,
+    life,
+  };
+
+  const baselineYears = state.price / Math.max(r.annualToward, 1e-9);
+
+  // Score every idea, drop hard-disqualified (-Infinity), then compute time saved.
+  const all = IDEA_POOL
+    .map(idea => ({ idea, score: scoreIdea(idea, ctx) }))
+    .filter(x => x.score > -Infinity)
+    .map(({ idea }) => {
+      const extra = idea.extra(ctx);
+      const newYears = idea.oneTime
+        ? Math.max(0, (state.price - extra) / Math.max(r.annualToward, 1e-9))
+        : state.price / (r.annualToward + extra);
+      const savedYears = Math.max(0, baselineYears - newYears);
+      return { idea, extra, newYears, savedYears };
+    })
+    .filter(x => x.savedYears > 0);
+
+  // Drop selections that no longer exist for this result (different state, etc.)
+  const validIds = new Set(all.map(x => x.idea.id));
+  for (const id of [...quickerSelected]) if (!validIds.has(id)) quickerSelected.delete(id);
+  lastQuickerAll = all;
+
+  // Apply filters
+  const filtered = all.filter(x => {
+    if (quickerFilters.type !== 'all' && x.idea.type !== quickerFilters.type) return false;
+    if (quickerFilters.load !== 'all' && x.idea.load !== quickerFilters.load) return false;
+    return true;
+  });
+
+  // Sort by biggest time saved first
+  filtered.sort((a, b) => b.savedYears - a.savedYears);
+
+  const fmtDuration = (yrs) => {
+    if (yrs <= 0) return ['0', 'days'];
+    if (yrs >= 1)      return [fmtNum(yrs, 1),         yrs >= 2 ? 'years' : 'year'];
+    if (yrs * 12 >= 1) return [fmtNum(yrs * 12, 1),    'months'];
+    if (yrs * 52 >= 1) return [fmtNum(yrs * 52, 1),    'weeks'];
+    return [fmtNum(yrs * 365, 0), 'days'];
+  };
+
+  const grid = $('#quickerGrid');
+  const empty = $('#quickerEmpty');
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    empty.hidden = false;
+  } else {
+    empty.hidden = true;
+    grid.innerHTML = filtered.map(({ idea, extra, newYears, savedYears }) => {
+      const [savedN, savedU] = fmtDuration(savedYears);
+      const [newN, newU]     = fmtDuration(newYears);
+      const cashLine = idea.oneTime
+        ? `<span class="cash">${fmtMoney(extra, cur)} one-time</span>`
+        : `<span class="cash">+${fmtMoney(extra, cur)}/yr</span>`;
+      // desc may be a string OR a function(ctx) so it can include the user's actual numbers.
+      const descText = typeof idea.desc === 'function' ? idea.desc(ctx) : (idea.desc || '');
+      const picked = quickerSelected.has(idea.id);
+      return `
+        <div class="idea${picked ? ' selected' : ''}" data-idea-id="${idea.id}" role="button" aria-pressed="${picked}">
+          <div class="pick">${picked ? '✓' : ''}</div>
+          <div class="ic">${idea.icon || '•'}</div>
+          <div class="body">
+            <div class="title">${escapeHtml(idea.title)}</div>
+            <div class="desc">${escapeHtml(descText)}</div>
+            <div class="meta">${cashLine} · <span class="tag">${idea.type}</span> · <span class="tag">${idea.load} effort</span></div>
+            <div class="impact">
+              <div class="saved"><strong>−${savedN}</strong> ${savedU} off</div>
+              <div class="newtotal">→ ${newN} ${newU} total</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Wire up tap-to-select on the freshly rendered cards.
+    grid.querySelectorAll('.idea[data-idea-id]').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.ideaId;
+        if (quickerSelected.has(id)) quickerSelected.delete(id);
+        else quickerSelected.add(id);
+        persistQuickerSelections();
+        // Re-render so the card's selected state + combo bar both update.
+        if (lastResult) renderQuickerPage(lastResult);
+      });
+    });
+  }
+
+  const totalAvail = all.length;
+  $('#quickerSummary').innerHTML =
+    `Showing <strong>${filtered.length}</strong> of <strong>${totalAvail}</strong> ideas · ` +
+    `baseline grind: <strong>${fmtDuration(baselineYears)[0]} ${fmtDuration(baselineYears)[1]}</strong>`;
+
+  renderComboBar(r, baselineYears, fmtDuration);
+}
+
+function renderComboBar(r, baselineYears, fmtDuration) {
+  const bar = document.getElementById('comboBar');
+  const line = document.getElementById('comboLine');
+  const clear = document.getElementById('comboClear');
+  if (!bar || !line || !clear) return;
+
+  const picked = lastQuickerAll.filter(x => quickerSelected.has(x.idea.id));
+  if (picked.length === 0) {
+    bar.classList.add('empty');
+    clear.disabled = true;
+    line.innerHTML = `Tap any cards below to combine them. The new ETA updates as you pick.`;
+    return;
+  }
+
+  // Combine: stack recurring incomes, sum one-time deposits.
+  let extraRecurring = 0;
+  let extraOneTime = 0;
+  picked.forEach(({ idea, extra }) => {
+    if (idea.oneTime) extraOneTime += extra;
+    else extraRecurring += extra;
+  });
+
+  const remaining = Math.max(0, state.price - extraOneTime);
+  const annualTowardCombined = (r.annualToward || 0) + extraRecurring;
+  const newYears = annualTowardCombined > 0
+    ? remaining / annualTowardCombined
+    : (remaining > 0 ? Infinity : 0);
+  const savedYears = Math.max(0, baselineYears - newYears);
+
+  const calendarDays = isFinite(newYears) ? Math.max(0, Math.ceil(newYears * 365)) : null;
+  const eta = calendarDays != null
+    ? new Date(Date.now() + calendarDays * 86400000)
+    : null;
+  const dateStr = eta
+    ? eta.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+    : 'never (need recurring income)';
+
+  const [newN, newU]     = fmtDuration(isFinite(newYears) ? newYears : 0);
+  const [savedN, savedU] = fmtDuration(savedYears);
+
+  bar.classList.remove('empty');
+  clear.disabled = false;
+
+  const stackedSummary = picked.map(p => escapeHtml(p.idea.title)).join(' + ');
+
+  line.innerHTML =
+    `<strong>${picked.length}</strong> stacked: ${stackedSummary}` +
+    `<br>New grind: <strong>${newN}</strong> ${newU}` +
+    (isFinite(newYears)
+      ? ` — done by <strong>${dateStr}</strong>`
+      : '') +
+    ` · <strong>−${savedN}</strong> ${savedU} off baseline.`;
+}
+
+// Wire the open button, back button, and filter chips once.
+(function wireQuickerPage() {
+  const openBtn = document.getElementById('quickerOpen');
+  if (openBtn) openBtn.addEventListener('click', openQuickerPage);
+
+  const backBtn = document.getElementById('quickerBack');
+  if (backBtn) backBtn.addEventListener('click', () => setStep(6));
+
+  const clearBtn = document.getElementById('comboClear');
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    if (quickerSelected.size === 0) return;
+    quickerSelected.clear();
+    if (activeGoalId) updateGoalPicks(activeGoalId, []);
+    if (lastResult) renderQuickerPage(lastResult);
+  });
+
+  const wireChips = (containerId, key) => {
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    c.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        c.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+        chip.classList.add('active');
+        quickerFilters[key] = chip.dataset[key === 'type' ? 'qtype' : 'qload'];
+        if (lastResult) renderQuickerPage(lastResult);
+      });
+    });
+  };
+  wireChips('quickerTypeChips', 'type');
+  wireChips('quickerLoadChips', 'load');
+})();
+
+// ── Idea pool (~30 ideas, scored by user context) ──────────────────────
+// Each idea returns { extra, recurring } given context. 'recurring' = annual cash;
+// 'oneTime' = single deposit. Wage-based amounts are post-tax.
+const IDEA_POOL = [
+  // ── Low-time gigs (≤10h/week) ─────────────────────────────────────────
+  { id:'barista', icon:'☕', title:'Barista 2h × 5 days at Starbucks',
+    desc:'~$16/hr after work shifts. After tax.',
+    type:'gig', load:'low', skill:'none',
+    extra:c => 16 * 10 * 50 * c.taxMul },
+  { id:'dogwalk', icon:'🐕', title:'Dog walking (Rover, 1h/day)',
+    desc:'~$20 per walk on the way home. Cash app to bank.',
+    type:'gig', load:'low', skill:'none',
+    extra:c => 20 * 5 * 50 * c.taxMul },
+  { id:'babysit', icon:'👶', title:'Babysit Friday/Saturday nights',
+    desc:'~$22/hr × 6h × 2 nights, every other weekend.',
+    type:'gig', load:'low', skill:'some',
+    extra:c => 22 * 12 * 26 * c.taxMul },
+  { id:'tutorOnline', icon:'📚', title:'Online tutoring (5h/week)',
+    desc:'Wyzant / Preply at ~$30/hr. Pick a subject you already know.',
+    type:'skill', load:'low', skill:'pro',
+    jobs:['teacher','professor','tutor','student','academic','phd'],
+    extra:c => 30 * 5 * 48 * c.taxMul },
+  { id:'tutorKids', icon:'✏️', title:'Tutor kids in your neighborhood',
+    desc:'$25/hr × 4h/week. Word of mouth, no platform fees.',
+    type:'skill', load:'low', skill:'pro',
+    jobs:['teacher','tutor'],
+    extra:c => 25 * 4 * 48 * c.taxMul },
+
+  // ── Medium-time gigs (10–20h/week) ───────────────────────────────────
+  { id:'rideshare', icon:'🚗', title:'Weekend rideshare (16h)',
+    desc:'Uber/Lyft Sat + Sun, ~$22/hr after expenses.',
+    type:'gig', load:'med', skill:'none',
+    extra:c => 22 * 16 * 50 * c.taxMul },
+  { id:'doordash', icon:'🛵', title:'Weekend food delivery (12h)',
+    desc:'DoorDash/Uber Eats, ~$20/hr in busy zones.',
+    type:'gig', load:'med', skill:'none',
+    extra:c => 20 * 12 * 50 * c.taxMul },
+  { id:'bartend', icon:'🍸', title:'Bartend Fri + Sat nights',
+    desc:'~$25/hr + tips, 12h/week. Noisy but lucrative.',
+    type:'gig', load:'med', skill:'some',
+    extra:c => 35 * 12 * 50 * c.taxMul },
+  { id:'retail', icon:'🛍️', title:'Retail weekend shifts',
+    desc:'~$18/hr × 12h. Predictable schedule.',
+    type:'gig', load:'med', skill:'none',
+    extra:c => 18 * 12 * 50 * c.taxMul },
+  { id:'warehouse', icon:'📦', title:'Warehouse / Amazon flex weekends',
+    desc:'~$22/hr, 14h/weekend. Physical but fast cash.',
+    type:'gig', load:'med', skill:'none',
+    extra:c => 22 * 14 * 48 * c.taxMul },
+
+  // ── Skilled freelance (scales with user's earning power) ─────────────
+  { id:'freelanceDev', icon:'💻', title:'Freelance dev projects (5h/week)',
+    desc:'Charge ~80% of your day-job hourly rate.',
+    type:'freelance', load:'low', skill:'pro',
+    jobs:['engineer','developer','programmer','software','coder','dev','swe'],
+    extra:c => Math.max(40, c.hourlyGross * 0.8) * 5 * 48 * c.taxMul },
+  { id:'freelanceDesign', icon:'🎨', title:'Freelance design (logos, Figma)',
+    desc:'5h/week at ~$60/hr or your day-rate.',
+    type:'freelance', load:'low', skill:'pro',
+    jobs:['designer','artist','creative','illustrator','ux','ui'],
+    extra:c => Math.max(50, c.hourlyGross * 0.8) * 5 * 48 * c.taxMul },
+  { id:'freelanceWrite', icon:'✍️', title:'Freelance writing / copywriting',
+    desc:'$0.20/word × 1500 words/week. Blog posts and landing pages.',
+    type:'freelance', load:'low', skill:'pro',
+    jobs:['writer','editor','journalist','marketing','copywriter','content'],
+    extra:c => 0.20 * 1500 * 48 * c.taxMul },
+  { id:'consulting', icon:'📊', title:'Consulting in your field (4h/week)',
+    desc:'Charge 1.5× your day-job hourly. Friends-of-friends only.',
+    type:'freelance', load:'low', skill:'pro',
+    extra:c => Math.max(60, c.hourlyGross * 1.5) * 4 * 40 * c.taxMul },
+  { id:'voiceover', icon:'🎙️', title:'Voiceover gigs (Fiverr/Voices)',
+    desc:'~$50 per short read, 4 per week.',
+    type:'freelance', load:'low', skill:'some',
+    jobs:['voice','actor','narrator','radio','musician'],
+    extra:c => 50 * 4 * 48 * c.taxMul },
+  { id:'training', icon:'💪', title:'Personal training clients (5h/week)',
+    desc:'$60/session × 5/week. Your gym, your hours.',
+    type:'skill', load:'low', skill:'pro',
+    jobs:['trainer','coach','fitness','athlete','pt','therapist'],
+    extra:c => 60 * 5 * 48 * c.taxMul },
+  { id:'photo', icon:'📷', title:'Weekend wedding/event photos',
+    desc:'~$400 per gig × 2/month.',
+    type:'freelance', load:'med', skill:'pro',
+    jobs:['photographer','videographer'],
+    extra:c => 400 * 24 * c.taxMul },
+
+  // ── Passive / asset-based ────────────────────────────────────────────
+  { id:'rentRoom', icon:'🏠', title:'Rent a spare room on Airbnb (weekends)',
+    desc:'~$120/night × 2 nights × 30 weekends.',
+    type:'passive', load:'low', skill:'some',
+    extra:c => 120 * 2 * 30 * c.taxMul },
+  { id:'stockphoto', icon:'🖼️', title:'Sell stock photos / templates',
+    desc:'~$80/month passive after a portfolio is built.',
+    type:'passive', load:'low', skill:'pro',
+    jobs:['photographer','designer','creative','artist'],
+    extra:c => 80 * 12 * c.taxMul },
+  { id:'newsletter', icon:'📰', title:'Paid newsletter (Substack)',
+    desc:'~50 subscribers × $7/mo. Slow start, compounds.',
+    type:'passive', load:'med', skill:'pro',
+    jobs:['writer','journalist','marketer','expert','researcher','analyst'],
+    extra:c => 50 * 7 * 12 * c.taxMul },
+  { id:'youtube', icon:'▶️', title:'Niche YouTube channel (4h/week)',
+    desc:'AdSense + sponsorships, ~$300/mo realistic at year 2.',
+    type:'passive', load:'med', skill:'some',
+    extra:c => 300 * 12 * c.taxMul },
+  { id:'etsy', icon:'🧶', title:'Etsy shop (handmade or digital)',
+    desc:'~$400/month if you stock 30+ listings.',
+    type:'freelance', load:'med', skill:'some',
+    jobs:['artist','designer','creative','craftsperson'],
+    extra:c => 400 * 12 * c.taxMul },
+
+  // ── One-time sells ───────────────────────────────────────────────────
+  { id:'sellElectronics', icon:'📱', title:'Sell unused electronics',
+    desc:'Old phone, laptop, console. ~$600 in your drawer.',
+    type:'sell', load:'low', skill:'none', oneTime:true,
+    extra:c => 600 },
+  { id:'sellFurniture', icon:'🛋️', title:'Sell unused furniture (FB Marketplace)',
+    desc:'~$400 for stuff you don\'t use.',
+    type:'sell', load:'low', skill:'none', oneTime:true,
+    extra:c => 400 },
+  { id:'garageSale', icon:'🏷️', title:'Garage sale / closet purge',
+    desc:'~$300 in one Saturday.',
+    type:'sell', load:'low', skill:'none', oneTime:true,
+    extra:c => 300 },
+
+  // ── Pure savings — DYNAMIC, scaled by user's own spending ────────────
+  // (Each requires the matching lifestyle field > 0 to be picked.)
+  { id:'cutCoffee', icon:'☕', title:'Quit your coffee-out habit',
+    desc:c => `You spend ~${fmtMoney(c.life.coffee, c.cur)}/mo. Brew at home and redirect 100%.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'coffee',
+    extra:c => c.life.coffee * 12 },
+  { id:'halfCoffee', icon:'☕', title:'Halve your coffee runs',
+    desc:c => `Cut your ${fmtMoney(c.life.coffee, c.cur)}/mo coffee in half — keep the joy, skip the bill.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'coffee',
+    extra:c => (c.life.coffee * 0.5) * 12 },
+  { id:'packLunch', icon:'🥪', title:'Pack lunch instead of buying',
+    desc:c => `Your ${fmtMoney(c.life.lunch, c.cur)}/mo lunch budget → pure cash for the goal.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'lunch',
+    extra:c => c.life.lunch * 12 },
+  { id:'cookDinner', icon:'🍳', title:'Cook dinner instead of takeout',
+    desc:c => `Replace your ${fmtMoney(c.life.takeout, c.cur)}/mo takeout with home-cooked.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'takeout',
+    extra:c => c.life.takeout * 12 },
+  { id:'halfTakeout', icon:'🍱', title:'Cut takeout in half',
+    desc:c => `Halve your ${fmtMoney(c.life.takeout, c.cur)}/mo takeout. Realistic, not joyless.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'takeout',
+    extra:c => (c.life.takeout * 0.5) * 12 },
+  { id:'cancelSubs', icon:'📺', title:'Cancel streaming subscriptions',
+    desc:c => `${fmtMoney(c.life.streaming, c.cur)}/mo redirected. Pick one to keep, drop the rest.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'streaming',
+    extra:c => c.life.streaming * 12 },
+  { id:'gym', icon:'🏋️', title:'Cancel the gym, train outside',
+    desc:c => `Your ${fmtMoney(c.life.gym, c.cur)}/mo membership → cash. Run, calisthenics, free.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'gym',
+    extra:c => c.life.gym * 12 },
+  { id:'cutBars', icon:'🍻', title:'Halve nights out at bars',
+    desc:c => `Cut your ${fmtMoney(c.life.bars, c.cur)}/mo bar tab in half. Pre-game at home.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'bars',
+    extra:c => (c.life.bars * 0.5) * 12 },
+  { id:'transit', icon:'🚌', title:'Public transit instead of rideshare',
+    desc:c => `Replace your ${fmtMoney(c.life.rideshare, c.cur)}/mo Uber spend with bus/metro.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'rideshare',
+    extra:c => c.life.rideshare * 12 },
+  { id:'noShop', icon:'🛒', title:'No-spend month on impulse shopping',
+    desc:c => `${fmtMoney(c.life.shopping, c.cur)}/mo redirected. Wishlist things for 7 days first.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'shopping',
+    extra:c => c.life.shopping * 12 },
+
+  // ── Mega cut (only if user has multiple lifestyle costs) ────────────
+  { id:'allLifestyle', icon:'🪓', title:'Cut all discretionary spending',
+    desc:c => `Brutal but fast: redirect every ${fmtMoney(c.life.total, c.cur)}/mo of lifestyle spending.`,
+    type:'saving', load:'none', skill:'none',
+    requires:'multi',
+    extra:c => c.life.total * 12 },
+];
+
+function scoreIdea(idea, ctx) {
+  // Hard requirements: lifestyle ideas need the user to actually spend on that category
+  if (idea.requires) {
+    const req = idea.requires;
+    if (req === 'multi') {
+      const nonZero = Object.values(ctx.life).filter(v => typeof v === 'number' && v > 0 && v !== ctx.life.total).length;
+      if (nonZero < 3) return -Infinity;
+    } else {
+      if (!(ctx.life[req] > 0)) return -Infinity;
+    }
+  }
+
+  let score = 1.0;
+
+  // Lifestyle ideas with bigger spending get a boost
+  if (idea.requires && idea.requires !== 'multi') {
+    const amount = ctx.life[idea.requires] || 0;
+    if (amount >= 200) score += 1.5;
+    else if (amount >= 100) score += 1.0;
+    else if (amount >= 50) score += 0.5;
+  }
+
+  // Job-keyword match: huge boost
+  if (idea.jobs && ctx.jobLower) {
+    if (idea.jobs.some(k => ctx.jobLower.includes(k))) score += 4;
+  }
+
+  // Available time: based on user's hoursPerWeek
+  const hpw = ctx.hoursPerWeek;
+  if (hpw >= 55) {
+    // Burnt out: heavily prefer savings + low-time + one-time
+    if (idea.load === 'none')      score += 2.5;
+    else if (idea.load === 'low')  score += 0.8;
+    else if (idea.load === 'med')  score -= 1.5;
+  } else if (hpw >= 45) {
+    if (idea.load === 'none')      score += 1.2;
+    else if (idea.load === 'low')  score += 0.5;
+    else if (idea.load === 'med')  score -= 0.5;
+  } else if (hpw <= 30) {
+    // Has spare time: open to gigs
+    if (idea.load === 'med')       score += 1.5;
+    else if (idea.load === 'low')  score += 0.5;
+  }
+
+  // Earning power: high earners shouldn't be told to drive Uber
+  const hourlyNet = ctx.hourlyNet;
+  if (hourlyNet >= 80) {
+    if (idea.type === 'gig')                score -= 2.5;
+    if (idea.type === 'freelance')          score += 1.5;
+    if (idea.type === 'passive')            score += 0.8;
+  } else if (hourlyNet >= 40) {
+    if (idea.type === 'freelance')          score += 1.0;
+    if (idea.type === 'gig' && idea.skill === 'none') score -= 0.3;
+  } else {
+    // Low/normal earners benefit most from gigs
+    if (idea.type === 'gig')                score += 0.6;
+  }
+
+  // Big fixed costs → savings ideas matter more
+  if (ctx.deductionPressure > 0.4) {
+    if (idea.type === 'saving') score += 1.0;
+    if (idea.type === 'sell')   score += 0.5;
+  }
+
+  // Skill tier match
+  if (idea.skill === 'pro' && !idea.jobs) score += 0.2;
+  if (idea.skill === 'pro' && idea.jobs && !(idea.jobs.some(k => ctx.jobLower.includes(k)))) {
+    score -= 0.6;  // pro-skill ideas without job match → demote
+  }
+
+  // Random shuffle so picks vary across views
+  score += Math.random() * 0.9;
+
+  return score;
+}
+
+function pickIdeas(ctx, n = 5) {
+  const scored = IDEA_POOL
+    .map(i => ({ idea: i, score: scoreIdea(i, ctx) }))
+    .filter(s => s.score > -Infinity);
+  scored.sort((a, b) => b.score - a.score);
+
+  // At most 3 of the same type, max 2 'saving' picks (lifestyle ideas can crowd otherwise)
+  const picks = [];
+  const typeCount = {};
+  const savingCap = ctx.life.total > 0 ? 2 : 0;
+  for (const s of scored) {
+    const t = s.idea.type;
+    const cap = t === 'saving' ? savingCap : 3;
+    if ((typeCount[t] || 0) >= cap) continue;
+    picks.push(s.idea);
+    typeCount[t] = (typeCount[t] || 0) + 1;
+    if (picks.length >= n) break;
+  }
+  // Top up if filtering left us short
+  if (picks.length < n) {
+    for (const s of scored) {
+      if (picks.includes(s.idea)) continue;
+      picks.push(s.idea);
+      if (picks.length >= n) break;
+    }
+  }
+  return picks;
+}
+
+// ── Render ideas ───────────────────────────────────────────────────────
+// (dead code — superseded by step 7's renderQuickerPage; kept for now)
+function renderIdeas(r) {
+  const marginal = state.marginalRate != null ? state.marginalRate : state.taxRate;
+  const taxMul = 1 - marginal / 100;
+  const cur = state.currency;
+
+  const life = {
+    coffee:    state.lifeCoffee || 0,
+    lunch:     state.lifeLunch || 0,
+    takeout:   state.lifeTakeout || 0,
+    streaming: state.lifeStreaming || 0,
+    gym:       state.lifeGym || 0,
+    bars:      state.lifeBars || 0,
+    rideshare: state.lifeRideshare || 0,
+    shopping:  state.lifeShopping || 0,
+  };
+  life.total = life.coffee + life.lunch + life.takeout + life.streaming
+             + life.gym + life.bars + life.rideshare + life.shopping;
+
+  const ctx = {
+    taxMul,
+    cur,
+    hourlyGross: r.hourlyGross,
+    hourlyNet: r.hourlyNet,
+    hoursPerWeek: state.hoursPerWeek,
+    jobLower: (state.job || '').toLowerCase(),
+    deductionPressure: r.annualNet > 0 ? r.annualDeductions / r.annualNet : 0,
+    life,
+  };
+
+  const picks = pickIdeas(ctx, 5);
+  const baselineYears = state.price / Math.max(r.annualToward, 1e-9);
+
+  const html = picks.map(idea => {
+    const extra = idea.extra(ctx);
+    let newYears;
+    if (idea.oneTime) {
+      newYears = Math.max(0, (state.price - extra) / Math.max(r.annualToward, 1e-9));
+    } else {
+      newYears = state.price / (r.annualToward + extra);
+    }
+    const savedYears = Math.max(0, baselineYears - newYears);
+
+    const fmtDuration = (yrs, allowZero = false) => {
+      if (yrs <= 0) return allowZero ? ['0', 'days'] : ['0', 'days'];
+      if (yrs >= 1)        return [fmtNum(yrs, 1),       yrs >= 2 ? 'years' : 'year'];
+      if (yrs * 12 >= 1)   return [fmtNum(yrs * 12, 1),  'months'];
+      if (yrs * 52 >= 1)   return [fmtNum(yrs * 52, 1),  'weeks'];
+      return [fmtNum(yrs * 365, 0), 'days'];
+    };
+
+    const [savedStr, savedUnit] = fmtDuration(savedYears, true);
+    const [newStr, newUnit] = fmtDuration(newYears);
+
+    const extraLabel = idea.oneTime
+      ? `+${fmtMoney(extra, cur)} one-time`
+      : `+${fmtMoney(extra, cur)}/yr`;
+
+    const desc = typeof idea.desc === 'function' ? idea.desc(ctx) : idea.desc;
+    return `
+      <div class="idea">
+        <div class="icon">${idea.icon}</div>
+        <div class="title">${idea.title}</div>
+        <div class="desc">${desc} <strong style="color:var(--text)">${extraLabel}</strong></div>
+        <div class="saving">−${savedStr}<span class="unit">${savedUnit} faster</span></div>
+        <div class="new-time">↳ ${newStr} ${newUnit} total</div>
+      </div>`;
+  }).join('');
+
+  $('#ideaGrid').innerHTML = html;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+}
+
+// ── Restart ─────────────────────────────────────────────────────────────
+$('#restart').addEventListener('click', () => {
+  activeGoalId = null;
+  quickerSelected.clear();
+  setStep(1);
+});
+
+// ── Save goal ───────────────────────────────────────────────────────────
+$('#saveGoal').addEventListener('click', () => {
+  const r = calculate();
+  const snapshot = JSON.parse(JSON.stringify(state));
+  delete snapshot.step;
+  const picks = [...quickerSelected];
+  // If this verdict was opened from an existing goal (and step-7 picks already
+  // auto-saved into it), update in place so we don't fork a duplicate row.
+  if (activeGoalId && updateGoalPicks(activeGoalId, picks)) {
+    showToast('Updated on dashboard');
+  } else {
+    activeGoalId = addGoal(snapshot, r, picks);
+    showToast('Saved to dashboard');
+  }
+  renderDashboard();
+  setTimeout(() => setStep(0), 350);
+});
+
+// ── Nav ─────────────────────────────────────────────────────────────────
+$('#navDash').addEventListener('click', () => { renderDashboard(); setStep(0); });
+$('#addGoalBtn').addEventListener('click', () => {
+  activeGoalId = null;
+  quickerSelected.clear();
+  setStep(1);
+});
+
+// ── Share / copy ────────────────────────────────────────────────────────
+$('#share').addEventListener('click', async () => {
+  const r = calculate();
+  const cur = state.currency;
+  const text =
+`WORTH IT? — Verdict
+———————————————————————————
+Item: ${state.item} (${fmtMoney(state.price, cur)})
+Job:  ${state.job || '—'}
+
+To afford this, I need to work:
+• ${fmtNum(r.workHoursNeeded, 0)} hours
+• ${fmtNum(r.workDaysNeeded, 1)} days
+• ${fmtNum(r.workWeeksNeeded, 1)} weeks
+• ${fmtNum(r.monthsNeeded, 1)} months
+• ${fmtNum(r.yearsNeeded, 1)} years
+
+Save ${fmtMoney(r.monthlySave, cur)}/month or ${fmtMoney(r.weeklySave, cur)}/week.
+That's ${fmtNum(r.pctOfAnnualNet, 1)}% of my annual net income.
+
+(Worth.It? — entertainment / planning only)`;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('Copied to clipboard');
+  } catch {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToast('Copied to clipboard'); }
+    catch { showToast('Copy failed — select manually'); }
+    document.body.removeChild(ta);
+  }
+});
+
+function showToast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ── Init ────────────────────────────────────────────────────────────────
+// Pre-fill state + DOM from saved profile so even step-through flow uses last setup
+const _initialProfile = loadProfile();
+if (_initialProfile) {
+  applyProfileToState(_initialProfile);
+  applyProfileToDom();
+} else {
+  // Fresh visit — still seed the marginal rate so it's not stale before step 3.
+  recomputeTaxFromCountry();
+}
+renderDashboard();
+if (loadGoals().length > 0) setStep(0); else setStep(1);
+
+// Keyboard convenience: Enter advances steps where possible
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (state.step === 1) $('#next1').click();
+  else if (state.step === 2 && !$('#next2').disabled) $('#next2').click();
+  else if (state.step === 3) $('#next3').click();
+  else if (state.step === 4) $('#next4').click();
+  else if (state.step === 5) $('#calc').click();
+});
+</script>
+</body>
+</html>
