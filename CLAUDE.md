@@ -21,6 +21,7 @@ To play any game: open the `.html` file directly in a browser.
 |------|-------------|
 | `tictactoe.html` | 2-player Tic Tac Toe with score tracking. Dark/neon theme (`#1a1a2e` bg, `#e94560` X, `#a8dadc` O). |
 | `shooter_game.html` | 2D side-scrolling Canvas shooter (800×450px). Player: cyan. 3 enemy types. Physics with gravity, 6 platforms, particle effects. Game states: start → playing → gameover. |
+| `hoops/index.html` | 3D basketball quick match (Three.js, NBA-2K-style). 3v3 full court; you control one MyPlayer. Timing-based shot meter, dunking, AI teammates/opponents, 3:00 + 24s shot clock. Block-primitive models. |
 
 ## shooter_game.html Architecture
 
@@ -55,5 +56,5 @@ Enemy types unlock by score: grunts only (<30), grunts+flyers (<80), all three (
 
 ## Git & GitHub
 
-- Remote: `https://github.com/jojjobot/neon-shooter`
+- Remote: `https://github.com/jojjobot/worth-it` (renamed from `neon-shooter` 2026-05-22; worth-it/ is deployed at https://jojjobot.github.io/worth-it/)
 - Commit and push after every meaningful change.
