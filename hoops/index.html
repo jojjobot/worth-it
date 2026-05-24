@@ -95,7 +95,7 @@
 
 <div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div></div>
 <div id="feedback"></div>
-<div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>Space</b> shoot/jump (hold) &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass/call &nbsp; <b>Mouse</b> camera</div>
+<div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> hold = lockdown D &nbsp; <b>Mouse</b> camera</div>
 
 <div class="overlay" id="startScreen">
   <h1>HOOPS 3D</h1>
@@ -108,6 +108,7 @@
     <span class="k">E</span><span class="d">Dunk near the rim · Steal on defense</span>
     <span class="k">Q</span><span class="d">Pass to a teammate · Call for the ball</span>
     <span class="k">Space (no ball)</span><span class="d">Jump to block / rebound</span>
+    <span class="k">Right Mouse (hold)</span><span class="d">Defensive stance — wall up your man, slow their drive & shrink their shot window</span>
   </div>
   <button id="startBtn">TIP OFF</button>
 </div>
@@ -321,6 +322,7 @@ function makePlayer(team, isUser){
     shootHold:0, shootQuality:0, shootTarget:null,
     cool:{shoot:0,steal:0,pass:0,jump:0},
     decision:0, aiSpot:new THREE.Vector3(),
+    stance:false, curWindow:0.30,
   };
 }
 
@@ -392,6 +394,17 @@ function nearestTeammate(p, forward){
   }
   return best;
 }
+// green release window half-width — shrinks when a defender contests up close (smaller if they're in a stance)
+function shotWindowHalf(p){
+  let half = 0.30;
+  const opp = nearestOpponent(p);
+  if(opp.p && opp.d < CONTEST_R){
+    const t = opp.d / CONTEST_R;                  // 0 = right on top, 1 = at edge of contest range
+    half = 0.12 + (0.30-0.12)*t;
+    if(opp.p.stance) half *= 0.62;                // locked-in defender squeezes it further
+  }
+  return Math.max(0.08, half);
+}
 
 // ============================================================ Possession / reset
 function giveBall(p){ B.holder=p; B.state='held'; B.shot=null; B.lastTeam=p.team; G.possession=p.team; G.shotClock=SHOT_CLOCK; }
@@ -406,7 +419,7 @@ function resetFormation(offTeam){
   def[0].pos.set(-d*3, 0, 0);
   def[1].pos.set( d*1, 0, 4);
   def[2].pos.set( d*1, 0,-4);
-  for(const p of players){ p.vel.set(0,0,0); p.y=0; p.vy=0; p.state='idle'; p.facing = (attackHoop(p.team).x>p.pos.x)?0:Math.PI; }
+  for(const p of players){ p.vel.set(0,0,0); p.y=0; p.vy=0; p.state='idle'; p.stance=false; p.facing = (attackHoop(p.team).x>p.pos.x)?0:Math.PI; }
   // user always handles the ball when team 0 has it; else CPU PG
   const handler = offTeam===0 ? userPlayer : off[0];
   // if user is on offense but listed elsewhere, still give to user
@@ -438,12 +451,19 @@ addEventListener('mousemove', e=>{
   camPitch  = clamp(camPitch - e.movementY*0.0024, 0.05, 1.15);
 });
 
+// right mouse button = hold for defensive stance
+let rmb = false;
+renderer.domElement.addEventListener('contextmenu', e=>e.preventDefault());
+addEventListener('mousedown', e=>{ if(e.button===2) rmb=true; });
+addEventListener('mouseup',   e=>{ if(e.button===2) rmb=false; });
+
 // ============================================================ User actions
 function onShootRelease(){
   if(userPlayer.state==='aim'){
     const frac = userPlayer.shootHold;
-    // green window centered at 0.85, half-width 0.12
-    const q = 1 - clamp(Math.abs(frac-0.85)/0.30, 0, 1);
+    // green window centered at 0.85; its width was set live during aim by the defender's pressure
+    const half = userPlayer.curWindow || 0.30;
+    const q = 1 - clamp(Math.abs(frac-0.85)/half, 0, 1);
     userPlayer.shootQuality = (frac>1.05) ? 0.1 : q;     // held too long = bad
     launchShot(userPlayer, userPlayer.shootQuality, true);
     userPlayer.state='shoot'; userPlayer.stateT=0; userPlayer.vy=4.6;
@@ -511,7 +531,7 @@ function launchShot(p, quality, isUserShot){
   base += (quality-0.5)*0.55;
   // contest
   const opp = nearestOpponent(p);
-  if(opp.d < CONTEST_R){ base -= 0.22*(1 - opp.d/CONTEST_R); if(opp.p && opp.p.y>0.3) base-=0.12; }
+  if(opp.d < CONTEST_R){ base -= 0.22*(1 - opp.d/CONTEST_R); if(opp.p && opp.p.y>0.3) base-=0.12; if(opp.p && opp.p.stance) base-=0.14; }
   base = clamp(base, 0.04, 0.97);
   const make = Math.random() < base;
 
@@ -591,8 +611,9 @@ function aiThink(p, dt){
   const hasBall = (B.holder===p);
   const dHoop = dist2D(p.pos, hoop);
 
-  // default: stop
+  // default: stop, no stance
   let move = new THREE.Vector3();
+  p.stance = false;
 
   // chase loose ball if nearest
   if(B.state==='loose' || B.state==='shot'){
@@ -662,6 +683,8 @@ function aiThink(p, dt){
     move.set(guardPos.x-p.pos.x,0,guardPos.z-p.pos.z);
     setMove(p, move, 0.85, dt);
     faceDir(p, new THREE.Vector3(man.pos.x-p.pos.x,0,man.pos.z-p.pos.z), dt);
+    // lock into a stance when closely guarding the ball handler
+    p.stance = (B.holder===man && md<2.6);
     // contest / steal / block
     if(B.holder===man){
       if(md<STEAL_R && p.cool.steal<=0 && Math.random()<0.02) attemptSteal(p);
@@ -687,10 +710,13 @@ function faceDir(p, dir, dt){
 // ============================================================ User movement
 function userMove(dt){
   const p = userPlayer;
-  if(p.state==='shoot'||p.state==='dunk'||p.state==='aim') {
-    // limited movement while shooting (none for shoot/dunk; aim allows tiny)
-    if(p.state!=='aim'){ p.vel.x*=0.8; p.vel.z*=0.8; return; }
-  }
+  const hasBall = (B.holder===p);
+  // defensive stance: hold RMB while you don't have the ball
+  p.stance = rmb && !hasBall && p.y<=0 && p.state!=='jump' && p.state!=='shoot';
+
+  if(p.state==='shoot'||p.state==='dunk'){ p.vel.x*=0.8; p.vel.z*=0.8; return; }
+  if(p.state==='aim') p.curWindow = shotWindowHalf(p);   // live window while aiming
+
   const hx=Math.sin(camYaw), hz=Math.cos(camYaw);
   const F = new THREE.Vector3(-hx,0,-hz);   // camera forward on ground
   const R = new THREE.Vector3(hz,0,-hx);    // camera right
@@ -699,14 +725,26 @@ function userMove(dt){
   if(keys['s']) dir.sub(F);
   if(keys['d']) dir.add(R);
   if(keys['a']) dir.sub(R);
-  const sprinting = keys['Shift'];
+
+  let speedMul = keys['Shift'] ? SPRINT : RUN;
+  if(p.state==='aim') speedMul = RUN*0.35;
+  if(p.stance)        speedMul = RUN*0.55;   // defensive slide is slower than a sprint
+
   if(dir.lengthSq()>1e-4){
     dir.normalize();
-    const sp = (sprinting?SPRINT:RUN) * (p.state==='aim'?0.35:1);
-    p.vel.x = dir.x*sp; p.vel.z = dir.z*sp;
-    faceDir(p, dir, dt*1.6);
+    p.vel.x = dir.x*speedMul; p.vel.z = dir.z*speedMul;
+    if(!p.stance) faceDir(p, dir, dt*1.6);
   } else {
     p.vel.x*=0.55; p.vel.z*=0.55;
+  }
+
+  if(p.stance){
+    // stay squared up to the ball handler (or nearest opponent)
+    const mark = (B.holder && B.holder.team!==p.team) ? B.holder : nearestOpponent(p).p;
+    if(mark) faceDir(p, new THREE.Vector3(mark.pos.x-p.pos.x,0,mark.pos.z-p.pos.z), dt*2.2);
+    if(p.state!=='jump') p.state='defend';
+  } else if(p.state==='defend'){
+    p.state='idle';
   }
 }
 
@@ -716,6 +754,19 @@ function updatePlayer(p, dt){
   if(p.y>0 || p.vy>0){
     p.vy -= 18*dt; p.y += p.vy*dt;
     if(p.y<=0){ p.y=0; p.vy=0; if(p.state==='jump'){ p.state='idle'; } }
+  }
+  // defensive-stance "wall": a squared-up defender slows the ball handler and is hard to drive through
+  if(B.holder===p){
+    let def=null, dd=1.6;
+    for(const q of players){ if(q.team===p.team || !q.stance) continue; const d=dist2D(p.pos,q.pos); if(d<dd){ dd=d; def=q; } }
+    if(def){
+      p.vel.x*=0.5; p.vel.z*=0.5;
+      if(dd<0.85){
+        const nx=p.pos.x-def.pos.x, nz=p.pos.z-def.pos.z, L=Math.hypot(nx,nz)||1;
+        p.pos.x = def.pos.x + nx/L*0.85;
+        p.pos.z = def.pos.z + nz/L*0.85;
+      }
+    }
   }
   // horizontal
   p.pos.x += p.vel.x*dt; p.pos.z += p.vel.z*dt;
@@ -784,33 +835,27 @@ function updatePlayer(p, dt){
 }
 
 function animatePlayer(p, speed, dt){
-  const P=p.parts;
-  let lLeg=0,rLeg=0,lArm=0,rArm=0, armRaise=0, lean=0;
-  if(p.state==='run'){
-    const s=Math.sin(p.animPhase)*clamp(speed/6,0.3,1)*0.9;
-    lLeg=s; rLeg=-s; lArm=-s*0.7; rArm=s*0.7; lean=0.15;
-  } else if(p.state==='aim'){
-    armRaise = -1.6 - p.shootHold*0.9; lLeg=0.3; rLeg=0.3; lean=0.1;
-  } else if(p.state==='shoot'){
-    armRaise = -2.6; lean=-0.1;
-  } else if(p.state==='dunk'){
-    armRaise = -2.9; lean=0.0;
-  } else if(p.state==='jump'){
-    armRaise = -2.4;
-  } else { // idle
-    const s=Math.sin(p.animPhase*2)*0.05; lArm=s; rArm=-s;
+  const P=p.parts, L=THREE.MathUtils.lerp;
+  let lLx=0,rLx=0,lAx=0,rAx=0, lAz=0,rAz=0, lLz=0,rLz=0, lean=0, armRaise=null;
+  switch(p.state){
+    case 'run': { const s=Math.sin(p.animPhase)*clamp(speed/6,0.3,1)*0.9; lLx=s; rLx=-s; lAx=-s*0.7; rAx=s*0.7; lean=0.15; } break;
+    case 'aim':   armRaise=-1.6 - p.shootHold*0.9; lLx=0.3; rLx=0.3; lean=0.1; break;
+    case 'shoot': armRaise=-2.6; lean=-0.1; break;
+    case 'dunk':  armRaise=-2.9; break;
+    case 'jump':  armRaise=-2.4; break;
+    case 'defend': {                       // wide, low stance with arms spread out
+      lAx=-0.5; rAx=-0.5; lAz=-0.9; rAz=0.9; lLz=-0.22; rLz=0.22; lLx=0.25; rLx=0.25; lean=0.28;
+      const sw=Math.sin(p.stateT*8)*0.07; lAx+=sw; rAx-=sw;
+    } break;
+    default: { const s=Math.sin(p.animPhase*2)*0.05; lAx=s; rAx=-s; }   // idle
   }
+  if(armRaise!==null){ lAx=armRaise; rAx=armRaise; lAz=0; rAz=0; }
   const k = 1-Math.pow(0.001,dt);
-  P.lLeg.rotation.x = THREE.MathUtils.lerp(P.lLeg.rotation.x, lLeg, k);
-  P.rLeg.rotation.x = THREE.MathUtils.lerp(P.rLeg.rotation.x, rLeg, k);
-  if(armRaise){
-    P.lArm.rotation.x = THREE.MathUtils.lerp(P.lArm.rotation.x, armRaise, k);
-    P.rArm.rotation.x = THREE.MathUtils.lerp(P.rArm.rotation.x, armRaise, k);
-  } else {
-    P.lArm.rotation.x = THREE.MathUtils.lerp(P.lArm.rotation.x, lArm, k);
-    P.rArm.rotation.x = THREE.MathUtils.lerp(P.rArm.rotation.x, rArm, k);
-  }
-  P.torso.rotation.x = THREE.MathUtils.lerp(P.torso.rotation.x, lean*0.5, k);
+  P.lLeg.rotation.x=L(P.lLeg.rotation.x,lLx,k); P.lLeg.rotation.z=L(P.lLeg.rotation.z,lLz,k);
+  P.rLeg.rotation.x=L(P.rLeg.rotation.x,rLx,k); P.rLeg.rotation.z=L(P.rLeg.rotation.z,rLz,k);
+  P.lArm.rotation.x=L(P.lArm.rotation.x,lAx,k); P.lArm.rotation.z=L(P.lArm.rotation.z,lAz,k);
+  P.rArm.rotation.x=L(P.rArm.rotation.x,rAx,k); P.rArm.rotation.z=L(P.rArm.rotation.z,rAz,k);
+  P.torso.rotation.x=L(P.torso.rotation.x,lean*0.5,k);
 }
 
 // ============================================================ Ball update
@@ -967,6 +1012,10 @@ function updateHUD(dt){
     : '<span style="color:#4fb6ff">● CPU BALL</span>';
   if(userPlayer.state==='aim'){
     meterFill.style.height=Math.min(100,userPlayer.shootHold*100)+'%';
+    // resize the green zone live so a tight defender visibly squeezes your window
+    const half=userPlayer.curWindow||0.30;
+    meterGreen.style.bottom=((0.85-half)*100)+'%';
+    meterGreen.style.height=(2*half*100)+'%';
   }
   if(feedbackT>0){ feedbackT-=dt; feedbackEl.style.opacity=clamp(feedbackT,0,1); }
 }
