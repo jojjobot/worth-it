@@ -353,7 +353,7 @@ const B = {
   pos:new THREE.Vector3(), vel:new THREE.Vector3(),
   state:'held', holder:userPlayer, lastTeam:0,
   shot:null,       // {team, points, make, blocked}
-  madeTimer:0, dribblePhase:0,
+  madeTimer:0, dribblePhase:0, passTo:null, passTime:0,
 };
 
 // ============================================================ Game state
@@ -365,6 +365,14 @@ const G = {
 // ============================================================ Helpers
 const _v = new THREE.Vector3();
 function dist2D(a,b){ const dx=a.x-b.x, dz=a.z-b.z; return Math.hypot(dx,dz); }
+// distance from point p to the segment a->b (3D) — used for swept catch so fast passes can't tunnel past a teammate
+function segPointDist(a,b,p){
+  const abx=b.x-a.x, aby=b.y-a.y, abz=b.z-a.z;
+  const apx=p.x-a.x, apy=p.y-a.y, apz=p.z-a.z;
+  const len2 = abx*abx+aby*aby+abz*abz || 1e-6;
+  let t = (apx*abx+apy*aby+apz*abz)/len2; t = clamp(t,0,1);
+  return Math.hypot(p.x-(a.x+abx*t), p.y-(a.y+aby*t), p.z-(a.z+abz*t));
+}
 function clamp(v,a,b){ return v<a?a:v>b?b:v; }
 function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2))-Math.PI; return a+d*t; }
 function forwardVec(yaw){ return new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)); }
@@ -593,13 +601,16 @@ function attemptSteal(p){
 }
 
 function startPass(from, to){
-  from.cool.pass = 0.5;
+  from.cool.pass = 0.4;
   const start = handPosFor(from);
-  const target = new THREE.Vector3(to.pos.x, 1.2, to.pos.z);
-  const tf = Math.max(0.18, dist2D(from.pos,to.pos)/16);
   B.pos.copy(start);
-  B.vel.set((target.x-start.x)/tf, (target.y-start.y)/tf + 0.5*GB*tf*0.4, (target.z-start.z)/tf);
+  // initial toss roughly toward the receiver; the pass then homes onto them each frame
+  const dir = new THREE.Vector3(to.pos.x-from.pos.x, 0, to.pos.z-from.pos.z);
+  const d = Math.max(0.5, dir.length()); dir.normalize();
+  const speed = clamp(11 + d*0.6, 10, 16);
+  B.vel.set(dir.x*speed, 1.4, dir.z*speed);
   B.state='pass'; B.holder=null; B.passTo=to; B.lastTeam=from.team;
+  B.passTime = 0;
 }
 
 // ============================================================ AI
@@ -877,11 +888,28 @@ function updateBall(dt){
     const p=B.holder; const h=handPosFor(p); h.y=p.y+2.4; B.pos.lerp(h,1-Math.pow(0.0001,dt));
   }
   else if(B.state==='pass'){
-    integrateBall(dt, 0.4);
-    if(B.passTo && dist2D(B.pos,B.passTo.pos)<0.7 && B.pos.y<2){
-      giveBall(B.passTo); B.passTo=null;
+    const to = B.passTo;
+    if(!to){ B.state='loose'; }
+    else {
+      B.passTime += dt;
+      // chest-height target on the moving receiver, led slightly by their motion
+      const target = new THREE.Vector3(to.pos.x + to.vel.x*0.15, 1.25, to.pos.z + to.vel.z*0.15);
+      const prev = B.pos.clone();
+      // steer the ball toward the receiver so the pass curves in instead of sailing past
+      const toT = new THREE.Vector3().subVectors(target, B.pos);
+      const dist = toT.length();
+      const speed = clamp(11 + dist*0.6, 10, 16);
+      const desired = toT.normalize().multiplyScalar(speed);
+      B.vel.lerp(desired, clamp(dt*12, 0, 1));
+      B.pos.addScaledVector(B.vel, dt);
+      // swept catch: catch if we're close OR the path this frame swept past the receiver
+      const chest = new THREE.Vector3(to.pos.x, 1.25, to.pos.z);
+      if(dist < 1.1 || segPointDist(prev, B.pos, chest) < 1.0){
+        giveBall(to); B.passTo = null;
+      } else if(B.passTime > 2.5){
+        B.state='loose';            // safety valve so a pass can never get stuck
+      }
     }
-    if(B.pos.y<0.1){ B.state='loose'; }
   }
   else if(B.state==='shot'){
     integrateBall(dt, 1);
