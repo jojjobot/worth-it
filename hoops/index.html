@@ -405,16 +405,25 @@ function nearestTeammate(p, forward){
   }
   return best;
 }
-// green release window half-width — shrinks when a defender contests up close (smaller if they're in a stance)
+// green release window half-width — hitting it is an automatic make, so its SIZE is the difficulty.
+// Adaptive: big & forgiving point-blank, tiny on deep contested jumpers.
 function shotWindowHalf(p){
-  let half = 0.30;
+  // distance from the hoop sets the base window: closer = wider green = more makeable
+  const d = dist2D(p.pos, attackHoop(p.team));
+  let half;
+  if(d < LAYUP_RANGE)      half = 0.34;   // point-blank — easy to green
+  else if(d < 5)           half = 0.25;   // mid-range
+  else if(d < THREE_DIST)  half = 0.17;   // long two
+  else                     half = 0.12;   // deep three — hardest
+  // defenders in your space squeeze the window
   const opp = nearestOpponent(p);
   if(opp.p && opp.d < CONTEST_R){
     const t = opp.d / CONTEST_R;                  // 0 = right on top, 1 = at edge of contest range
-    half = 0.12 + (0.30-0.12)*t;
-    if(opp.p.stance) half *= 0.62;                // locked-in defender squeezes it further
+    half *= 0.45 + 0.55*t;                        // up to ~55% smaller when smothered
+    if(opp.p.stance)  half *= 0.72;               // locked-in defender squeezes it further
+    if(opp.p.y > 0.3) half *= 0.82;               // jumping contest shrinks it too
   }
-  return Math.max(0.08, half);
+  return Math.max(0.05, half);
 }
 
 // ============================================================ Possession / reset
@@ -472,11 +481,13 @@ addEventListener('mouseup',   e=>{ if(e.button===2) rmb=false; });
 function onShootRelease(){
   if(userPlayer.state==='aim'){
     const frac = userPlayer.shootHold;
-    // green window centered at 0.85; its width was set live during aim by the defender's pressure
+    // green window centered at 0.85; its width was set live during aim by distance + defender pressure
     const half = userPlayer.curWindow || 0.30;
-    const q = 1 - clamp(Math.abs(frac-0.85)/half, 0, 1);
+    const off  = Math.abs(frac-0.85);
+    const green = (off <= half) && (frac <= 1.05);       // inside the window = automatic make
+    const q = 1 - clamp(off/half, 0, 1);
     userPlayer.shootQuality = (frac>1.05) ? 0.1 : q;     // held too long = bad
-    launchShot(userPlayer, userPlayer.shootQuality, true);
+    launchShot(userPlayer, userPlayer.shootQuality, true, green);
     userPlayer.state='shoot'; userPlayer.stateT=0; userPlayer.vy=4.6;
     shotMeterEl.style.display='none';
   }
@@ -534,7 +545,7 @@ function tryUserActions(){
 }
 
 // ============================================================ Shooting
-function launchShot(p, quality, isUserShot){
+function launchShot(p, quality, isUserShot, forceMake){
   const hoop = attackHoop(p.team);
   const start = handPosFor(p);
   const d = dist2D(p.pos, hoop);
@@ -552,7 +563,8 @@ function launchShot(p, quality, isUserShot){
   const opp = nearestOpponent(p);
   if(opp.d < CONTEST_R){ base -= 0.22*(1 - opp.d/CONTEST_R); if(opp.p && opp.p.y>0.3) base-=0.12; if(opp.p && opp.p.stance) base-=0.14; }
   base = clamp(base, 0.04, 0.97);
-  const make = Math.random() < base;
+  // a clean green release (window hit) is a guaranteed bucket; otherwise roll vs the make %
+  const make = forceMake ? true : (Math.random() < base);
 
   // target point
   const target = hoop.clone();
@@ -580,7 +592,9 @@ function launchShot(p, quality, isUserShot){
   p.cool.shoot = 0.5;
 
   if(isUserShot){
-    showFeedback(quality>0.82?'GREEN!':quality>0.55?'GOOD':'EARLY', quality>0.82?'#4fff9c':quality>0.55?'#ffe14f':'#ff7a3c');
+    if(forceMake)            showFeedback('GREEN! AUTO', '#4fff9c');
+    else if(quality>0.55)    showFeedback('GOOD',  '#ffe14f');
+    else                     showFeedback('EARLY', '#ff7a3c');
   }
 }
 
