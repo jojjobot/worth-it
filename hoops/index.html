@@ -668,6 +668,8 @@ function attemptSteal(p){
   const h = B.holder;
   if(!h || h.team===p.team) return;
   p.cool.steal = 0.7;
+  if(p.y<=0){ p.state='steal'; p.stateT=0; }   // visible reach-in (whiff or not)
+  p.facing = Math.atan2(h.pos.x-p.pos.x, h.pos.z-p.pos.z);
   if(dist2D(p.pos,h.pos) < STEAL_R){
     if(Math.random() < 0.35){
       // success -> loose ball toward stealer
@@ -955,7 +957,7 @@ function userMove(dt){
     // stay squared up to the ball handler (or nearest opponent)
     const mark = (B.holder && B.holder.team!==p.team) ? B.holder : nearestOpponent(p).p;
     if(mark) faceDir(p, new THREE.Vector3(mark.pos.x-p.pos.x,0,mark.pos.z-p.pos.z), dt*2.2);
-    if(p.state!=='jump') p.state='defend';
+    if(p.state!=='jump' && p.state!=='steal') p.state='defend';
   } else if(p.state==='defend'){
     p.state='idle';
   }
@@ -1044,6 +1046,15 @@ function updatePlayer(p, dt){
     if(k>=1){ p.state='idle'; p.dunkInfo=null; }
   }
 
+  // a defensive stance shows the low guarding pose — for CPU defenders too, not just you
+  if(p.stance && p.y<=0 && p.state!=='shoot' && p.state!=='dunk' && p.state!=='dunkaim' && p.state!=='aim' && p.state!=='steal'){
+    p.state='defend';
+  } else if(p.state==='defend' && !p.stance){
+    p.state='idle';
+  }
+  // brief reach-in on a steal attempt, then recover
+  if(p.state==='steal' && p.stateT>0.35){ p.state='idle'; }
+
   // animation phase
   if((p.state==='idle'||p.state==='run') && speed>0.3){ p.animPhase += speed*dt*1.8; p.state= speed>0.3?'run':'idle'; }
   else if(p.state==='idle'||p.state==='run'){ p.state = speed>0.3?'run':'idle'; p.animPhase += dt; }
@@ -1085,9 +1096,17 @@ function animatePlayer(p, speed, dt){
     case 'fallen': {                       // sprawled on the floor, arms & legs splayed
       lLx=-0.8; rLx=-0.5; lAx=-0.2; rAx=-0.45; lAz=-0.8; rAz=0.8; lean=-0.5;
     } break;
+    case 'steal': {                        // quick lunging reach-in swipe
+      const sw=Math.sin(p.stateT*22)*0.35;
+      rAx=-1.2+sw; rAz=0.25; lAx=-0.3; lean=0.3; lLx=0.3;
+    } break;
     default: { const s=Math.sin(p.animPhase*2)*0.05; lAx=s; rAx=-s; }   // idle
   }
   if(armRaise!==null){ lAx=armRaise; rAx=armRaise; lAz=0; rAz=0; }
+  // whoever is handling the ball bobs a dribbling hand toward it (so you can read who has it)
+  if(B.holder===p && (p.state==='idle'||p.state==='run')){
+    rAx = -0.55 - Math.abs(Math.sin(B.dribblePhase))*0.6; rAz = 0.12;
+  }
   const k = 1-Math.pow(0.001,dt);
   P.lLeg.rotation.x=L(P.lLeg.rotation.x,lLx,k); P.lLeg.rotation.z=L(P.lLeg.rotation.z,lLz,k);
   P.rLeg.rotation.x=L(P.rLeg.rotation.x,rLx,k); P.rLeg.rotation.z=L(P.rLeg.rotation.z,rLz,k);
