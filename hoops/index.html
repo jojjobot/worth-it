@@ -105,7 +105,7 @@
     <span class="k">Mouse</span><span class="d">Look / orbit camera</span>
     <span class="k">Shift</span><span class="d">Sprint</span>
     <span class="k">Space (hold)</span><span class="d">Jump shot — release in the green for a swish</span>
-    <span class="k">E</span><span class="d">Dunk near the rim · Steal on defense</span>
+    <span class="k">E (hold)</span><span class="d">Dunk at the rim — release in the green to throw it down (gets stuffed if contested) · Steal on defense</span>
     <span class="k">Q</span><span class="d">Pass to a teammate · Call for the ball</span>
     <span class="k">C</span><span class="d">Crossover — quick dribble move to blow past your defender</span>
     <span class="k">V</span><span class="d">Hesi — fake one way, then explode the way you're steering (smaller burst than a crossover)</span>
@@ -138,7 +138,8 @@ const BACKBOARD_X = HALF_LEN - 1.2;
 const THREE_DIST = 7.24;
 const GB = 16;                                 // ball gravity
 const RUN = 6.0, SPRINT = 8.7;
-const DUNK_RANGE = 3.3, LAYUP_RANGE = 2.4, SHOOT_RANGE = 8.5;
+const DUNK_RANGE = 2.2, LAYUP_RANGE = 2.4, SHOOT_RANGE = 8.5;
+const DUNK_FILL = 0.4;                         // seconds for the dunk timing meter to fill
 const PICKUP_R = 0.95, STEAL_R = 1.2, CONTEST_R = 1.9;
 const CROSS_DUR = 0.5, CROSS_SPEED = 12;       // crossover burst length (s) and speed
 const HESI_DUR = 0.42, HESI_FAKE = 0.4;        // hesi total time (s) and the fraction spent on the fake
@@ -442,6 +443,16 @@ function shotWindowHalf(p){
   }
   return Math.max(0.05, half);
 }
+// dunk takeoff window — forgiving when you've got a clear lane, tight when a defender is there
+function dunkWindowHalf(p){
+  let half = 0.30;
+  const opp = nearestOpponent(p);
+  if(opp.p && opp.d < CONTEST_R){
+    half *= 0.4 + 0.6*(opp.d/CONTEST_R);
+    if(opp.p.y > 0.4) half *= 0.7;                // rim protector up = hard to time clean
+  }
+  return Math.max(0.07, half);
+}
 
 // ============================================================ Possession / reset
 function giveBall(p){ B.holder=p; B.state='held'; B.shot=null; B.lastTeam=p.team; G.possession=p.team; G.shotClock=SHOT_CLOCK; }
@@ -477,6 +488,7 @@ addEventListener('keyup', e=>{
   const k = e.key.length===1 ? e.key.toLowerCase() : e.key;
   keys[k]=false;
   if(k===' ') onShootRelease();
+  if(k==='e') onDunkRelease();
 });
 
 // camera orbit via pointer lock
@@ -510,6 +522,16 @@ function onShootRelease(){
   }
 }
 
+function onDunkRelease(){
+  const p = userPlayer;
+  if(p.state!=='dunkaim') return;
+  const frac = p.shootHold;
+  const half = p.curWindow || 0.30;
+  const timed = (Math.abs(frac-0.85) <= half) && (frac <= 1.05);   // released in the green = clean takeoff
+  shotMeterEl.style.display='none';
+  startDunk(p, timed);
+}
+
 function tryUserActions(){
   const p = userPlayer;
   const hasBall = B.holder===p;
@@ -529,9 +551,11 @@ function tryUserActions(){
     }
     // other ball actions are locked out for the brief crossover / hesi burst
     if(p.crossT<=0 && p.hesiT<=0){
-      // E -> dunk if close enough
-      if(pressedThisFrame['e'] && dHoop < DUNK_RANGE && p.cool.shoot<=0){
-        startDunk(p);
+      // E -> begin a dunk: charge the timing meter, then release E to throw it down
+      if(pressedThisFrame['e'] && dHoop < DUNK_RANGE && p.cool.shoot<=0 &&
+         p.state!=='aim' && p.state!=='dunkaim' && p.state!=='dunk'){
+        p.state='dunkaim'; p.shootHold=0;
+        shotMeterEl.style.display='block';
       }
       // Q -> pass
       if(pressedThisFrame['q'] && p.cool.pass<=0){
@@ -539,7 +563,7 @@ function tryUserActions(){
         if(mate){ startPass(p, mate); }
       }
       // Space press -> begin aim (jump shot) OR instant layup if very close
-      if(pressedThisFrame[' '] && p.state!=='aim' && p.state!=='shoot' && p.cool.shoot<=0){
+      if(pressedThisFrame[' '] && p.state!=='aim' && p.state!=='dunkaim' && p.state!=='shoot' && p.cool.shoot<=0){
         if(dHoop < LAYUP_RANGE){
           // quick layup, decent quality
           launchShot(p, 0.7, true);
@@ -620,15 +644,23 @@ function launchShot(p, quality, isUserShot, forceMake){
   }
 }
 
-function startDunk(p){
+function startDunk(p, timed){
+  if(timed===undefined) timed = Math.random()<0.85;   // AI takeoff timing
   const hoop = attackHoop(p.team);
-  p.state='dunk'; p.stateT=0; p.cool.shoot=0.6;
+  p.state='dunk'; p.stateT=0; p.cool.shoot=0.9;        // longer cooldown — no spamming dunks
   p.facing = Math.atan2(hoop.x-p.pos.x, hoop.z-p.pos.z);
-  // contest check -> chance to get blocked / miss
-  const opp = nearestOpponent(p);
-  let make = true;
-  if(opp.d < 1.5 && opp.p && opp.p.y>0.5) make = Math.random()<0.5;
-  p.dunkInfo = { hoop, make, t:0, done:false, startPos:p.pos.clone() };
+  // a mistimed takeoff is already a miss; a clean one can still be stuffed by a contesting defender
+  let make = !!timed;
+  if(make){
+    const opp = nearestOpponent(p);
+    if(opp.p && opp.d < CONTEST_R){
+      let block = 0.22*(1 - opp.d/CONTEST_R);          // tighter = easier to contest
+      if(opp.p.y>0.4)   block += 0.32;                 // they actually went up to meet you
+      if(opp.p.stance)  block += 0.10;
+      if(Math.random() < block) make=false;
+    }
+  }
+  p.dunkInfo = { hoop, make, timed, t:0, done:false, startPos:p.pos.clone() };
   B.holder = p; B.state='dunk_hold';
 }
 
@@ -903,11 +935,12 @@ function userMove(dt){
   p.stance = rmb && !hasBall && p.y<=0 && p.state!=='jump' && p.state!=='shoot';
 
   if(p.state==='shoot'||p.state==='dunk'){ p.vel.x*=0.8; p.vel.z*=0.8; return; }
-  if(p.state==='aim') p.curWindow = shotWindowHalf(p);   // live window while aiming
+  if(p.state==='aim')     p.curWindow = shotWindowHalf(p);   // live window while aiming
+  if(p.state==='dunkaim') p.curWindow = dunkWindowHalf(p);   // live window while gathering for a dunk
 
   const dir = camMoveDir();
   let speedMul = keys['Shift'] ? SPRINT : RUN;
-  if(p.state==='aim') speedMul = RUN*0.35;
+  if(p.state==='aim' || p.state==='dunkaim') speedMul = RUN*0.35;
   if(p.stance)        speedMul = RUN*0.55;   // defensive slide is slower than a sprint
 
   if(dir.lengthSq()>1e-4){
@@ -971,6 +1004,11 @@ function updatePlayer(p, dt){
       onShootRelease();
     }
   }
+  // dunk: charge the (faster) takeoff meter
+  if(p.state==='dunkaim'){
+    p.shootHold += dt/DUNK_FILL;
+    if(p.shootHold>1.35){ onDunkRelease(); }   // over-held -> mistimed takeoff
+  }
 
   // shoot landing
   if(p.state==='shoot' && p.y<=0 && p.stateT>0.15){ p.state='idle'; }
@@ -1000,7 +1038,7 @@ function updatePlayer(p, dt){
         B.pos.set(di.hoop.x, RIM_Y, di.hoop.z);
         B.vel.set((Math.random()-0.5)*4, 2, (Math.random()-0.5)*4);
         B.lastTeam=p.team;
-        showFeedbackIf(p.isUser,'REJECTED','#ff5b2e');
+        showFeedbackIf(p.isUser, di.timed ? 'REJECTED' : 'MISSED IT', '#ff5b2e');
       }
     }
     if(k>=1){ p.state='idle'; p.dunkInfo=null; }
@@ -1241,7 +1279,7 @@ function updateHUD(dt){
   possEl.innerHTML = G.possession===0
     ? '<span style="color:#ff7a3c">● YOUR BALL</span>'
     : '<span style="color:#4fb6ff">● CPU BALL</span>';
-  if(userPlayer.state==='aim'){
+  if(userPlayer.state==='aim' || userPlayer.state==='dunkaim'){
     meterFill.style.height=Math.min(100,userPlayer.shootHold*100)+'%';
     // resize the green zone live so a tight defender visibly squeezes your window
     const half=userPlayer.curWindow||0.30;
