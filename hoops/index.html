@@ -334,7 +334,7 @@ function makePlayer(team, isUser){
     cool:{shoot:0,steal:0,pass:0,jump:0,cross:0,hesi:0},
     decision:0, aiSpot:new THREE.Vector3(),
     stance:false, curWindow:0.30,
-    crossT:0, crossDir:new THREE.Vector3(), frozenT:0,
+    crossT:0, crossDir:new THREE.Vector3(), frozenT:0, frozenDir:new THREE.Vector3(),
     hesiT:0, hesiDir:new THREE.Vector3(),
   };
 }
@@ -662,30 +662,45 @@ function startCrossover(p){
   p.crossT = CROSS_DUR;
   p.cool.cross = 1.8;
   p.state = 'cross';
-  // ankle-breaker: briefly freeze the nearest defender so you gain a step
-  const opp = nearestOpponent(p);
-  if(opp.p && opp.d < 3.0) opp.p.frozenT = 0.45;
+  // ankle-breaker: send the nearest defender lurching the wrong way so you blow by
+  fakeOut(p, p.crossDir, 0.5);
   showFeedbackIf(p.isUser, 'CROSSOVER!', '#ffe14f');
 }
 
 function startHesi(p){
-  // jab one way then explode toward where you're steering (or the hoop if standing still)
+  // jab one way then explode toward where you're steering; with no input, go where the camera faces
   const dir = camMoveDir();
-  if(dir.lengthSq()<1e-4){ const h=attackHoop(p.team); dir.set(h.x-p.pos.x,0,h.z-p.pos.z); }
+  if(dir.lengthSq()<1e-4){ dir.set(-Math.sin(camYaw),0,-Math.cos(camYaw)); }
   dir.normalize();
   p.hesiDir.copy(dir);
   p.hesiT = HESI_DUR;
   p.cool.hesi = 1.1;
   p.state = 'hesi';
-  // a clean hesi only nudges a tight defender — a much briefer freeze than a crossover
-  const opp = nearestOpponent(p);
-  if(opp.p && opp.d < 2.2) opp.p.frozenT = 0.22;
+  // bite the defender the wrong way (they follow your jab) — briefer than a crossover
+  fakeOut(p, p.hesiDir, 0.32);
   showFeedbackIf(p.isUser, 'HESI!', '#ffe14f');
+}
+
+// make the nearest defender bite on a fake: they lurch opposite to where you'll explode, then can't recover
+function fakeOut(p, goDir, dur){
+  const opp = nearestOpponent(p);
+  if(opp.p && opp.d < 3.2){
+    opp.p.frozenT = dur;
+    opp.p.frozenDir.copy(goDir).multiplyScalar(-1).normalize();   // lunge the wrong way
+  }
 }
 
 // ============================================================ AI
 function aiThink(p, dt){
   p.decision -= dt;
+  // fooled by a crossover / hesi: bite the wrong way and can't recover for a beat
+  if(p.frozenT>0){
+    p.frozenT -= dt;
+    p.stance = false;
+    setMove(p, p.frozenDir.clone(), 0.55, dt);   // lunge in the faked direction
+    faceDir(p, p.frozenDir, dt*3);
+    return;
+  }
   const hoop = attackHoop(p.team);
   const ownHoop = HOOPS[p.team^1];
   const onOffense = (G.possession===p.team);
@@ -882,8 +897,6 @@ function updatePlayer(p, dt){
     p.vy -= 18*dt; p.y += p.vy*dt;
     if(p.y<=0){ p.y=0; p.vy=0; if(p.state==='jump'){ p.state='idle'; } }
   }
-  // frozen (e.g. ankle-broken by a crossover) — sluggish for a beat
-  if(p.frozenT>0){ p.frozenT-=dt; p.vel.x*=0.22; p.vel.z*=0.22; }
 
   // defensive-stance "wall": slows the ball handler & hard to drive through — but you slip it on a crossover / hesi
   if(B.holder===p && p.crossT<=0 && p.hesiT<=0){
