@@ -95,7 +95,7 @@
 
 <div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div></div>
 <div id="feedback"></div>
-<div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>C</b> crossover &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> lockdown D</div>
+<div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>C</b> crossover &nbsp; <b>V</b> hesi &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> lockdown D</div>
 
 <div class="overlay" id="startScreen">
   <h1>HOOPS 3D</h1>
@@ -108,6 +108,7 @@
     <span class="k">E</span><span class="d">Dunk near the rim · Steal on defense</span>
     <span class="k">Q</span><span class="d">Pass to a teammate · Call for the ball</span>
     <span class="k">C</span><span class="d">Crossover — quick dribble move to blow past your defender</span>
+    <span class="k">V</span><span class="d">Hesi — fake one way, then explode the way you're steering (smaller burst than a crossover)</span>
     <span class="k">Space (no ball)</span><span class="d">Jump to block / rebound</span>
     <span class="k">Right Mouse (hold)</span><span class="d">Defensive stance — wall up your man, slow their drive & shrink their shot window</span>
   </div>
@@ -139,6 +140,8 @@ const RUN = 6.0, SPRINT = 8.7;
 const DUNK_RANGE = 3.3, LAYUP_RANGE = 2.4, SHOOT_RANGE = 8.5;
 const PICKUP_R = 0.95, STEAL_R = 1.2, CONTEST_R = 1.9;
 const CROSS_DUR = 0.5, CROSS_SPEED = 12;       // crossover burst length (s) and speed
+const HESI_DUR = 0.42, HESI_FAKE = 0.4;        // hesi total time (s) and the fraction spent on the fake
+const HESI_FAKE_SPEED = 5.5, HESI_GO_SPEED = 8.5;  // jab-the-wrong-way speed vs. explode-out speed (< crossover)
 const GAME_TIME = 180, SHOT_CLOCK = 24;
 
 // hoops: team 0 (YOU) attacks +X, team 1 (CPU) attacks -X
@@ -212,7 +215,7 @@ function makeCourtTexture(){
     const sideZ = 6.7*ppm;
     const drawThree = ()=>{
       x.beginPath();
-      x.arc(hoopPx, cz, THREE_DIST*ppm, dir>0?-Math.PI/2:Math.PI/2, dir>0?Math.PI/2:Math.PI*1.5, dir<0);
+      x.arc(hoopPx, cz, THREE_DIST*ppm, dir>0?-Math.PI/2:Math.PI/2, dir>0?Math.PI/2:Math.PI*1.5, false);
       x.stroke();
       x.beginPath(); x.moveTo(baseX, cz-sideZ); x.lineTo(baseX+dir*4.2*ppm, cz-sideZ); x.stroke();
       x.beginPath(); x.moveTo(baseX, cz+sideZ); x.lineTo(baseX+dir*4.2*ppm, cz+sideZ); x.stroke();
@@ -328,10 +331,11 @@ function makePlayer(team, isUser){
     animPhase:0,
     stateT:0,                          // time in current state
     shootHold:0, shootQuality:0, shootTarget:null,
-    cool:{shoot:0,steal:0,pass:0,jump:0,cross:0},
+    cool:{shoot:0,steal:0,pass:0,jump:0,cross:0,hesi:0},
     decision:0, aiSpot:new THREE.Vector3(),
     stance:false, curWindow:0.30,
     crossT:0, crossDir:new THREE.Vector3(), frozenT:0,
+    hesiT:0, hesiDir:new THREE.Vector3(),
   };
 }
 
@@ -445,7 +449,7 @@ function resetFormation(offTeam){
   def[0].pos.set(-d*3, 0, 0);
   def[1].pos.set( d*1, 0, 4);
   def[2].pos.set( d*1, 0,-4);
-  for(const p of players){ p.vel.set(0,0,0); p.y=0; p.vy=0; p.state='idle'; p.stance=false; p.crossT=0; p.frozenT=0; p.facing = (attackHoop(p.team).x>p.pos.x)?0:Math.PI; }
+  for(const p of players){ p.vel.set(0,0,0); p.y=0; p.vy=0; p.state='idle'; p.stance=false; p.crossT=0; p.hesiT=0; p.frozenT=0; p.facing = (attackHoop(p.team).x>p.pos.x)?0:Math.PI; }
   // user always handles the ball when team 0 has it; else CPU PG
   const handler = offTeam===0 ? userPlayer : off[0];
   // if user is on offense but listed elsewhere, still give to user
@@ -507,12 +511,17 @@ function tryUserActions(){
 
   if(hasBall){
     // C -> crossover dribble to blow past your man (not while shooting)
-    if(pressedThisFrame['c'] && p.cool.cross<=0 && p.crossT<=0 &&
+    if(pressedThisFrame['c'] && p.cool.cross<=0 && p.crossT<=0 && p.hesiT<=0 &&
        p.state!=='aim' && p.state!=='shoot' && p.state!=='dunk'){
       startCrossover(p);
     }
-    // other ball actions are locked out for the brief crossover burst
-    if(p.crossT<=0){
+    // V -> hesi: small fake-and-go to shake your man (less explosive than a crossover)
+    if(pressedThisFrame['v'] && p.cool.hesi<=0 && p.crossT<=0 && p.hesiT<=0 &&
+       p.state!=='aim' && p.state!=='shoot' && p.state!=='dunk'){
+      startHesi(p);
+    }
+    // other ball actions are locked out for the brief crossover / hesi burst
+    if(p.crossT<=0 && p.hesiT<=0){
       // E -> dunk if close enough
       if(pressedThisFrame['e'] && dHoop < DUNK_RANGE && p.cool.shoot<=0){
         startDunk(p);
@@ -657,6 +666,21 @@ function startCrossover(p){
   const opp = nearestOpponent(p);
   if(opp.p && opp.d < 3.0) opp.p.frozenT = 0.45;
   showFeedbackIf(p.isUser, 'CROSSOVER!', '#ffe14f');
+}
+
+function startHesi(p){
+  // jab one way then explode toward where you're steering (or the hoop if standing still)
+  const dir = camMoveDir();
+  if(dir.lengthSq()<1e-4){ const h=attackHoop(p.team); dir.set(h.x-p.pos.x,0,h.z-p.pos.z); }
+  dir.normalize();
+  p.hesiDir.copy(dir);
+  p.hesiT = HESI_DUR;
+  p.cool.hesi = 1.1;
+  p.state = 'hesi';
+  // a clean hesi only nudges a tight defender — a much briefer freeze than a crossover
+  const opp = nearestOpponent(p);
+  if(opp.p && opp.d < 2.2) opp.p.frozenT = 0.22;
+  showFeedbackIf(p.isUser, 'HESI!', '#ffe14f');
 }
 
 // ============================================================ AI
@@ -806,6 +830,22 @@ function userMove(dt){
     p.state='idle';   // burst finished — fall through to normal control this frame
   }
 
+  // hesi burst — sell a jab the wrong way, then explode the direction you're steering
+  if(p.hesiT>0){
+    p.hesiT -= dt;
+    if(p.hesiT>0){
+      const prog = 1 - (p.hesiT/HESI_DUR);          // 0..1 through the move
+      const fake = prog < HESI_FAKE;
+      const sp = fake ? HESI_FAKE_SPEED : HESI_GO_SPEED;
+      const vx = (fake ? -p.hesiDir.x : p.hesiDir.x);
+      const vz = (fake ? -p.hesiDir.z : p.hesiDir.z);
+      p.vel.x = vx*sp; p.vel.z = vz*sp;
+      faceDir(p, new THREE.Vector3(vx,0,vz), dt*5);
+      return;
+    }
+    p.state='idle';
+  }
+
   // defensive stance: hold RMB while you don't have the ball
   p.stance = rmb && !hasBall && p.y<=0 && p.state!=='jump' && p.state!=='shoot';
 
@@ -845,8 +885,8 @@ function updatePlayer(p, dt){
   // frozen (e.g. ankle-broken by a crossover) — sluggish for a beat
   if(p.frozenT>0){ p.frozenT-=dt; p.vel.x*=0.22; p.vel.z*=0.22; }
 
-  // defensive-stance "wall": slows the ball handler & hard to drive through — but you blow by on a crossover
-  if(B.holder===p && p.crossT<=0){
+  // defensive-stance "wall": slows the ball handler & hard to drive through — but you slip it on a crossover / hesi
+  if(B.holder===p && p.crossT<=0 && p.hesiT<=0){
     let def=null, dd=1.6;
     for(const q of players){ if(q.team===p.team || !q.stance) continue; const d=dist2D(p.pos,q.pos); if(d<dd){ dd=d; def=q; } }
     if(def){
@@ -941,6 +981,11 @@ function animatePlayer(p, speed, dt){
       const ph=1-(p.crossT/CROSS_DUR), sweep=Math.sin(ph*Math.PI*2);
       lAx=0.5; rAx=0.5; lAz=-0.35 - sweep*0.7; rAz=0.35 - sweep*0.7;
       lLx=sweep*0.5; rLx=-sweep*0.5; lean=0.32;
+    } break;
+    case 'hesi': {                         // stutter step: rock back on the fake, then square up & go
+      const prog=1-(p.hesiT/HESI_DUR), fake = prog<HESI_FAKE ? 1 : -0.6;
+      lAx=0.4; rAx=0.4; lAz=-0.2; rAz=0.2;
+      lLx=fake*0.45; rLx=-fake*0.45; lean=0.18 - fake*0.12;
     } break;
     default: { const s=Math.sin(p.animPhase*2)*0.05; lAx=s; rAx=-s; }   // idle
   }
