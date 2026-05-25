@@ -207,14 +207,20 @@ function makeCourtTexture(){
     x.strokeRect(Math.min(baseX,baseX+dir*ftLen), cz-laneHalf, ftLen, laneHalf*2);
     // free-throw circle
     x.beginPath(); x.arc(baseX+dir*ftLen, cz, 1.8*ppm, 0, Math.PI*2); x.stroke();
-    // 3pt arc
-    x.beginPath();
-    x.arc(hoopPx, cz, THREE_DIST*ppm, dir>0?-Math.PI/2:Math.PI/2, dir>0?Math.PI/2:Math.PI*1.5, dir<0);
-    x.stroke();
-    // straight 3pt sides
+    // 3pt line — bold & high-contrast so it reads from across the court.
+    // Draw a dark underlay first, then a bright white line on top.
     const sideZ = 6.7*ppm;
-    x.beginPath(); x.moveTo(baseX, cz-sideZ); x.lineTo(baseX+dir*4.2*ppm, cz-sideZ); x.stroke();
-    x.beginPath(); x.moveTo(baseX, cz+sideZ); x.lineTo(baseX+dir*4.2*ppm, cz+sideZ); x.stroke();
+    const drawThree = ()=>{
+      x.beginPath();
+      x.arc(hoopPx, cz, THREE_DIST*ppm, dir>0?-Math.PI/2:Math.PI/2, dir>0?Math.PI/2:Math.PI*1.5, dir<0);
+      x.stroke();
+      x.beginPath(); x.moveTo(baseX, cz-sideZ); x.lineTo(baseX+dir*4.2*ppm, cz-sideZ); x.stroke();
+      x.beginPath(); x.moveTo(baseX, cz+sideZ); x.lineTo(baseX+dir*4.2*ppm, cz+sideZ); x.stroke();
+    };
+    x.lineCap='round';
+    x.strokeStyle='rgba(20,14,8,.55)'; x.lineWidth=11; drawThree();   // dark halo for contrast
+    x.strokeStyle='#fff';              x.lineWidth=7;  drawThree();   // bright line
+    x.strokeStyle='#fff'; x.lineWidth=4;                             // restore default for later strokes
   });
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -725,21 +731,37 @@ function aiThink(p, dt){
     return;
   }
 
-  // DEFENSE: mark nearest opponent, stay between man and own hoop
-  let man=null,md=1e9;
-  for(const q of players){ if(q.team===p.team) continue; const d=dist2D(p.pos,q.pos); if(d<md){md=d;man=q;} }
+  // DEFENSE: pick a man, stay between him and own hoop.
+  // The closest defender always picks up the ball handler so he's never left wide open;
+  // the others mark the nearest remaining opponent.
+  const handler = (B.holder && B.holder.team!==p.team) ? B.holder : null;
+  let man=null;
+  if(handler){
+    let closest=null, cd=1e9;
+    for(const q of players){ if(q.team!==p.team) continue; const d=dist2D(q.pos,handler.pos); if(d<cd){cd=d;closest=q;} }
+    if(closest===p) man=handler;
+  }
+  if(!man){
+    let md=1e9;
+    for(const q of players){ if(q.team===p.team||q===handler) continue; const d=dist2D(p.pos,q.pos); if(d<md){md=d;man=q;} }
+    if(!man) man=handler;   // fallback (only two opponents on a 3v3 lineup)
+  }
   if(man){
+    const md = dist2D(p.pos, man.pos);
+    const onBall = (man===handler);
+    // hug the ball handler tight; give off-ball men a touch more cushion
+    const gap = onBall ? 0.95 : 1.3;
     const toOwn = new THREE.Vector3(ownHoop.x-man.pos.x,0,ownHoop.z-man.pos.z).normalize();
-    const guardPos = new THREE.Vector3(man.pos.x + toOwn.x*1.4, 0, man.pos.z + toOwn.z*1.4);
+    const guardPos = new THREE.Vector3(man.pos.x + toOwn.x*gap, 0, man.pos.z + toOwn.z*gap);
     move.set(guardPos.x-p.pos.x,0,guardPos.z-p.pos.z);
-    setMove(p, move, 0.85, dt);
+    setMove(p, move, onBall ? 1.0 : 0.9, dt);   // stay attached to the ball handler
     faceDir(p, new THREE.Vector3(man.pos.x-p.pos.x,0,man.pos.z-p.pos.z), dt);
     // lock into a stance when closely guarding the ball handler
-    p.stance = (B.holder===man && md<2.6);
+    p.stance = (onBall && md<2.8);
     // contest / steal / block
-    if(B.holder===man){
+    if(onBall){
       if(md<STEAL_R && p.cool.steal<=0 && Math.random()<0.02) attemptSteal(p);
-      if(man.state==='shoot' && md<2.0 && p.y<=0 && p.cool.jump<=0 && Math.random()<0.4){
+      if(man.state==='shoot' && md<2.2 && p.y<=0 && p.cool.jump<=0 && Math.random()<0.55){
         p.vy=5.0; p.state='jump'; p.cool.jump=0.8;
       }
     }
@@ -1021,7 +1043,10 @@ function checkScore(){
   const hoop = HOOPS[B.shot.team];
   const dx=B.pos.x-hoop.x, dz=B.pos.z-hoop.z;
   const horiz=Math.hypot(dx,dz);
-  if(B.vel.y<0 && B.pos.y<RIM_Y+0.06 && B.pos.y>RIM_Y-0.20 && horiz<RIM_R*0.85){
+  // guaranteed (green) makes get a generous gate so frame-stepping can never rattle them out
+  const scoreR = B.shot.make ? RIM_R*1.7 : RIM_R*0.85;
+  const yLo    = B.shot.make ? RIM_Y-0.5  : RIM_Y-0.20;
+  if(B.vel.y<0 && B.pos.y<RIM_Y+0.10 && B.pos.y>yLo && horiz<scoreR){
     if(B.shot.make){
       B.shot.scored=true;
       G.score[B.shot.team]+=B.shot.points;
@@ -1036,6 +1061,8 @@ function checkScore(){
 
 function checkRimBackboard(){
   if(!B.shot) return;
+  // a guaranteed make never clanks — let it drop straight through
+  if(B.shot.make) return;
   const hoop = HOOPS[B.shot.team];
   // rim ring bounce (near rim height, outside the hole)
   const dx=B.pos.x-hoop.x, dz=B.pos.z-hoop.z; const horiz=Math.hypot(dx,dz);
