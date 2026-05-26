@@ -81,6 +81,11 @@
     box-shadow:0 6px 24px rgba(255,90,46,.4); transition:transform .1s;
   }
   .overlay button:hover { transform:translateY(-2px); }
+  .overlay .menu { display:flex; gap:16px; align-items:center; justify-content:center; }
+  .overlay button.secondary {
+    background:transparent; color:#cfe; border:1px solid #44506e; box-shadow:none;
+  }
+  .overlay button.secondary:hover { border-color:#ff5b2e; color:#fff; }
   #endScreen { display:none; }
   #endScreen .final { font-size:40px; margin-bottom:24px; font-variant-numeric:tabular-nums; }
 </style>
@@ -118,7 +123,10 @@
     <span class="k">Space (no ball)</span><span class="d">Jump to block / rebound</span>
     <span class="k">Right Mouse (hold)</span><span class="d">Defensive stance — wall up your man, slow their drive & shrink their shot window</span>
   </div>
-  <button id="startBtn">TIP OFF</button>
+  <div class="menu">
+    <button id="startBtn">PLAY</button>
+    <button id="exitBtn" class="secondary">EXIT</button>
+  </div>
 </div>
 
 <div class="overlay" id="endScreen">
@@ -1481,8 +1489,19 @@ function endGame(){
   document.getElementById('endScore').textContent=`${h} : ${a}`;
   document.getElementById('endScreen').style.display='flex';
 }
+function exitGame(){
+  // Browsers only let a page close a window/tab it opened itself; the open('','_self') trick
+  // re-grants that for many of them. If it's refused, fall back to a goodbye screen.
+  try { window.open('', '_self'); window.close(); } catch(e){}
+  setTimeout(()=>{
+    document.body.innerHTML =
+      '<div class="overlay" style="display:flex"><h1>THANKS FOR PLAYING</h1>'
+      + '<h2>You can close this tab now.</h2></div>';
+  }, 250);
+}
 document.getElementById('startBtn').onclick=startGame;
 document.getElementById('rematchBtn').onclick=startGame;
+document.getElementById('exitBtn').onclick=exitGame;
 
 addEventListener('resize',()=>{
   camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
