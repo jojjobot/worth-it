@@ -39,6 +39,11 @@
     position:absolute; bottom:0; left:0; width:100%; height:0%;
     background:linear-gradient(#ffe14f,#ff8a3c);
   }
+  /* horizontal line marking exactly where you released — lingers after the shot so you can read your timing */
+  #shotmeter .marker {
+    position:absolute; left:-3px; width:calc(100% + 6px); height:3px; bottom:0;
+    background:#fff; border-radius:2px; display:none; transition:opacity .15s;
+  }
   #feedback {
     position:fixed; left:50%; top:42%; transform:translateX(-50%);
     font-size:42px; font-weight:800; letter-spacing:2px; z-index:11;
@@ -93,7 +98,7 @@
 </div>
 <div id="poss"></div>
 
-<div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div></div>
+<div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div><div class="marker" id="meterMark"></div></div>
 <div id="feedback"></div>
 <div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>C</b> crossover &nbsp; <b>V</b> hesi &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> lockdown D</div>
 
@@ -526,7 +531,7 @@ function onShootRelease(){
     userPlayer.shootQuality = (frac>1.05) ? 0.1 : q;     // held too long = bad
     launchShot(userPlayer, userPlayer.shootQuality, true, green);
     userPlayer.state='shoot'; userPlayer.stateT=0; userPlayer.vy=4.6;
-    shotMeterEl.style.display='none';
+    showReleaseMarker(frac, green, half);   // keep the meter up briefly so you can read your release
   }
 }
 
@@ -550,7 +555,7 @@ function onDunkRelease(){
   const frac = p.shootHold;
   const half = p.curWindow || 0.30;
   const timed = (Math.abs(frac-0.85) <= half) && (frac <= 1.05);   // released in the green = clean takeoff
-  shotMeterEl.style.display='none';
+  showReleaseMarker(frac, timed, half);
   startDunk(p, timed);
 }
 
@@ -1363,8 +1368,14 @@ const possEl=document.getElementById('poss');
 const shotMeterEl=document.getElementById('shotmeter');
 const meterFill=document.getElementById('meterFill');
 const meterGreen=document.getElementById('meterGreen');
+const meterMark=document.getElementById('meterMark');
 const feedbackEl=document.getElementById('feedback');
 let feedbackT=0;
+// post-release readout: freeze the meter for a beat showing where you let go vs the green window
+let meterHoldT=0, meterHoldFrac=0, meterHoldGreen=false, meterHoldWin=0.3;
+function showReleaseMarker(frac, green, half){
+  meterHoldT=0.9; meterHoldFrac=frac; meterHoldGreen=green; meterHoldWin=half;
+}
 
 // green zone display (center 0.85, half 0.12 of meter height)
 meterGreen.style.bottom = (0.73*100)+'%';
@@ -1387,11 +1398,30 @@ function updateHUD(dt){
     ? '<span style="color:#ff7a3c">● YOUR BALL</span>'
     : '<span style="color:#4fb6ff">● CPU BALL</span>';
   if(userPlayer.state==='aim' || userPlayer.state==='dunkaim'){
+    shotMeterEl.style.display='block';
+    meterMark.style.display='none';
     meterFill.style.height=Math.min(100,userPlayer.shootHold*100)+'%';
+    meterFill.style.opacity='1';
     // resize the green zone live so distance + a tight defender visibly squeeze (or erase) your window
     const half=(typeof userPlayer.curWindow==='number')?userPlayer.curWindow:0.30;
     meterGreen.style.bottom=((0.85-half)*100)+'%';
     meterGreen.style.height=(2*half*100)+'%';
+  } else if(meterHoldT>0){
+    // frozen readout after the shot: fill locked at the release height, a line marking exactly where you let go
+    meterHoldT-=dt;
+    shotMeterEl.style.display='block';
+    const pct=Math.min(100,meterHoldFrac*100);
+    meterFill.style.height=pct+'%';
+    meterFill.style.opacity='0.5';
+    meterGreen.style.bottom=((0.85-meterHoldWin)*100)+'%';
+    meterGreen.style.height=(2*meterHoldWin*100)+'%';
+    meterMark.style.display='block';
+    meterMark.style.bottom=pct+'%';
+    const col = meterHoldGreen ? '#4fff9c' : '#ff5b2e';
+    meterMark.style.background=col;
+    meterMark.style.boxShadow='0 0 8px '+col;
+    meterMark.style.opacity = meterHoldT<0.25 ? (meterHoldT/0.25).toFixed(2) : '1';   // fade out at the end
+    if(meterHoldT<=0){ shotMeterEl.style.display='none'; meterMark.style.display='none'; meterFill.style.opacity='1'; }
   }
   if(feedbackT>0){ feedbackT-=dt; feedbackEl.style.opacity=clamp(feedbackT,0,1); }
 }
