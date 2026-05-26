@@ -693,20 +693,27 @@ function launchShot(p, quality, isUserShot, forceMake){
 }
 
 function startDunk(p, timed){
-  if(timed===undefined) timed = Math.random()<0.85;   // AI takeoff timing
+  // AI takeoff timing — mistimes (an automatic miss) far more often the more crowded the lane is
+  if(timed===undefined) timed = Math.random() < clamp(0.85 - contestLevel(p)*0.4, 0.35, 0.85);
   const hoop = attackHoop(p.team);
   p.state='dunk'; p.stateT=0; p.cool.shoot=0.9;        // longer cooldown — no spamming dunks
   p.facing = Math.atan2(hoop.x-p.pos.x, hoop.z-p.pos.z);
-  // a mistimed takeoff is already a miss; a clean one can still be stuffed by a contesting defender
+  // a mistimed takeoff is already a miss; a clean one can still be stuffed — and EVERY defender
+  // crowding the rim stacks onto the block chance, so throwing it down over two bodies is rare.
   let make = !!timed;
   if(make){
-    const opp = nearestOpponent(p);
-    if(opp.p && opp.d < CONTEST_R){
-      let block = 0.22*(1 - opp.d/CONTEST_R);          // tighter = easier to contest
-      if(opp.p.y>0.4)   block += 0.32;                 // they actually went up to meet you
-      if(opp.p.stance)  block += 0.10;
-      if(Math.random() < block) make=false;
+    let block = 0;
+    for(const q of players){
+      if(q.team===p.team) continue;
+      const d = dist2D(p.pos, q.pos);
+      if(d >= CONTEST_R) continue;
+      const prox = 1 - d/CONTEST_R;                    // 0 at the edge of contest range .. 1 right in your chest
+      let c = 0.45*prox;                               // a body in the lane bothers it even flat-footed on the ground
+      if(q.y > 0.4)  c += 0.50*prox;                   // actually went up to meet you at the rim = much tougher
+      if(q.stance)   c += 0.12*prox;                   // squared-up and ready
+      block += c;                                      // two defenders add together
     }
+    if(Math.random() < Math.min(block, 0.96)) make=false;
   }
   p.dunkInfo = { hoop, make, timed, t:0, done:false, startPos:p.pos.clone() };
   B.holder = p; B.state='dunk_hold';
