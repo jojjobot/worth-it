@@ -429,6 +429,30 @@ function nearestTeammate(p, forward){
   }
   return best;
 }
+// How hard the shooter is being contested: 0 = wide open, up to ~1.3 = fully smothered.
+// Folds together, specifically: how CLOSE the nearest defender is (curved so the last meter
+// into your chest bites hardest), whether he's gotten VERTICAL and HOW HIGH, whether he's
+// locked into a STANCE, and whether he's actually IN THE SHOT LANE (a man on your back barely
+// bothers the shot). Each factor stacks. Used to shrink the green window AND dock the make %.
+function contestLevel(p){
+  const opp = nearestOpponent(p);
+  if(!opp.p || opp.d >= CONTEST_R) return 0;
+  const def = opp.p;
+  const hoop = attackHoop(p.team);
+  // 1) proximity — 0 at the edge of contest range, 1 right in your chest, curved to bite late
+  const prox = Math.pow(1 - opp.d/CONTEST_R, 1.4);
+  // 2) jump — a real vertical contest; scales with how high he actually is (≈1.5 = full extension)
+  const jump = def.y > 0.15 ? clamp(def.y/1.5, 0, 1) : 0;
+  // 3) stance — squared up & ready to bother the shot
+  const stance = def.stance ? 1 : 0;
+  // 4) shot lane — is he between you and the rim, or trailing behind?  cos of the angle to the hoop
+  const toHx = hoop.x-p.pos.x, toHz = hoop.z-p.pos.z, toHl = Math.hypot(toHx,toHz)||1;
+  const cos  = ((def.pos.x-p.pos.x)*toHx + (def.pos.z-p.pos.z)*toHz) / (toHl*Math.max(opp.d,1e-3));
+  const inLane = clamp((cos+0.25)/1.25, 0.3, 1);   // ~1 dead in front, 0.3 on your hip/back
+  // stack them — jump & stance count for more the closer he is
+  let c = prox*0.70 + jump*0.65*Math.max(prox,0.4) + stance*0.22;
+  return clamp(c*inLane, 0, 1.3);
+}
 // green release window half-width — hitting it is an automatic make, so its SIZE is the difficulty.
 // Adaptive: big & forgiving point-blank, tiny on deep contested jumpers.
 function shotWindowHalf(p){
@@ -444,24 +468,13 @@ function shotWindowHalf(p){
   } else {
     half = Math.max(0, 0.15 - (d-THREE_DIST)*0.038);                       // collapses ~4m past the line (deep half-court ≈ no green)
   }
-  // defenders in your space squeeze the window
-  const opp = nearestOpponent(p);
-  if(opp.p && opp.d < CONTEST_R){
-    const t = opp.d / CONTEST_R;                  // 0 = right on top, 1 = at edge of contest range
-    half *= 0.45 + 0.55*t;                        // up to ~55% smaller when smothered
-    if(opp.p.stance)  half *= 0.72;               // locked-in defender squeezes it further
-    if(opp.p.y > 0.3) half *= 0.82;               // jumping contest shrinks it too
-  }
-  return Math.max(0, half);                       // floor of 0: extreme range has no auto-make green at all
+  // a defender's contest squeezes the green — a clean, fully-extended point-blank contest can ERASE it
+  half *= clamp(1 - contestLevel(p)*0.9, 0, 1);
+  return Math.max(0, half);                       // floor of 0: extreme range / smothered = no auto-make green at all
 }
-// dunk takeoff window — forgiving when you've got a clear lane, tight when a defender is there
+// dunk takeoff window — forgiving when you've got a clear lane, tight when a rim protector is there
 function dunkWindowHalf(p){
-  let half = 0.30;
-  const opp = nearestOpponent(p);
-  if(opp.p && opp.d < CONTEST_R){
-    half *= 0.4 + 0.6*(opp.d/CONTEST_R);
-    if(opp.p.y > 0.4) half *= 0.7;                // rim protector up = hard to time clean
-  }
+  let half = 0.30 * clamp(1 - contestLevel(p)*0.7, 0.18, 1);
   return Math.max(0.07, half);
 }
 
@@ -633,9 +646,8 @@ function launchShot(p, quality, isUserShot, forceMake){
   else base = 0.40 - (d-THREE_DIST)*0.085;   // ~0.40 at the line, single digits from deep
   // timing quality (0..1)
   base += (quality-0.5)*0.55;
-  // contest
-  const opp = nearestOpponent(p);
-  if(opp.d < CONTEST_R){ base -= 0.22*(1 - opp.d/CONTEST_R); if(opp.p && opp.p.y>0.3) base-=0.12; if(opp.p && opp.p.stance) base-=0.14; }
+  // contest — same specific model (proximity + jump height + stance + shot lane) that shrinks the green
+  base -= contestLevel(p)*0.34;
   base = clamp(base, 0.04, 0.97);
   // a clean green release (window hit) is a guaranteed bucket; otherwise roll vs the make %
   const make = forceMake ? true : (Math.random() < base);
