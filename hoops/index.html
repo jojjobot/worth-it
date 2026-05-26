@@ -336,7 +336,7 @@ function makePlayer(team, isUser){
     state:'idle',                      // idle|run|aim|shoot|dunk|jump|land
     animPhase:0, animSeed:Math.random()*Math.PI*2,   // seed desyncs idle/breathing across players
     stateT:0,                          // time in current state
-    shootHold:0, shootQuality:0, shootTarget:null,
+    shootHold:0, shootQuality:0, shootTarget:null, aiReleaseAt:0.85,   // AI's target meter point to release a jumper
     cool:{shoot:0,steal:0,pass:0,jump:0,cross:0,hesi:0},
     decision:0, aiSpot:new THREE.Vector3(),
     stance:false, curWindow:0.30,
@@ -528,6 +528,20 @@ function onShootRelease(){
     userPlayer.state='shoot'; userPlayer.stateT=0; userPlayer.vy=4.6;
     shotMeterEl.style.display='none';
   }
+}
+
+// AI releases its jumper at the meter point it was aiming for. It uses the SAME contest-aware
+// window the user does — so a defender who closed out during the wind-up shrinks the green and
+// docks the make %, and the AI can brick a contested shot just like you can.
+function aiShootRelease(p){
+  if(B.holder!==p){ p.state='idle'; return; }   // got stripped during the wind-up — no shot
+  const frac  = p.shootHold;
+  const half  = shotWindowHalf(p);
+  const off   = Math.abs(frac-0.85);
+  const green = (half > 0) && (off <= half) && (frac <= 1.05);
+  const q     = 1 - clamp(off/Math.max(half,1e-3), 0, 1);
+  launchShot(p, green ? 1 : q, false, green);
+  p.state='shoot'; p.stateT=0; p.vy=4.4;
 }
 
 function onDunkRelease(){
@@ -788,6 +802,14 @@ function aiThink(p, dt){
   const hasBall = (B.holder===p);
   const dHoop = dist2D(p.pos, hoop);
 
+  // committed to a jump-shot wind-up: hold the pose & let the meter charge — don't re-decide.
+  // This is what gives the defense a real window to close out and contest.
+  if(p.state==='aim'){
+    p.vel.x*=0.6; p.vel.z*=0.6; p.stance=false;
+    faceDir(p, new THREE.Vector3(hoop.x-p.pos.x,0,hoop.z-p.pos.z), dt*3);
+    return;
+  }
+
   // default: stop, no stance
   let move = new THREE.Vector3();
   p.stance = false;
@@ -813,10 +835,10 @@ function aiThink(p, dt){
       if(Math.random()<0.7){ startDunk(p); return; }
     }
     const opp = nearestOpponent(p);
-    // open shot
-    if(dHoop < SHOOT_RANGE && opp.d > 2.0 && p.cool.shoot<=0 && Math.random()<0.04){
-      launchShot(p, 0.62 + Math.random()*0.25, false);
-      p.state='shoot'; p.stateT=0; p.vy=4.4;
+    // open shot — wind up a real jumper (charges the same meter the user does, so it can be contested)
+    if(dHoop < SHOOT_RANGE && opp.d > 1.7 && p.cool.shoot<=0 && Math.random()<0.05){
+      p.state='aim'; p.shootHold=0;
+      p.aiReleaseAt = 0.85 + (Math.random()-0.5)*0.22;   // aims for the green, off by a bit (variance/skill)
       return;
     }
     // pressured -> pass
@@ -881,7 +903,8 @@ function aiThink(p, dt){
     // contest / steal / block
     if(onBall){
       if(md<STEAL_R && p.cool.steal<=0 && Math.random()<0.02) attemptSteal(p);
-      if(man.state==='shoot' && md<2.2 && p.y<=0 && p.cool.jump<=0 && Math.random()<0.55){
+      // jump to contest during the wind-up (aim), not just after the ball's gone
+      if((man.state==='aim'||man.state==='shoot') && md<2.4 && p.y<=0 && p.cool.jump<=0 && Math.random()<0.5){
         p.vy=5.0; p.state='jump'; p.cool.jump=0.8;
       }
     }
@@ -1017,8 +1040,10 @@ function updatePlayer(p, dt){
   // aim: charge meter — snappier release (~0.48s to fill, green at ~0.41s)
   if(p.state==='aim'){
     p.shootHold += dt/0.48;
-    if(p.shootHold>1.4){ // auto-release if held way too long
-      onShootRelease();
+    if(p.isUser){
+      if(p.shootHold>1.4) onShootRelease();              // user over-held -> auto fire
+    } else if(p.shootHold >= (p.aiReleaseAt||0.85)){
+      aiShootRelease(p);                                  // AI must let the meter run up before it fires — contestable
     }
   }
   // dunk: charge the (faster) takeoff meter
