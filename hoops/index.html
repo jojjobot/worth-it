@@ -427,13 +427,18 @@ function nearestTeammate(p, forward){
 // green release window half-width — hitting it is an automatic make, so its SIZE is the difficulty.
 // Adaptive: big & forgiving point-blank, tiny on deep contested jumpers.
 function shotWindowHalf(p){
-  // distance from the hoop sets the base window: closer = wider green = more makeable
+  // distance from the hoop sets the base window: closer = wider green = more makeable.
+  // It shrinks SMOOTHLY with range and collapses to ~nothing past the arc, so a deep heave
+  // can't be greened the way a catch-and-shoot 18-footer can.
   const d = dist2D(p.pos, attackHoop(p.team));
   let half;
-  if(d < LAYUP_RANGE)      half = 0.34;   // point-blank — easy to green
-  else if(d < 5)           half = 0.25;   // mid-range
-  else if(d < THREE_DIST)  half = 0.17;   // long two
-  else                     half = 0.12;   // deep three — hardest
+  if(d < LAYUP_RANGE){
+    half = 0.34;                                                            // point-blank — easy to green
+  } else if(d < THREE_DIST){
+    half = 0.30 - (d-LAYUP_RANGE)/(THREE_DIST-LAYUP_RANGE) * 0.15;          // 0.30 (paint) → 0.15 (the arc)
+  } else {
+    half = Math.max(0, 0.15 - (d-THREE_DIST)*0.038);                       // collapses ~4m past the line (deep half-court ≈ no green)
+  }
   // defenders in your space squeeze the window
   const opp = nearestOpponent(p);
   if(opp.p && opp.d < CONTEST_R){
@@ -442,7 +447,7 @@ function shotWindowHalf(p){
     if(opp.p.stance)  half *= 0.72;               // locked-in defender squeezes it further
     if(opp.p.y > 0.3) half *= 0.82;               // jumping contest shrinks it too
   }
-  return Math.max(0.05, half);
+  return Math.max(0, half);                       // floor of 0: extreme range has no auto-make green at all
 }
 // dunk takeoff window — forgiving when you've got a clear lane, tight when a defender is there
 function dunkWindowHalf(p){
@@ -511,11 +516,13 @@ addEventListener('mouseup',   e=>{ if(e.button===2) rmb=false; });
 function onShootRelease(){
   if(userPlayer.state==='aim'){
     const frac = userPlayer.shootHold;
-    // green window centered at 0.85; its width was set live during aim by distance + defender pressure
-    const half = userPlayer.curWindow || 0.30;
+    // green window centered at 0.85; its width was set live during aim by distance + defender pressure.
+    // NOTE: use a numeric check, not `|| 0.30` — at extreme range the window is legitimately 0,
+    // and a truthy fallback there would wrongly re-enable the auto-make on a half-court heave.
+    const half = (typeof userPlayer.curWindow==='number') ? userPlayer.curWindow : 0.30;
     const off  = Math.abs(frac-0.85);
-    const green = (off <= half) && (frac <= 1.05);       // inside the window = automatic make
-    const q = 1 - clamp(off/half, 0, 1);
+    const green = (half > 0) && (off <= half) && (frac <= 1.05);   // inside a real window = automatic make
+    const q = 1 - clamp(off/Math.max(half,1e-3), 0, 1);
     userPlayer.shootQuality = (frac>1.05) ? 0.1 : q;     // held too long = bad
     launchShot(userPlayer, userPlayer.shootQuality, true, green);
     userPlayer.state='shoot'; userPlayer.stateT=0; userPlayer.vy=4.6;
@@ -598,12 +605,13 @@ function launchShot(p, quality, isUserShot, forceMake){
   const d = dist2D(p.pos, hoop);
   const points = d > THREE_DIST ? 3 : 2;
 
-  // base make % by distance
+  // base make % by distance — beyond the arc it keeps falling ~8.5%/m, so a contested
+  // half-court chuck lands near the floor instead of a flat ~38%.
   let base;
   if(d<LAYUP_RANGE) base=0.78;
   else if(d<5) base=0.55;
   else if(d<THREE_DIST) base=0.46;
-  else base=0.38;
+  else base = 0.40 - (d-THREE_DIST)*0.085;   // ~0.40 at the line, single digits from deep
   // timing quality (0..1)
   base += (quality-0.5)*0.55;
   // contest
@@ -1000,9 +1008,9 @@ function updatePlayer(p, dt){
   p.stateT += dt;
   const speed = Math.hypot(p.vel.x,p.vel.z);
 
-  // aim: charge meter
+  // aim: charge meter — snappier release (~0.48s to fill, green at ~0.41s)
   if(p.state==='aim'){
-    p.shootHold += dt/0.62;     // ~0.62s to reach 1.0
+    p.shootHold += dt/0.48;
     if(p.shootHold>1.4){ // auto-release if held way too long
       onShootRelease();
     }
@@ -1349,8 +1357,8 @@ function updateHUD(dt){
     : '<span style="color:#4fb6ff">● CPU BALL</span>';
   if(userPlayer.state==='aim' || userPlayer.state==='dunkaim'){
     meterFill.style.height=Math.min(100,userPlayer.shootHold*100)+'%';
-    // resize the green zone live so a tight defender visibly squeezes your window
-    const half=userPlayer.curWindow||0.30;
+    // resize the green zone live so distance + a tight defender visibly squeeze (or erase) your window
+    const half=(typeof userPlayer.curWindow==='number')?userPlayer.curWindow:0.30;
     meterGreen.style.bottom=((0.85-half)*100)+'%';
     meterGreen.style.height=(2*half*100)+'%';
   }
