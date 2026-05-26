@@ -980,16 +980,22 @@ function updatePlayer(p, dt){
     if(p.y<=0){ p.y=0; p.vy=0; if(p.state==='jump'){ p.state='idle'; } }
   }
 
-  // defensive-stance "wall": slows the ball handler & hard to drive through — but you slip it on a crossover / hesi
+  // defensive stance: jostles & SLOWS the ball handler (and contests his shot elsewhere) — but it is NOT
+  // a wall. You can still beat it with a good angle or by sprinting; crossover / hesi blow right past it.
   if(B.holder===p && p.crossT<=0 && p.hesiT<=0){
     let def=null, dd=1.6;
     for(const q of players){ if(q.team===p.team || !q.stance) continue; const d=dist2D(p.pos,q.pos); if(d<dd){ dd=d; def=q; } }
     if(def){
-      p.vel.x*=0.5; p.vel.z*=0.5;
-      if(dd<0.85){
+      // mild, distance-scaled friction: real drag when he's chest-to-chest, almost none at arm's length.
+      // Kept light enough that a sprint still edges out the defender's tracking speed, so drives aren't sealed off.
+      const t = clamp(dd/1.6, 0, 1);
+      const slow = 0.72 + 0.28*t;               // ~0.72 point-blank → 1.0 at the edge of the bubble
+      p.vel.x*=slow; p.vel.z*=slow;
+      // soft body collision so they don't clip through each other — a gentle nudge, not a teleport wall
+      if(dd<0.5){
         const nx=p.pos.x-def.pos.x, nz=p.pos.z-def.pos.z, L=Math.hypot(nx,nz)||1;
-        p.pos.x = def.pos.x + nx/L*0.85;
-        p.pos.z = def.pos.z + nz/L*0.85;
+        p.pos.x += (def.pos.x + nx/L*0.5 - p.pos.x)*0.3;
+        p.pos.z += (def.pos.z + nz/L*0.5 - p.pos.z)*0.3;
       }
     }
   }
