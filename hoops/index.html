@@ -61,6 +61,15 @@
   /* possession dot */
   #poss { position:fixed; top:58px; left:50%; transform:translateX(-50%); font-size:12px; z-index:10; opacity:.85; }
 
+  /* heat-check ability indicator */
+  #heat {
+    position:fixed; top:80px; left:50%; transform:translateX(-50%);
+    font-size:14px; font-weight:800; letter-spacing:2px; z-index:10; display:none;
+    color:#ffd24f; text-shadow:0 0 10px rgba(255,140,40,.9), 0 0 22px rgba(255,90,30,.6);
+    animation:heatPulse .7s ease-in-out infinite alternate;
+  }
+  @keyframes heatPulse { from{ opacity:.7; } to{ opacity:1; } }
+
   /* overlays */
   .overlay {
     position:fixed; inset:0; z-index:50; display:flex; flex-direction:column;
@@ -118,6 +127,7 @@
   <span id="shotclock">24</span>
 </div>
 <div id="poss"></div>
+<div id="heat"></div>
 
 <div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div><div class="marker" id="meterMark"></div></div>
 <div id="feedback"></div>
@@ -149,9 +159,13 @@
   <h1>CHOOSE YOUR ABILITY</h1>
   <h2>Pick a special to take into the match</h2>
   <div class="ability-grid" id="abilityGrid">
-    <div class="ability-card" data-ability="slot1"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
+    <div class="ability-card" data-ability="heatCheck"><div class="icon">🔥</div><div class="name">HEAT CHECK</div><div class="sub">3 IN A ROW → 60s BOOST</div></div>
     <div class="ability-card" data-ability="slot2"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
     <div class="ability-card" data-ability="slot3"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
+  </div>
+  <div style="max-width:520px;font-size:13px;color:#9fb0d0;margin:-14px 0 26px;line-height:1.5">
+    <b style="color:#ffe14f">HEAT CHECK</b> — drain 3 shots in a row and you catch fire for one minute:
+    your green release window swells, and deep shots that normally can't be greened become makeable.
   </div>
   <div class="menu">
     <button id="confirmAbilityBtn">START MATCH</button>
@@ -506,6 +520,10 @@ function shotWindowHalf(p){
   } else {
     half = Math.max(0, 0.15 - (d-THREE_DIST)*0.038);                       // collapses ~4m past the line (deep half-court ≈ no green)
   }
+  // HEAT CHECK (user only): while on fire the window swells (×1.5) and gains a flat bonus so deep
+  // shots that normally floor to ~0 green become legitimately makeable. Applied before contest, so
+  // a defender's hand still squeezes it.
+  if(p===userPlayer && heatActive()) half = half*1.5 + 0.06;
   // a defender's contest squeezes the green — a clean, fully-extended point-blank contest can ERASE it
   half *= clamp(1 - contestLevel(p)*0.9, 0, 1);
   return Math.max(0, half);                       // floor of 0: extreme range / smothered = no auto-make green at all
@@ -689,6 +707,7 @@ function launchShot(p, quality, isUserShot, forceMake){
   base = clamp(base, 0.04, 0.97);
   // a clean green release (window hit) is a guaranteed bucket; otherwise roll vs the make %
   const make = forceMake ? true : (Math.random() < base);
+  if(isUserShot) noteUserShot(make);   // HEAT CHECK: track makes-in-a-row to ignite the buff
 
   // target point
   const target = hoop.clone();
@@ -1422,6 +1441,7 @@ const awayScoreEl=document.getElementById('awayScore');
 const clockEl=document.getElementById('gameClock');
 const shotClockEl=document.getElementById('shotclock');
 const possEl=document.getElementById('poss');
+const heatEl=document.getElementById('heat');
 const shotMeterEl=document.getElementById('shotmeter');
 const meterFill=document.getElementById('meterFill');
 const meterGreen=document.getElementById('meterGreen');
@@ -1454,6 +1474,20 @@ function updateHUD(dt){
   possEl.innerHTML = G.possession===0
     ? '<span style="color:#ff7a3c">● YOUR BALL</span>'
     : '<span style="color:#4fb6ff">● CPU BALL</span>';
+  if(heatActive()){
+    heatEl.style.display='block';
+    heatEl.style.color='#ffd24f';
+    heatEl.style.textShadow='0 0 10px rgba(255,140,40,.9), 0 0 22px rgba(255,90,30,.6)';
+    heatEl.textContent=`🔥 ON FIRE — ${Math.ceil(heat.timer)}s`;
+  } else if(selectedAbility==='heatCheck' && heat.streak>0){
+    // building a streak: show progress toward igniting
+    heatEl.style.display='block';
+    heatEl.style.color='#9fb0d0';
+    heatEl.style.textShadow='none';
+    heatEl.textContent=`MAKES: ${heat.streak}/${HEAT_STREAK}`;
+  } else {
+    heatEl.style.display='none';
+  }
   if(userPlayer.state==='aim' || userPlayer.state==='dunkaim'){
     shotMeterEl.style.display='block';
     meterMark.style.display='none';
@@ -1491,6 +1525,7 @@ function loop(){
   if(G.running){
     // clocks
     G.clock-=dt; if(G.clock<=0){ G.clock=0; endGame(); }
+    if(heat.timer>0) heat.timer-=dt;   // HEAT CHECK buff countdown
     if(['held','pass'].includes(B.state)){
       G.shotClock-=dt;
       if(G.shotClock<=0){ resetFormation(G.possession^1); }
@@ -1511,6 +1546,7 @@ loop();
 // ============================================================ Game flow
 function startGame(){
   G.running=true; G.score=[0,0]; G.clock=GAME_TIME; updateScoreboard();
+  heat.streak=0; heat.timer=0;   // reset HEAT CHECK each match
   resetFormation(0);
   // place camera behind player, looking down-court toward the hoop they attack
   camYaw=-Math.PI/2; camPitch=0.35;
@@ -1536,8 +1572,28 @@ function exitGame(){
       + '<h2>You can close this tab now.</h2></div>';
   }, 250);
 }
-// ability select flow (no abilities wired up yet — just the menu)
+// ability select flow
 let selectedAbility = null;
+
+// --- HEAT CHECK ability state ---
+// Drain 3 user shots in a row → "on fire" for HEAT_DURATION seconds. While hot, the green
+// release window swells and deep shots (which normally can't be greened) become makeable.
+// Every make while hot refreshes the timer; a miss only resets the streak, not an active buff.
+const HEAT_DURATION = 60;      // seconds
+const HEAT_STREAK   = 3;       // makes in a row to ignite
+const heat = { streak:0, timer:0 };
+function heatActive(){ return selectedAbility==='heatCheck' && heat.timer>0; }
+function noteUserShot(make){
+  if(make){
+    heat.streak++;
+    if(selectedAbility==='heatCheck' && heat.streak>=HEAT_STREAK){
+      if(heat.streak===HEAT_STREAK) showFeedback('ON FIRE! 🔥', '#ff9b3c');   // ignite flash (once)
+      heat.timer = HEAT_DURATION;
+    }
+  } else {
+    heat.streak = 0;
+  }
+}
 function showAbilityScreen(){
   document.getElementById('startScreen').style.display='none';
   document.getElementById('endScreen').style.display='none';
@@ -1549,6 +1605,7 @@ function showStartScreen(){
 }
 document.querySelectorAll('#abilityGrid .ability-card').forEach(card=>{
   card.onclick=()=>{
+    if(card.dataset.ability.startsWith('slot')) return;   // locked / coming-soon slots aren't selectable
     document.querySelectorAll('#abilityGrid .ability-card').forEach(c=>c.classList.remove('selected'));
     card.classList.add('selected');
     selectedAbility = card.dataset.ability;
