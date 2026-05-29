@@ -1576,9 +1576,10 @@ function exitGame(){
 let selectedAbility = null;
 
 // --- HEAT CHECK ability state ---
-// Drain 3 user shots in a row → "on fire" for HEAT_DURATION seconds. While hot, the green
+// Drain 3 user shots in a row → "on fire" for a fixed HEAT_DURATION seconds. While hot, the green
 // release window swells and deep shots (which normally can't be greened) become makeable.
-// Every make while hot refreshes the timer; a miss only resets the streak, not an active buff.
+// The timer does NOT refresh on further makes while active (that was too strong — you could stay
+// hot indefinitely); it just runs out, then 3 fresh makes can re-ignite. A miss resets the streak.
 const HEAT_DURATION = 60;      // seconds
 const HEAT_STREAK   = 3;       // makes in a row to ignite
 const heat = { streak:0, timer:0 };
@@ -1586,9 +1587,10 @@ function heatActive(){ return selectedAbility==='heatCheck' && heat.timer>0; }
 function noteUserShot(make){
   if(make){
     heat.streak++;
-    if(selectedAbility==='heatCheck' && heat.streak>=HEAT_STREAK){
-      if(heat.streak===HEAT_STREAK) showFeedback('ON FIRE! 🔥', '#ff9b3c');   // ignite flash (once)
+    // ignite only on the igniting make, and only when not already on fire (no extending the buff)
+    if(selectedAbility==='heatCheck' && heat.streak>=HEAT_STREAK && heat.timer<=0){
       heat.timer = HEAT_DURATION;
+      showFeedback('ON FIRE! 🔥', '#ff9b3c');
     }
   } else {
     heat.streak = 0;
