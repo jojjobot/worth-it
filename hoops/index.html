@@ -86,6 +86,22 @@
     background:transparent; color:#cfe; border:1px solid #44506e; box-shadow:none;
   }
   .overlay button.secondary:hover { border-color:#ff5b2e; color:#fff; }
+
+  /* ability select */
+  #abilityScreen { display:none; }
+  .ability-grid { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin-bottom:30px; }
+  .ability-card {
+    width:150px; height:190px; border-radius:14px; cursor:pointer;
+    background:rgba(10,14,22,.6); border:1px solid #2a3550;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    transition:transform .12s, border-color .12s, box-shadow .12s;
+  }
+  .ability-card:hover { transform:translateY(-4px); border-color:#ff7a3c; }
+  .ability-card.selected { border-color:#ffe14f; box-shadow:0 0 0 2px #ffe14f, 0 8px 28px rgba(255,225,79,.25); }
+  .ability-card .icon { font-size:46px; color:#44506e; }
+  .ability-card.selected .icon { color:#ffe14f; }
+  .ability-card .name { font-size:15px; font-weight:800; letter-spacing:1px; color:#cfe; }
+  .ability-card .sub { font-size:11px; color:#7888a8; letter-spacing:1px; }
   #endScreen { display:none; }
   #endScreen .final { font-size:40px; margin-bottom:24px; font-variant-numeric:tabular-nums; }
 </style>
@@ -126,6 +142,20 @@
   <div class="menu">
     <button id="startBtn">PLAY</button>
     <button id="exitBtn" class="secondary">EXIT</button>
+  </div>
+</div>
+
+<div class="overlay" id="abilityScreen">
+  <h1>CHOOSE YOUR ABILITY</h1>
+  <h2>Pick a special to take into the match</h2>
+  <div class="ability-grid" id="abilityGrid">
+    <div class="ability-card" data-ability="slot1"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
+    <div class="ability-card" data-ability="slot2"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
+    <div class="ability-card" data-ability="slot3"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
+  </div>
+  <div class="menu">
+    <button id="confirmAbilityBtn">START MATCH</button>
+    <button id="backBtn" class="secondary">BACK</button>
   </div>
 </div>
 
@@ -1506,7 +1536,28 @@ function exitGame(){
       + '<h2>You can close this tab now.</h2></div>';
   }, 250);
 }
-document.getElementById('startBtn').onclick=startGame;
+// ability select flow (no abilities wired up yet — just the menu)
+let selectedAbility = null;
+function showAbilityScreen(){
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('endScreen').style.display='none';
+  document.getElementById('abilityScreen').style.display='flex';
+}
+function showStartScreen(){
+  document.getElementById('abilityScreen').style.display='none';
+  document.getElementById('startScreen').style.display='flex';
+}
+document.querySelectorAll('#abilityGrid .ability-card').forEach(card=>{
+  card.onclick=()=>{
+    document.querySelectorAll('#abilityGrid .ability-card').forEach(c=>c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedAbility = card.dataset.ability;
+  };
+});
+
+document.getElementById('startBtn').onclick=showAbilityScreen;
+document.getElementById('confirmAbilityBtn').onclick=()=>{ document.getElementById('abilityScreen').style.display='none'; startGame(); };
+document.getElementById('backBtn').onclick=showStartScreen;
 document.getElementById('rematchBtn').onclick=startGame;
 document.getElementById('exitBtn').onclick=exitGame;
 
