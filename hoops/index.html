@@ -146,7 +146,7 @@
 <div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div><div class="marker" id="meterMark"></div></div>
 <div id="stamina"><div class="sfill" id="stamFill"></div><div class="slabel">STAMINA</div></div>
 <div id="feedback"></div>
-<div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>C</b> crossover &nbsp; <b>V</b> hesi &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> lockdown D</div>
+<div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>C</b> crossover &nbsp; <b>V</b> hesi &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> lockdown D &nbsp; <b>B</b> new ball (playground)</div>
 
 <div class="overlay" id="startScreen">
   <h1>HOOPS 3D</h1>
@@ -167,6 +167,7 @@
   </div>
   <div class="menu">
     <button id="startBtn">PLAY</button>
+    <button id="playgroundBtn" class="secondary">PLAYGROUND</button>
     <button id="exitBtn" class="secondary">EXIT</button>
   </div>
 </div>
@@ -427,6 +428,7 @@ function makePlayer(team, isUser){
     comboCount:0, comboWindow:0, lastMoveDir:new THREE.Vector3(),   // handler's move-combo state
     balance:0, fallenT:0,                                           // defender imbalance / ankle-broken timer
     stamina:STAMINA_MAX,                                            // gas tank (0..STAMINA_MAX)
+    parked:false,                                                   // playground: sat out & hidden
   };
 }
 
@@ -465,7 +467,7 @@ const B = {
 // ============================================================ Game state
 const G = {
   running:false, score:[0,0], clock:GAME_TIME, shotClock:SHOT_CLOCK,
-  possession:0,
+  possession:0, mode:'match',          // 'match' = 3v3 quick game, 'playground' = solo sandbox
 };
 
 // ============================================================ Helpers
@@ -495,13 +497,13 @@ function handPosFor(p){
 }
 function nearestOpponent(p){
   let best=null,bd=1e9;
-  for(const q of players){ if(q.team===p.team) continue; const d=dist2D(p.pos,q.pos); if(d<bd){bd=d;best=q;} }
+  for(const q of players){ if(q.team===p.team||q.parked) continue; const d=dist2D(p.pos,q.pos); if(d<bd){bd=d;best=q;} }
   return {p:best,d:bd};
 }
 function nearestTeammate(p, forward){
   let best=null,bd=1e9; const f=forwardVec(p.facing);
   for(const q of players){
-    if(q===p||q.team!==p.team) continue;
+    if(q===p||q.team!==p.team||q.parked) continue;
     const d=dist2D(p.pos,q.pos);
     let score=d;
     if(forward){ const dx=q.pos.x-p.pos.x, dz=q.pos.z-p.pos.z; const dot=(dx*f.x+dz*f.z); score = d - dot*0.6; }
@@ -660,6 +662,8 @@ function onDunkRelease(){
 
 function tryUserActions(){
   const p = userPlayer;
+  // playground: B drops a fresh ball straight into your hands, wherever you are
+  if(pressedThisFrame['b'] && G.mode==='playground'){ spawnPlaygroundBall(); }
   const hasBall = B.holder===p;
   const hoop = attackHoop(p.team);
   const dHoop = dist2D(p.pos, hoop);
@@ -1459,15 +1463,19 @@ function updateBall(dt){
       if(Math.abs(B.vel.y)<0.6) B.vel.y=0;
     }
     checkPickup();
-    // out of bounds -> turnover
+    // out of bounds -> turnover (or just a fresh ball in the playground)
     if(Math.abs(B.pos.x)>HALF_LEN-0.1 || Math.abs(B.pos.z)>HALF_W-0.1){
-      resetFormation(B.lastTeam^1);
+      if(G.mode==='playground') spawnPlaygroundBall();
+      else resetFormation(B.lastTeam^1);
     }
   }
   else if(B.state==='made'){
     integrateBall(dt,1);
     B.madeTimer-=dt;
-    if(B.madeTimer<=0){ resetFormation(B.shot.team^1); }
+    if(B.madeTimer<=0){
+      if(G.mode==='playground') spawnPlaygroundBall();
+      else resetFormation(B.shot.team^1);
+    }
   }
 
   ball.position.copy(B.pos);
@@ -1524,6 +1532,7 @@ function checkPickup(){
   if(B.pos.y>1.7) return;
   let near=null,nd=PICKUP_R;
   for(const p of players){
+    if(p.parked) continue;       // playground: benched players can't grab it
     if(p.y>0.2) continue;        // must be grounded-ish (or just landed)
     const d=dist2D(p.pos,B.pos);
     if(d<nd){ nd=d; near=p; }
@@ -1582,7 +1591,7 @@ function showFeedbackIf(cond,text,color){ if(cond) showFeedback(text,color); }
 
 function updateHUD(dt){
   const m=Math.floor(G.clock/60), s=Math.floor(G.clock%60);
-  clockEl.textContent=`${m}:${s<10?'0':''}${s}`;
+  clockEl.textContent = (G.mode==='playground') ? '∞' : `${m}:${s<10?'0':''}${s}`;
   // stamina bar — greens up when fresh, reds out when gassed
   const sf = staminaFrac(userPlayer);
   staminaEl.style.display='block';
@@ -1590,10 +1599,15 @@ function updateHUD(dt){
   stamFill.style.background = sf>0.5 ? 'linear-gradient(90deg,#2fd968,#7fff4f)'
                           : sf>0.25 ? 'linear-gradient(90deg,#e8a93c,#ffe14f)'
                           :           'linear-gradient(90deg,#ff3b2e,#ff7a3c)';
-  shotClockEl.textContent=Math.ceil(G.shotClock);
-  possEl.innerHTML = G.possession===0
-    ? '<span style="color:#ff7a3c">● YOUR BALL</span>'
-    : '<span style="color:#4fb6ff">● CPU BALL</span>';
+  if(G.mode==='playground'){
+    shotClockEl.textContent='∞';
+    possEl.innerHTML = '<span style="color:#7fff4f">● PLAYGROUND — <b style="color:#ffe14f">B</b> = new ball</span>';
+  } else {
+    shotClockEl.textContent=Math.ceil(G.shotClock);
+    possEl.innerHTML = G.possession===0
+      ? '<span style="color:#ff7a3c">● YOUR BALL</span>'
+      : '<span style="color:#4fb6ff">● CPU BALL</span>';
+  }
   if(heatActive()){
     heatEl.style.display='block';
     heatEl.style.color='#ffd24f';
@@ -1643,17 +1657,19 @@ function loop(){
   requestAnimationFrame(loop);
   let dt=clock.getDelta(); dt=Math.min(dt,0.05);
   if(G.running){
-    // clocks
-    G.clock-=dt; if(G.clock<=0){ G.clock=0; endGame(); }
     if(heat.timer>0) heat.timer-=dt;   // HEAT CHECK buff countdown
-    if(['held','pass'].includes(B.state)){
-      G.shotClock-=dt;
-      if(G.shotClock<=0){ resetFormation(G.possession^1); }
+    // clocks & opponents only run in a real match — playground is a free-roam sandbox
+    if(G.mode!=='playground'){
+      G.clock-=dt; if(G.clock<=0){ G.clock=0; endGame(); }
+      if(['held','pass'].includes(B.state)){
+        G.shotClock-=dt;
+        if(G.shotClock<=0){ resetFormation(G.possession^1); }
+      }
     }
     tryUserActions();
     userMove(dt);
-    for(const p of players){ if(!p.isUser) aiThink(p,dt); }
-    for(const p of players){ updatePlayer(p,dt); }
+    for(const p of players){ if(!p.isUser && !p.parked) aiThink(p,dt); }
+    for(const p of players){ if(!p.parked) updatePlayer(p,dt); }
     updateBall(dt);
     updateCamera(dt);
     updateHUD(dt);
@@ -1665,10 +1681,41 @@ loop();
 
 // ============================================================ Game flow
 function startGame(){
-  G.running=true; G.score=[0,0]; G.clock=GAME_TIME; updateScoreboard();
+  G.running=true; G.mode='match'; G.score=[0,0]; G.clock=GAME_TIME; updateScoreboard();
   heat.streak=0; heat.timer=0;   // reset HEAT CHECK each match
+  for(const p of players){ p.parked=false; p.mesh.visible=true; }   // everyone back on the floor
   resetFormation(0);
   // place camera behind player, looking down-court toward the hoop they attack
+  camYaw=-Math.PI/2; camPitch=0.35;
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('endScreen').style.display='none';
+  renderer.domElement.requestPointerLock();
+}
+
+// drop a fresh ball into the user's hands (used all over the playground sandbox)
+function spawnPlaygroundBall(){
+  const u = userPlayer;
+  if(u.state==='aim'||u.state==='dunkaim'){ u.state='idle'; shotMeterEl.style.display='none'; }
+  giveBall(u);
+  B.pos.copy(holdPosFor(u)); B.pos.y=0.7; B.vel.set(0,0,0);
+  showFeedback('NEW BALL', '#7fff4f');
+}
+
+// Playground: solo sandbox — no opponents, no clock. Shoot, dunk, work on moves; B = new ball.
+function startPlayground(){
+  G.running=true; G.mode='playground'; G.score=[0,0]; updateScoreboard();
+  heat.streak=0; heat.timer=0;
+  // bench & hide everyone but you
+  for(const p of players){
+    if(p.isUser){ p.parked=false; p.mesh.visible=true; }
+    else        { p.parked=true;  p.mesh.visible=false; }
+  }
+  const u = userPlayer;
+  u.pos.set(6,0,0); u.vel.set(0,0,0); u.y=0; u.vy=0; u.stamina=STAMINA_MAX;
+  u.crossT=0; u.hesiT=0; u.frozenT=0; u.fallenT=0; u.balance=0; u.comboWindow=0; u.comboCount=0;
+  u.state='idle'; u.stance=false; u.mesh.rotation.x=0;
+  u.facing = Math.atan2(attackHoop(0).x-u.pos.x, attackHoop(0).z-u.pos.z);   // square up to the rim
+  spawnPlaygroundBall();
   camYaw=-Math.PI/2; camPitch=0.35;
   document.getElementById('startScreen').style.display='none';
   document.getElementById('endScreen').style.display='none';
@@ -1735,6 +1782,7 @@ document.querySelectorAll('#abilityGrid .ability-card').forEach(card=>{
 });
 
 document.getElementById('startBtn').onclick=showAbilityScreen;
+document.getElementById('playgroundBtn').onclick=startPlayground;
 document.getElementById('confirmAbilityBtn').onclick=()=>{ document.getElementById('abilityScreen').style.display='none'; startGame(); };
 document.getElementById('backBtn').onclick=showStartScreen;
 document.getElementById('rematchBtn').onclick=startGame;
