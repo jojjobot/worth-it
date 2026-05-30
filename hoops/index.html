@@ -44,6 +44,20 @@
     position:absolute; left:-3px; width:calc(100% + 6px); height:3px; bottom:0;
     background:#fff; border-radius:2px; display:none; transition:opacity .15s;
   }
+  /* stamina bar */
+  #stamina {
+    position:fixed; left:24px; bottom:24px; width:210px; height:18px;
+    background:rgba(8,12,20,.7); border:2px solid #44506e; border-radius:10px;
+    z-index:10; overflow:hidden; display:none;
+  }
+  #stamina .sfill {
+    position:absolute; left:0; top:0; height:100%; width:100%;
+    background:linear-gradient(90deg,#2fd968,#7fff4f); transition:width .08s linear;
+  }
+  #stamina .slabel {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:800; letter-spacing:2px; color:#0c0f16;
+  }
   #feedback {
     position:fixed; left:50%; top:42%; transform:translateX(-50%);
     font-size:42px; font-weight:800; letter-spacing:2px; z-index:11;
@@ -130,6 +144,7 @@
 <div id="heat"></div>
 
 <div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div><div class="marker" id="meterMark"></div></div>
+<div id="stamina"><div class="sfill" id="stamFill"></div><div class="slabel">STAMINA</div></div>
 <div id="feedback"></div>
 <div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>C</b> crossover &nbsp; <b>V</b> hesi &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> lockdown D</div>
 
@@ -148,6 +163,7 @@
     <span class="k">C + V combo</span><span class="d">Chain moves fast with sharp direction changes & good timing to <b>break ankles</b> — your man hits the floor</span>
     <span class="k">Space (no ball)</span><span class="d">Jump to block / rebound</span>
     <span class="k">Right Mouse (hold)</span><span class="d">Defensive stance — wall up your man, slow their drive & shrink their shot window</span>
+    <span class="k">Stamina</span><span class="d">Sprinting, stance D & dribble moves (crossover costs a TON) drain it — gassed = slower, smaller green, easier to strip. It refills on every dead ball.</span>
   </div>
   <div class="menu">
     <button id="startBtn">PLAY</button>
@@ -206,6 +222,15 @@ const COMBO_WINDOW = 1.2;      // seconds to chain into the next move before the
 const BALANCE_DECAY = 0.85;    // how fast a defender recovers his balance, per second
 const ANKLE_THRESH = 1.15;     // accumulated imbalance that drops a defender to the floor
 const GAME_TIME = 180, SHOT_CLOCK = 24;
+// ---- stamina: a spendable gas tank. Exertion burns it, resting refills it. ----
+const STAMINA_MAX     = 100;
+const STAM_SPRINT     = 16;   // /s while sprinting (moving faster than a jog)
+const STAM_STANCE     = 7;    // /s holding a defensive stance
+const STAM_STANCE_TIGHT = 9;  // extra /s when chest-to-chest on the ball handler
+const STAM_REGEN      = 14;   // /s recovering while standing / jogging easy
+const STAM_REGEN_MOVE = 6;    // slower regen while still moving around
+const STAM_CROSS      = 32;   // crossover — brutal cost; it's the most broken move
+const STAM_HESI       = 14;   // hesi cost
 
 // hoops: team 0 (YOU) attacks +X, team 1 (CPU) attacks -X
 const HOOPS = [ new THREE.Vector3( RIM_X, RIM_Y, 0), new THREE.Vector3(-RIM_X, RIM_Y, 0) ];
@@ -401,6 +426,7 @@ function makePlayer(team, isUser){
     hesiT:0, hesiDir:new THREE.Vector3(),
     comboCount:0, comboWindow:0, lastMoveDir:new THREE.Vector3(),   // handler's move-combo state
     balance:0, fallenT:0,                                           // defender imbalance / ankle-broken timer
+    stamina:STAMINA_MAX,                                            // gas tank (0..STAMINA_MAX)
   };
 }
 
@@ -454,6 +480,7 @@ function segPointDist(a,b,p){
   return Math.hypot(p.x-(a.x+abx*t), p.y-(a.y+aby*t), p.z-(a.z+abz*t));
 }
 function clamp(v,a,b){ return v<a?a:v>b?b:v; }
+function staminaFrac(p){ return clamp(p.stamina/STAMINA_MAX, 0, 1); }   // 1 = fresh, 0 = gassed
 function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2))-Math.PI; return a+d*t; }
 function forwardVec(yaw){ return new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)); }
 
@@ -525,6 +552,8 @@ function shotWindowHalf(p){
   // shots that normally floor to ~0 green become legitimately makeable. Applied before contest, so
   // a defender's hand still squeezes it.
   if(p===userPlayer && heatActive()) half = half*1.5 + 0.06;
+  // fatigue: tired legs = a smaller, harder window (full stamina ×1 → gassed ×0.45)
+  half *= 0.45 + 0.55*staminaFrac(p);
   // a defender's contest squeezes the green — a clean, fully-extended point-blank contest can ERASE it
   half *= clamp(1 - contestLevel(p)*0.9, 0, 1);
   return Math.max(0, half);                       // floor of 0: extreme range / smothered = no auto-make green at all
@@ -548,7 +577,7 @@ function resetFormation(offTeam){
   def[0].pos.set(-d*3, 0, 0);
   def[1].pos.set( d*1, 0, 4);
   def[2].pos.set( d*1, 0,-4);
-  for(const p of players){ p.vel.set(0,0,0); p.y=0; p.vy=0; p.state='idle'; p.stance=false; p.crossT=0; p.hesiT=0; p.frozenT=0; p.fallenT=0; p.balance=0; p.comboWindow=0; p.comboCount=0; p.mesh.rotation.x=0; p.facing = (attackHoop(p.team).x>p.pos.x)?0:Math.PI; }
+  for(const p of players){ p.vel.set(0,0,0); p.y=0; p.vy=0; p.state='idle'; p.stance=false; p.crossT=0; p.hesiT=0; p.frozenT=0; p.fallenT=0; p.balance=0; p.comboWindow=0; p.comboCount=0; p.stamina=STAMINA_MAX; p.mesh.rotation.x=0; p.facing = (attackHoop(p.team).x>p.pos.x)?0:Math.PI; }
   // user always handles the ball when team 0 has it; else CPU PG
   const handler = offTeam===0 ? userPlayer : off[0];
   // if user is on offense but listed elsewhere, still give to user
@@ -639,7 +668,8 @@ function tryUserActions(){
     // C -> crossover dribble to blow past your man (not while shooting)
     if(pressedThisFrame['c'] && p.cool.cross<=0 && p.crossT<=0 && p.hesiT<=0 &&
        p.state!=='aim' && p.state!=='shoot' && p.state!=='dunk'){
-      startCrossover(p);
+      if(p.stamina >= STAM_CROSS*0.5) startCrossover(p);
+      else showFeedback('GASSED — NO LEGS', '#ff5b2e');   // too tired to explode into a cross
     }
     // V -> hesi: small fake-and-go to shake your man (less explosive than a crossover)
     if(pressedThisFrame['v'] && p.cool.hesi<=0 && p.crossT<=0 && p.hesiT<=0 &&
@@ -793,7 +823,9 @@ function stealChance(def, h){
   const speedProtect = clamp(Math.hypot(h.vel.x,h.vel.z)/SPRINT, 0, 1) * 0.5;
   // 5) posture — squared up in a stance you reach cleaner than back-pedalling
   const ready = def.stance ? 1.0 : 0.7;
-  return clamp(0.95 * prox * expo * angle * (1-speedProtect) * ready, 0, 0.9);
+  // 6) the handler's gas tank — a gassed ball-handler loses the rock far more easily (up to +70%)
+  const tired = 1 + (1 - staminaFrac(h))*0.7;
+  return clamp(0.95 * prox * expo * angle * (1-speedProtect) * ready * tired, 0, 0.95);
 }
 
 function attemptSteal(p){
@@ -840,6 +872,7 @@ function startCrossover(p){
   p.crossDir.copy(dir);
   p.crossT = CROSS_DUR;
   p.cool.cross = 0.7;
+  p.stamina = Math.max(0, p.stamina - STAM_CROSS);   // the big tax — crossover empties the tank fast
   p.state = 'cross';
   applyMove(p, p.crossDir, 0.34, 'CROSSOVER');
 }
@@ -852,6 +885,7 @@ function startHesi(p){
   p.hesiDir.copy(dir);
   p.hesiT = HESI_DUR;
   p.cool.hesi = 0.5;
+  p.stamina = Math.max(0, p.stamina - STAM_HESI);
   p.state = 'hesi';
   applyMove(p, p.hesiDir, 0.26, 'HESI');
 }
@@ -1029,7 +1063,7 @@ function aiThink(p, dt){
 function setMove(p, dir, speedScale, dt){
   if(dir.lengthSq()<1e-5){ p.vel.x*=0.6; p.vel.z*=0.6; return; }
   dir.normalize();
-  const sp = RUN*speedScale;
+  const sp = RUN*speedScale*(0.7 + 0.3*staminaFrac(p));   // tired legs run slower
   p.vel.x = dir.x*sp; p.vel.z = dir.z*sp;
 }
 function faceDir(p, dir, dt){
@@ -1105,6 +1139,7 @@ function userMove(dt){
   let speedMul = keys['Shift'] ? SPRINT : RUN;
   if(p.state==='aim' || p.state==='dunkaim') speedMul = RUN*0.35;
   if(p.stance)        speedMul = RUN*0.55;   // defensive slide is slower than a sprint
+  speedMul *= 0.7 + 0.3*staminaFrac(p);      // tired legs run slower
 
   if(dir.lengthSq()>1e-4){
     dir.normalize();
@@ -1161,6 +1196,22 @@ function updatePlayer(p, dt){
   // combo window expires; a shaken defender steadily regains his balance
   if(p.comboWindow>0) p.comboWindow -= dt;
   if(p.balance>0)     p.balance = Math.max(0, p.balance - BALANCE_DECAY*dt);
+
+  // ---- stamina: sprinting & defending burn it, everything else lets it recover ----
+  {
+    const sp = Math.hypot(p.vel.x, p.vel.z);
+    let drain = 0;
+    // sprinting (faster than a jog) — the scripted cross/hesi bursts already bill up front, so skip them
+    if(p.state!=='cross' && p.state!=='hesi' && sp > RUN+0.6) drain += STAM_SPRINT;
+    // working in a defensive stance, worse when you're glued to the ball handler
+    if(p.stance){
+      drain += STAM_STANCE;
+      const opp = nearestOpponent(p);
+      if(opp.p && opp.d < 1.5) drain += STAM_STANCE_TIGHT;
+    }
+    if(drain>0) p.stamina = Math.max(0, p.stamina - drain*dt);
+    else        p.stamina = Math.min(STAMINA_MAX, p.stamina + (sp>0.5?STAM_REGEN_MOVE:STAM_REGEN)*dt);
+  }
 
   // state timing
   p.stateT += dt;
@@ -1506,6 +1557,8 @@ const shotMeterEl=document.getElementById('shotmeter');
 const meterFill=document.getElementById('meterFill');
 const meterGreen=document.getElementById('meterGreen');
 const meterMark=document.getElementById('meterMark');
+const staminaEl=document.getElementById('stamina');
+const stamFill=document.getElementById('stamFill');
 const feedbackEl=document.getElementById('feedback');
 let feedbackT=0;
 // post-release readout: freeze the meter for a beat showing where you let go vs the green window
@@ -1530,6 +1583,13 @@ function showFeedbackIf(cond,text,color){ if(cond) showFeedback(text,color); }
 function updateHUD(dt){
   const m=Math.floor(G.clock/60), s=Math.floor(G.clock%60);
   clockEl.textContent=`${m}:${s<10?'0':''}${s}`;
+  // stamina bar — greens up when fresh, reds out when gassed
+  const sf = staminaFrac(userPlayer);
+  staminaEl.style.display='block';
+  stamFill.style.width=(sf*100)+'%';
+  stamFill.style.background = sf>0.5 ? 'linear-gradient(90deg,#2fd968,#7fff4f)'
+                          : sf>0.25 ? 'linear-gradient(90deg,#e8a93c,#ffe14f)'
+                          :           'linear-gradient(90deg,#ff3b2e,#ff7a3c)';
   shotClockEl.textContent=Math.ceil(G.shotClock);
   possEl.innerHTML = G.possession===0
     ? '<span style="color:#ff7a3c">● YOUR BALL</span>'
