@@ -433,6 +433,7 @@ const B = {
   shot:null,       // {team, points, make, blocked}
   madeTimer:0, dribblePhase:0, passTo:null, passTime:0,
   dribbleHand:1, dribbleSwitchT:1.0, dribbleCrossT:0,   // +1 right / -1 left; timers for hand-switching & the cross-body travel
+  exposure:0.2,                                          // 0..1 how stealable the rock is RIGHT NOW (set live while dribbling)
 };
 
 // ============================================================ Game state
@@ -768,20 +769,53 @@ function startDunk(p, timed){
   B.holder = p; B.state='dunk_hold';
 }
 
+// How likely a reach-in actually rips the ball, 0..1. A real strip needs the rock EXPOSED at the
+// instant you poke — mid-crossover, at the bottom of the bounce, or on the dribble hand nearest you —
+// AND you have to be right on him, in front, while he isn't shielding it or pushing it away at speed.
+// Shared by the user and the AI so both steal (and get stripped) under the exact same rules.
+function stealChance(def, h){
+  const d = dist2D(def.pos, h.pos);
+  if(d >= STEAL_R) return 0;
+  // 1) proximity — only a true reach connects; curved so it bites in the last half-metre
+  const prox = Math.pow(1 - d/STEAL_R, 1.3);
+  // 2) exposure — is the rock grabbable this instant, and is it on THIS defender's side of the body?
+  const f = forwardVec(h.facing);
+  const rgt = new THREE.Vector3(f.z, 0, -f.x);
+  const sideOfDef = (def.pos.x-h.pos.x)*rgt.x + (def.pos.z-h.pos.z)*rgt.z;   // + = on the handler's right
+  const onBallSide = Math.sign(sideOfDef||1) === Math.sign(B.dribbleHand||1);
+  let expo = (typeof B.exposure==='number') ? B.exposure : 0.3;
+  expo *= onBallSide ? 1.0 : 0.4;          // reaching across to the shielded hand is a long shot
+  // 3) angle — has to be a front/side poke; you can't strip a man from behind his back
+  const toDef = new THREE.Vector3(def.pos.x-h.pos.x, 0, def.pos.z-h.pos.z);
+  const front = (toDef.x*f.x + toDef.z*f.z) / (toDef.length()||1);          // 1 in front, -1 behind him
+  const angle = clamp((front+0.4)/1.4, 0.12, 1);
+  // 4) speed — a handler pushing it hard shields with his body & momentum
+  const speedProtect = clamp(Math.hypot(h.vel.x,h.vel.z)/SPRINT, 0, 1) * 0.5;
+  // 5) posture — squared up in a stance you reach cleaner than back-pedalling
+  const ready = def.stance ? 1.0 : 0.7;
+  return clamp(0.95 * prox * expo * angle * (1-speedProtect) * ready, 0, 0.9);
+}
+
 function attemptSteal(p){
   const h = B.holder;
   if(!h || h.team===p.team) return;
-  p.cool.steal = 0.7;
   if(p.y<=0){ p.state='steal'; p.stateT=0; }   // visible reach-in (whiff or not)
   p.facing = Math.atan2(h.pos.x-p.pos.x, h.pos.z-p.pos.z);
-  if(dist2D(p.pos,h.pos) < STEAL_R){
-    if(Math.random() < 0.35){
-      // success -> loose ball toward stealer
-      B.state='loose'; B.holder=null;
-      B.vel.set((p.pos.x-h.pos.x)*1.5,1.5,(p.pos.z-h.pos.z)*1.5);
-      B.lastTeam = p.team;
-      showFeedback('STEAL!', '#4fff9c');
-    }
+  if(Math.random() < stealChance(p, h)){
+    // clean strip -> ball pops loose toward the stealer, short recovery
+    p.cool.steal = 0.6;
+    B.state='loose'; B.holder=null;
+    B.vel.set((p.pos.x-h.pos.x)*1.6, 1.6, (p.pos.z-h.pos.z)*1.6);
+    B.lastTeam = p.team;
+    showFeedbackIf(p.isUser, 'STEAL!',    '#4fff9c');
+    showFeedbackIf(h.isUser, 'STRIPPED!', '#ff5b2e');
+  } else {
+    // whiff -> you lunged in and got caught leaning; long recovery so reaches are never free
+    p.cool.steal = 1.1;
+    p.frozenT = Math.max(p.frozenT, 0.4);
+    p.frozenDir.set(h.pos.x-p.pos.x, 0, h.pos.z-p.pos.z);
+    if(p.frozenDir.lengthSq()>1e-6) p.frozenDir.normalize();
+    showFeedbackIf(p.isUser, 'REACH…', '#ff7a3c');
   }
 }
 
@@ -983,7 +1017,7 @@ function aiThink(p, dt){
     p.stance = (onBall && md<2.8);
     // contest / steal / block
     if(onBall){
-      if(md<STEAL_R && p.cool.steal<=0 && Math.random()<0.02) attemptSteal(p);
+      if(md<STEAL_R && p.cool.steal<=0 && stealChance(p,man)>0.25 && Math.random()<0.08) attemptSteal(p);
       // jump to contest during the wind-up (aim), not just after the ball's gone
       if((man.state==='aim'||man.state==='shoot') && md<2.4 && p.y<=0 && p.cool.jump<=0 && Math.random()<0.5){
         p.vy=5.0; p.state='jump'; p.cool.jump=0.8;
@@ -1017,6 +1051,20 @@ function camMoveDir(){
 function userMove(dt){
   const p = userPlayer;
   const hasBall = (B.holder===p);
+
+  // ankle-broken: sprawled, no control until you scramble back up (same rule the AI plays by)
+  if(p.fallenT>0){
+    p.fallenT -= dt; p.vel.set(0,0,0);
+    if(p.fallenT>0){ p.state='fallen'; return; }
+    p.state='idle';
+  }
+  // off-balance after a whiffed reach-in (or a move that shook you): stagger, no real control for a beat
+  if(p.frozenT>0){
+    p.frozenT -= dt;
+    p.vel.x = p.frozenDir.x*RUN*0.5; p.vel.z = p.frozenDir.z*RUN*0.5;
+    faceDir(p, p.frozenDir, dt*3);
+    if(p.frozenT>0) return;
+  }
 
   // crossover burst — a committed move that overrides normal input briefly
   if(p.crossT>0){
@@ -1229,9 +1277,13 @@ function animatePlayer(p, speed, dt){
     case 'fallen': {                       // sprawled on the floor, arms & legs splayed
       lLx=-0.8; rLx=-0.5; lAx=-0.2; rAx=-0.45; lAz=-0.8; rAz=0.8; lean=-0.5;
     } break;
-    case 'steal': {                        // quick lunging reach-in swipe
-      const sw=Math.sin(p.stateT*22)*0.35;
-      rAx=-1.2+sw; rAz=0.25; lAx=-0.3; lean=0.3; lLx=0.3;
+    case 'steal': {                        // lunging reach-in: the hand nearest the ball stabs down at it
+      const t=clamp(p.stateT/0.35,0,1), sw=Math.sin(t*Math.PI);    // extend, then retract
+      const f=forwardVec(p.facing), rgt=new THREE.Vector3(f.z,0,-f.x);
+      const bside=(B.pos.x-p.pos.x)*rgt.x+(B.pos.z-p.pos.z)*rgt.z; // + = ball on his right
+      lean=0.2+sw*0.2; lLx=0.32; rLx=0.08;
+      if(bside>=0){ rAx=-0.5-sw*1.6; rAz=0.18+sw*0.5; lAx=-0.25; lAz=-0.3; }   // stab with the right
+      else        { lAx=-0.5-sw*1.6; lAz=-0.18-sw*0.5; rAx=-0.25; rAz=0.3; }   // stab with the left
     } break;
     default: {                             // idle: gentle breathing + a slow weight shift, desynced per player
       const b=p.animPhase+p.animSeed;
@@ -1243,8 +1295,10 @@ function animatePlayer(p, speed, dt){
   // whoever is handling the ball pounds it with the live hand & guards with the off hand (so you can read who has it)
   if(B.holder===p && (p.state==='idle'||p.state==='run')){
     const bob = -0.5 - Math.abs(Math.sin(B.dribblePhase))*0.7;
-    if((B.dribbleHand||1) > 0){ rAx=bob; rAz=0.16; lAx=-0.28; lAz=-0.5; }   // right hand dribbles, left arm out to shield
-    else                      { lAx=bob; lAz=-0.16; rAx=-0.28; rAz=0.5; }   // left hand dribbles, right arm shields
+    const opp = nearestOpponent(p);
+    const shield = (opp.p && opp.d<2.2) ? clamp(1-opp.d/2.2,0,1) : 0;   // arm-bar out harder the closer the D gets
+    if((B.dribbleHand||1) > 0){ rAx=bob; rAz=0.16; lAx=-0.28-shield*0.55; lAz=-0.5-shield*0.5; }   // right dribbles, left arm shields
+    else                      { lAx=bob; lAz=-0.16; rAx=-0.28-shield*0.55; rAz=0.5+shield*0.5; }    // left dribbles, right arm shields
   }
   const k = 1-Math.pow(0.001,dt);
   P.lLeg.rotation.x=L(P.lLeg.rotation.x,lLx,k); P.lLeg.rotation.z=L(P.lLeg.rotation.z,lLz,k);
@@ -1260,7 +1314,9 @@ function updateBall(dt){
     const p=B.holder;
     if(p.state==='aim'||p.state==='shoot'||p.state==='dunk_hold'){
       const h=handPosFor(p); B.pos.lerp(h, 1-Math.pow(0.0001,dt));
+      B.exposure = 0.12;                              // up by the head on a gather — strip it with a block, not a poke
     } else if(p.state==='cross'){
+      B.exposure = 0.5;                               // out front on the committed cross (but your man's usually beat)
       // low, quick side-to-side sweep in front of the handler
       const ph = 1-(p.crossT/CROSS_DUR);
       const sweep = Math.sin(ph*Math.PI*2);
@@ -1306,6 +1362,10 @@ function updateBall(dt){
       const tight = crossing || (opp.p && opp.d < 1.7);
       const amp = tight ? 0.40 : 0.54;
       B.pos.y = 0.13 + Math.abs(Math.sin(B.dribblePhase))*amp;
+      // how exposed the rock is to a poke this instant: wide open mid-crossover, most grabbable at the
+      // bottom of the bounce, hard to get a hand on when it's palmed up high in a tight handle.
+      const bounceLow = 1 - Math.abs(Math.sin(B.dribblePhase));   // 1 at the floor, 0 up in the hand
+      B.exposure = clamp(crossing ? 0.9 : 0.22 + bounceLow*0.33, 0, 1);
     }
   }
   else if(B.state==='dunk_hold'){
