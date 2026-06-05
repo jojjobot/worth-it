@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NBA Era Translator</title>
+<style>
+  :root {
+    --bg: #0b0f1a;
+    --bg2: #131a2b;
+    --card: #1a2238;
+    --card2: #212c47;
+    --line: #2c3a5e;
+    --text: #eaf0ff;
+    --muted: #9aa9c9;
+    --accent: #ff5e3a;      /* hardwood-ember orange */
+    --accent2: #ffb648;     /* amber */
+    --good: #46d3a0;
+    --bad: #ff6b81;
+    --shadow: 0 18px 50px rgba(0,0,0,.45);
+    --radius: 18px;
+  }
+  html[data-theme="light"] {
+    --bg: #f4f1ea;
+    --bg2: #ece7db;
+    --card: #ffffff;
+    --card2: #f7f4ed;
+    --line: #e0d8c7;
+    --text: #1d2230;
+    --muted: #6a7488;
+    --accent: #d4502a;
+    --accent2: #c98a21;
+    --good: #1f9e72;
+    --bad: #d23a52;
+    --shadow: 0 14px 40px rgba(60,50,30,.18);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(255,94,58,.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(255,182,72,.12), transparent 55%),
+      linear-gradient(160deg, var(--bg), var(--bg2));
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 18px 60px; }
+
+  header.top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .ball {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #ff8a5c, var(--accent) 60%, #b83d1e);
+    position: relative; box-shadow: 0 6px 16px rgba(255,94,58,.4); flex: 0 0 auto;
+  }
+  .ball::before, .ball::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid rgba(0,0,0,.35);
+  }
+  .ball::before { clip-path: inset(0 49% 0 49%); }
+  .ball::after { clip-path: inset(49% 0 49% 0); }
+  h1 { font-size: 1.5rem; margin: 0; letter-spacing: .2px; }
+  h1 small { display: block; font-size: .72rem; color: var(--muted); font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .theme-btn {
+    background: var(--card); color: var(--text); border: 1px solid var(--line);
+    border-radius: 12px; padding: 9px 12px; cursor: pointer; font-size: .95rem;
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 22px; margin-bottom: 18px;
+  }
+
+  label { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], select {
+    width: 100%; padding: 13px 14px; font-size: 1rem;
+    background: var(--card2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 12px; outline: none;
+  }
+  input[type=text]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,94,58,.18); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+
+  .row-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+  button.action {
+    border: none; cursor: pointer; font-weight: 700; font-size: 1.02rem;
+    padding: 14px 20px; border-radius: 14px; color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 10px 24px rgba(255,94,58,.35); flex: 1 1 auto; min-width: 180px;
+    transition: transform .08s ease, filter .15s ease;
+  }
+  button.action:hover { filter: brightness(1.06); }
+  button.action:active { transform: translateY(1px); }
+  button.action:disabled { opacity: .6; cursor: not-allowed; filter: grayscale(.3); }
+
+  button.ghost {
+    background: var(--card2); color: var(--text); border: 1px solid var(--line);
+    cursor: pointer; padding: 14px 16px; border-radius: 14px; font-weight: 600;
+    flex: 0 0 auto;
+  }
+  button.ghost:hover { border-color: var(--accent2); }
+
+  .hint { font-size: .82rem; color: var(--muted); margin-top: 10px; }
+  .hint a { color: var(--accent2); }
+
+  details.key-box { margin-top: 6px; }
+  details.key-box summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
+  .key-row { display: flex; gap: 10px; margin-top: 10px; }
+  .key-row input { flex: 1; }
+  .key-row button { white-space: nowrap; }
+
+  /* loading */
+  .loading { text-align: center; padding: 40px 10px; }
+  .spinner {
+    width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 50%;
+    border: 4px solid var(--line); border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { color: var(--muted); margin: 0; }
+
+  /* results */
+  .result-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap; margin-bottom: 4px;
+  }
+  .matchup { font-size: 1.25rem; font-weight: 800; }
+  .matchup .era { color: var(--accent2); }
+  .arrow { color: var(--accent); margin: 0 8px; }
+
+  .section { padding: 16px 0; border-top: 1px solid var(--line); }
+  .section:first-of-type { border-top: none; }
+  .section h3 {
+    margin: 0 0 8px; font-size: .8rem; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--accent); display: flex; align-items: center; gap: 8px;
+  }
+  .section p { margin: 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+  .stat {
+    background: var(--card2); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px; text-align: center;
+  }
+  .stat .num { font-size: 1.7rem; font-weight: 800; color: var(--text); }
+  .stat .lbl { font-size: .72rem; color: var(--muted); letter-spacing: 1px; }
+
+  ul.clean { margin: 0; padding-left: 0; list-style: none; }
+  ul.clean li { padding: 6px 0 6px 26px; position: relative; }
+  ul.clean.good li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 800; }
+  ul.clean.bad li::before { content: "✕"; position: absolute; left: 0; color: var(--bad); font-weight: 800; }
+
+  .comp-card, .fact-card {
+    background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px;
+  }
+  .fact-card { border-left: 4px solid var(--accent2); }
+  .comp-card { border-left: 4px solid var(--accent); }
+
+  .error {
+    background: rgba(255,107,129,.12); border: 1px solid var(--bad);
+    color: var(--text); border-radius: 14px; padding: 14px 16px;
+  }
+
+  .footer-note { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 22px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    background: var(--accent); color: #fff; padding: 11px 18px; border-radius: 12px;
+    font-weight: 600; box-shadow: var(--shadow); opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 560px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    h1 { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="ball" aria-hidden="true"></div>
+      <h1>NBA Era Translator<small>How would they ball in another time?</small></h1>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Toggle theme">🌙</button>
+  </header>
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="field">
+      <label for="player">Player</label>
+      <input type="text" id="player" placeholder="e.g. Stephen Curry, Wilt Chamberlain, Allen Iverson…" autocomplete="off" />
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label for="fromEra">From Era</label>
+        <select id="fromEra"></select>
+      </div>
+      <div class="field">
+        <label for="toEra">To Era</label>
+        <select id="toEra"></select>
+      </div>
+    </div>
+
+    <div class="row-btns">
+      <button class="action" id="translateBtn">⛹️ Translate</button>
+      <button class="ghost" id="randomBtn" title="Surprise me">🎲 Random Matchup</button>
+    </div>
+
+    <details class="key-box" id="keyBox">
+      <summary>🔑 Anthropic API key settings</summary>
+      <div class="key-row">
+        <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" />
+        <button class="ghost" id="saveKeyBtn">Save</button>
+      </div>
+      <p class="hint">
+        Your key is stored only in this browser (localStorage) and sent directly to Anthropic from your machine.
+        Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
+      </p>
+    </details>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="output"></div>
+
+  <p class="footer-note">Opinionated takes generated by Claude. For fun, not front-office decisions. 🏀</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Config -------------------------------------------------------------
+  // The user asked for claude-sonnet-4-20250514. Swap to "claude-sonnet-4-6"
+  // for the current Sonnet, or "claude-opus-4-8" for the most capable model.
+  const MODEL = "claude-sonnet-4-20250514";
+  const API_URL = "https://api.anthropic.com/v1/messages";
+
+  const ERAS = [
+    { id: "1950s-60s", label: "1950s–60s — pre-shot-clock chaos, physical big men" },
+    { id: "1970s",     label: "1970s — ABA influence, playground era" },
+    { id: "1980s",     label: "1980s — hand-checking, slow pace, post dominance" },
+    { id: "1990s",     label: "1990s — physical defense, isolation, midrange" },
+    { id: "2000s",     label: "2000s — post-Shaq, pre-analytics" },
+    { id: "2010s",     label: "2010s — analytics revolution, stretch bigs emerge" },
+    { id: "2020s",     label: "2020s–present — pace & space, positionless" },
+  ];
+
+  const RANDOM_MATCHUPS = [
+    { player: "Stephen Curry",      from: "2010s",     to: "1980s" },
+    { player: "Wilt Chamberlain",   from: "1950s-60s", to: "2020s" },
+    { player: "Allen Iverson",      from: "2000s",     to: "2020s" },
+    { player: "Shaquille O'Neal",   from: "2000s",     to: "2020s" },
+    { player: "Larry Bird",         from: "1980s",     to: "2020s" },
+    { player: "Nikola Jokić",       from: "2020s",     to: "1990s" },
+    { player: "Dennis Rodman",      from: "1990s",     to: "2020s" },
+    { player: "Pete Maravich",      from: "1970s",     to: "2020s" },
+    { player: "Ben Wallace",        from: "2000s",     to: "1980s" },
+    { player: "Steve Nash",         from: "2000s",     to: "1990s" },
+    { player: "Giannis Antetokounmpo", from: "2020s",  to: "1990s" },
+    { player: "Reggie Miller",      from: "1990s",     to: "2020s" },
+    { player: "Bob Cousy",          from: "1950s-60s", to: "2020s" },
+    { player: "Russell Westbrook",  from: "2010s",     to: "1980s" },
+  ];
+
+  // ---- Elements -----------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const playerEl = $("player");
+  const fromEl = $("fromEra");
+  const toEl = $("toEra");
+  const translateBtn = $("translateBtn");
+  const randomBtn = $("randomBtn");
+  const apiKeyEl = $("apiKey");
+  const saveKeyBtn = $("saveKeyBtn");
+  const keyBox = $("keyBox");
+  const output = $("output");
+  const themeBtn = $("themeBtn");
+  const toastEl = $("toast");
+
+  // ---- Init ---------------------------------------------------------------
+  ERAS.forEach((e) => {
+    fromEl.add(new Option(e.label, e.id));
+    toEl.add(new Option(e.label, e.id));
+  });
+  fromEl.value = "2010s";
+  toEl.value = "1980s";
+
+  // theme
+  const savedTheme = localStorage.getItem("nbaet_theme") || "dark";
+  applyTheme(savedTheme);
+  themeBtn.onclick = () => {
+    const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+    applyTheme(next);
+    localStorage.setItem("nbaet_theme", next);
+  };
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    themeBtn.textContent = t === "light" ? "☀️" : "🌙";
+  }
+
+  // api key
+  const savedKey = localStorage.getItem("nbaet_key") || "";
+  if (savedKey) apiKeyEl.value = savedKey;
+  else keyBox.open = true;
+  saveKeyBtn.onclick = () => {
+    const k = apiKeyEl.value.trim();
+    localStorage.setItem("nbaet_key", k);
+    toast(k ? "API key saved" : "API key cleared");
+    if (k) keyBox.open = false;
+  };
+
+  // ---- Events -------------------------------------------------------------
+  translateBtn.onclick = translate;
+  playerEl.addEventListener("keydown", (e) => { if (e.key === "Enter") translate(); });
+  randomBtn.onclick = () => {
+    const m = RANDOM_MATCHUPS[Math.floor(Math.random() * RANDOM_MATCHUPS.length)];
+    playerEl.value = m.player;
+    fromEl.value = m.from;
+    toEl.value = m.to;
+    translate();
+  };
+
+  // ---- Core ---------------------------------------------------------------
+  async function translate() {
+    const player = playerEl.value.trim();
+    const fromEra = fromEl.value;
+    const toEra = toEl.value;
+    const key = (apiKeyEl.value || localStorage.getItem("nbaet_key") || "").trim();
+
+    if (!player) { showError("Enter a player name first."); playerEl.focus(); return; }
+    if (!key) {
+      keyBox.open = true; apiKeyEl.focus();
+      showError("Add your Anthropic API key to run a translation.");
+      return;
+    }
+    if (fromEra === toEra) {
+      showError("Pick two different eras — that's where the fun is.");
+      return;
+    }
+
+    setLoading(true, player, fromEra, toEra);
+
+    try {
+      const data = await callClaude(player, fromEra, toEra, key);
+      renderResult(player, fromEra, toEra, data);
+    } catch (err) {
+      showError(err.message || String(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function eraLabel(id) {
+    const e = ERAS.find((x) => x.id === id);
+    return e ? e.label.split(" — ")[0] : id;
+  }
+
+  async function callClaude(player, fromEra, toEra, key) {
+    const system =
+      "You are a sharp, opinionated NBA historian and film-study nerd — the kind of fan who " +
+      "argues about eras at the bar with receipts. You understand pace, rule changes (hand-checking, " +
+      "illegal defense, the shot clock, the addition of the three-point line and its rise), spacing, " +
+      "training/medicine, athleticism inflation, and positional evolution across every NBA era. " +
+      "When asked to translate a player across eras, you reason about how rules, pace, spacing, defensive " +
+      "schemes, and competition would reshape their game, role, and production. " +
+      "Be vivid, specific, and a little spicy — never a dry Wikipedia summary. " +
+      "Respond with ONE valid JSON object and nothing else (no markdown, no code fences, no preamble).";
+
+    const schema =
+      '{\n' +
+      '  "summary": "2-3 punchy sentences on how they\'d fit in the target era",\n' +
+      '  "role_change": "how their position/role would shift",\n' +
+      '  "stat_projection": { "ppg": number, "rpg": number, "apg": number, "reasoning": "1-2 sentences" },\n' +
+      '  "strengths_that_survive": ["skill 1", "skill 2", "skill 3"],\n' +
+      '  "weaknesses_exposed": ["weakness 1", "weakness 2"],\n' +
+      '  "player_comparison": "In that era, they\'d remind you of [player] because…",\n' +
+      '  "fun_fact": "one spicy, opinionated take"\n' +
+      '}';
+
+    const userMsg =
+      'Translate this player across NBA eras.\n\n' +
+      'Player: ' + player + '\n' +
+      'From era: ' + eraLabel(fromEra) + '\n' +
+      'To era: ' + eraLabel(toEra) + '\n\n' +
+      'Imagine ' + player + ' in their prime, dropped into the ' + eraLabel(toEra) + '. ' +
+      'How does their game, role, and production change? Keep the tone fun and opinionated.\n\n' +
+      'Return exactly this JSON shape (numbers are plain numbers, no quotes):\n' + schema;
+
+    let res;
+    try {
+      res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+          // Required to call the API directly from a browser:
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 1400,
+          system: [
+            { type: "text", text: system, cache_control: { type: "ephemeral" } },
+          ],
+          messages: [{ role: "user", content: userMsg }],
+        }),
+      });
+    } catch (netErr) {
+      throw new Error("Network error reaching Anthropic. Check your connection and try again.");
+    }
+
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const e = await res.json();
+        detail = e && e.error && e.error.message ? e.error.message : "";
+      } catch (_) {}
+      if (res.status === 401) throw new Error("Invalid API key (401). Double-check the key you saved.");
+      if (res.status === 429) throw new Error("Rate limited (429). Wait a moment and try again.");
+      if (res.status === 400) throw new Error("Bad request (400). " + (detail || "Try a different player/era."));
+      throw new Error("API error " + res.status + (detail ? ": " + detail : ""));
+    }
+
+    const json = await res.json();
+    const text = (json.content || [])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+
+    return parseLoose(text);
+  }
+
+  // Claude is asked for clean JSON, but be defensive about fences / stray text.
+  function parseLoose(text) {
+    if (!text) throw new Error("Empty response from the model.");
+    let t = text.trim();
+    // strip code fences if present
+    t = t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+    try {
+      return JSON.parse(t);
+    } catch (_) {
+      const start = t.indexOf("{");
+      const end = t.lastIndexOf("}");
+      if (start !== -1 && end !== -1 && end > start) {
+        try { return JSON.parse(t.slice(start, end + 1)); } catch (_) {}
+      }
+      throw new Error("Couldn't parse the model's response. Try again.");
+    }
+  }
+
+  // ---- Rendering ----------------------------------------------------------
+  function setLoading(on, player, fromEra, toEra) {
+    translateBtn.disabled = on;
+    randomBtn.disabled = on;
+    if (on) {
+      output.innerHTML =
+        '<div class="card loading">' +
+        '<div class="spinner"></div>' +
+        '<p>Beaming <strong>' + esc(player) + '</strong> from the ' + esc(eraLabel(fromEra)) +
+        ' to the ' + esc(eraLabel(toEra)) + '…</p></div>';
+    }
+  }
+
+  function showError(msg) {
+    output.innerHTML = '<div class="card"><div class="error">⚠️ ' + esc(msg) + '</div></div>';
+  }
+
+  function renderResult(player, fromEra, toEra, d) {
+    const sp = d.stat_projection || {};
+    const strengths = asArray(d.strengths_that_survive);
+    const weaknesses = asArray(d.weaknesses_exposed);
+
+    const statBlock =
+      (sp.ppg != null || sp.rpg != null || sp.apg != null)
+        ? '<div class="stats">' +
+            statCell(sp.ppg, "PPG") + statCell(sp.rpg, "RPG") + statCell(sp.apg, "APG") +
+          '</div>'
+        : "";
+
+    const html =
+      '<div class="card">' +
+        '<div class="result-head">' +
+          '<div class="matchup">' + esc(player) +
+            ' <span class="arrow">→</span> <span class="era">' + esc(eraLabel(toEra)) + '</span>' +
+          '</div>' +
+          '<button class="ghost" id="shareBtn">📋 Share</button>' +
+        '</div>' +
+        '<p class="hint" style="margin-top:0">From the ' + esc(eraLabel(fromEra)) + '</p>' +
+
+        section("Overview", '<p>' + esc(d.summary) + '</p>') +
+        section("New Role", '<p>' + esc(d.role_change) + '</p>') +
+        section("Projected Line",
+          statBlock + (sp.reasoning ? '<p class="hint" style="margin-top:0">' + esc(sp.reasoning) + '</p>' : "")) +
+        section("Strengths That Survive", list(strengths, "good")) +
+        section("Weaknesses Exposed", list(weaknesses, "bad")) +
+        section("Era Comp", '<div class="comp-card">' + esc(d.player_comparison) + '</div>') +
+        section("🌶️ Hot Take", '<div class="fact-card">' + esc(d.fun_fact) + '</div>') +
+      '</div>';
+
+    output.innerHTML = html;
+
+    const shareText = buildShareText(player, fromEra, toEra, d);
+    $("shareBtn").onclick = () => {
+      navigator.clipboard.writeText(shareText)
+        .then(() => toast("Copied to clipboard"))
+        .catch(() => toast("Couldn't copy"));
+    };
+  }
+
+  function section(title, body) {
+    return '<div class="section"><h3>' + title + '</h3>' + body + '</div>';
+  }
+  function statCell(v, label) {
+    const num = (v == null || v === "") ? "—" : v;
+    return '<div class="stat"><div class="num">' + esc(String(num)) + '</div><div class="lbl">' + label + '</div></div>';
+  }
+  function list(items, kind) {
+    if (!items.length) return '<p class="hint">—</p>';
+    return '<ul class="clean ' + kind + '">' + items.map((i) => '<li>' + esc(i) + '</li>').join("") + '</ul>';
+  }
+  function asArray(v) {
+    if (Array.isArray(v)) return v.filter(Boolean);
+    if (typeof v === "string" && v.trim()) return v.split(/\n|;|•/).map((s) => s.trim()).filter(Boolean);
+    return [];
+  }
+
+  function buildShareText(player, fromEra, toEra, d) {
+    const sp = d.stat_projection || {};
+    const line = [sp.ppg, sp.rpg, sp.apg].every((x) => x != null)
+      ? sp.ppg + " PPG / " + sp.rpg + " RPG / " + sp.apg + " APG"
+      : "";
+    return (
+      "🏀 NBA Era Translator\n" +
+      player + " → " + eraLabel(toEra) + "\n\n" +
+      d.summary + "\n" +
+      (line ? "\nProjected: " + line + "\n" : "") +
+      "\nComp: " + d.player_comparison + "\n" +
+      "\n🌶️ " + d.fun_fact
+    );
+  }
+
+  // ---- Utils --------------------------------------------------------------
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+  let toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+  }
+})();
+</script>
+</body>
+</html>
