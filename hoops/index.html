@@ -2103,6 +2103,67 @@ function buildBuilderCards(){
     };
   });
 }
+// ---- Signature looks: each legend gets a face + build that reads as the real player ----
+// Forward is local +Z (see forwardVec), so face features (beard/mustache) sit at +Z.
+// `build` scales each limb group [x,y,z]: slim Curry, broad LeBron, lanky long-armed Wemby.
+const LEGEND_DESIGN = {
+  curry:  { skin:0xc8966b, hair:'short', hairColor:0x2a1d12,                 // light skin, short dark hair, slim
+            build:{ torso:[0.90,1,0.92], arm:[0.85,1,0.85], leg:[0.92,1,0.92] } },
+  jordan: { skin:0x7a4a2c, hair:'bald', mustache:true,                       // bald dome + signature mustache
+            build:{ torso:[1.05,1,1.0], arm:[1.06,1,1.06], leg:[1.03,1,1.03] } },
+  lebron: { skin:0x5a3620, hair:'short', hairColor:0x140d08, beard:true,     // dark skin, beard, headband, broad
+            headband:true, headbandColor:0xf2f2f2,
+            build:{ torso:[1.20,1,1.12], arm:[1.22,1,1.18], leg:[1.12,1,1.10] } },
+  wemby:  { skin:0xab7a4e, hair:'short', hairColor:0x1c1109,                 // medium skin, short hair, very long thin limbs
+            build:{ torso:[0.84,1,0.90], arm:[0.70,1.20,0.70], leg:[0.82,1.05,0.82] } },
+};
+// strip any previously-applied look so re-picking a legend starts from the plain model
+function clearLegendLook(p){
+  (p.designParts||[]).forEach(m=>{ if(m.parent) m.parent.remove(m); m.geometry&&m.geometry.dispose(); m.material&&m.material.dispose(); });
+  p.designParts = [];
+  p.parts.head.material.color.setHex(0x9a6b46);
+  ['torso','lArm','rArm','lLeg','rLeg'].forEach(k=>p.parts[k].scale.set(1,1,1));
+}
+function applyLegendLook(p, key){
+  clearLegendLook(p);
+  const d = LEGEND_DESIGN[key]; if(!d) return;
+  const head = p.parts.head, R = 0.16;                 // head sphere radius (local space)
+  if(d.skin!=null) head.material.color.setHex(d.skin);
+  const add = m => { head.add(m); p.designParts.push(m); return m; };
+  // hair: top cap (or nothing for a bald dome)
+  if(d.hair==='short'){
+    const cap = new THREE.Mesh(
+      new THREE.SphereGeometry(R*1.05,16,12, 0,Math.PI*2, 0, Math.PI*0.60),
+      new THREE.MeshStandardMaterial({color:d.hairColor??0x1a130d, roughness:.95}));
+    cap.position.y = R*0.06; add(cap);
+  }
+  // headband around the forehead
+  if(d.headband){
+    const band = new THREE.Mesh(new THREE.TorusGeometry(R*0.95, R*0.15, 8, 24),
+      new THREE.MeshStandardMaterial({color:d.headbandColor??0xffffff, roughness:.7}));
+    band.rotation.x = Math.PI/2; band.position.y = R*0.45; add(band);
+  }
+  // beard across the lower jaw (front = +Z)
+  if(d.beard){
+    const beard = new THREE.Mesh(new THREE.SphereGeometry(R*0.82,12,10),
+      new THREE.MeshStandardMaterial({color:0x140d08, roughness:.98}));
+    beard.scale.set(1,0.85,0.62); beard.position.set(0,-R*0.34,R*0.30); add(beard);
+  }
+  // Jordan's mustache
+  if(d.mustache){
+    const m = new THREE.Mesh(new THREE.BoxGeometry(R*0.60,R*0.14,R*0.12),
+      new THREE.MeshStandardMaterial({color:0x140d08, roughness:.98}));
+    m.position.set(0,-R*0.20,R*0.92); add(m);
+  }
+  // build: thicken / thin / lengthen the limbs
+  if(d.build){
+    const set = (k,s)=>{ if(s) p.parts[k].scale.set(s[0],s[1],s[2]); };
+    set('torso',d.build.torso);
+    set('lArm',d.build.arm); set('rArm',d.build.arm);
+    set('lLeg',d.build.leg); set('rLeg',d.build.leg);
+  }
+}
+
 // copy the chosen legend's ratings into the live player object + label the scoreboard
 function applyLegend(L){
   Object.assign(userPlayer.stats, { shooting:L.shooting, dunking:L.dunking, athletics:L.athletics, defending:L.defending });
@@ -2111,6 +2172,7 @@ function applyLegend(L){
   // Group origin sits at the feet, so scaling Y just grows them upward; width tracks at half the rate.
   const h = L.height || 1, w = 1 + (h-1)*0.5;
   userPlayer.mesh.scale.set(w, h, w);
+  applyLegendLook(userPlayer, L.key);   // give the model the legend's signature face + build
 }
 function showBuilder(next){
   builderNext = next;
