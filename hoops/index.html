@@ -451,6 +451,41 @@ function makeHoop(sign){
 }
 makeHoop(1); makeHoop(-1);
 
+// ============================================================ Player ratings ("the builder")
+// Every player carries a 1–99 rating in four categories that hook straight into the live mechanics.
+// 80 is the "average pro" anchor — every multiplier below sits at ≈1.0 there, so a generic CPU
+// (DEFAULT_STATS) plays like the pre-stats game and a legend's numbers read as better/worse than that.
+// Declared up here (before makePlayer runs) so the players can be built with stats. All tunable.
+const DEFAULT_STATS = { shooting:80, dunking:80, athletics:80, defending:80 };
+const LEGENDS = [
+  { key:'curry',  short:'CURRY',  name:'STEPHEN CURRY',     shooting:99, dunking:60, athletics:82, defending:74,
+    blurb:'Greatest shooter alive — huge green from deep, but he can\'t throw down.' },
+  { key:'jordan', short:'JORDAN', name:'MICHAEL JORDAN',    shooting:88, dunking:97, athletics:95, defending:95,
+    blurb:'The GOAT — elite at everything: posterizes and locks you down.' },
+  { key:'lebron', short:'LEBRON', name:'LEBRON JAMES',      shooting:85, dunking:93, athletics:96, defending:88,
+    blurb:'Freight train — top athleticism, a monster finisher at the rim.' },
+  { key:'wemby',  short:'WEMBY',  name:'VICTOR WEMBANYAMA', shooting:84, dunking:91, athletics:84, defending:97,
+    blurb:'Rim eraser — blocks everything; gas tank runs out a touch sooner.' },
+];
+const stat01 = v => clamp(v/99, 0, 1);   // rating → 0..1 skill  (clamp is a hoisted fn decl below)
+// --- per-stat multipliers, each ≈1.0 at an 80 rating so the 80-stat CPU keeps the old feel ---
+// SHOOTING: a wider green window + holding more of it through a closeout
+const shootWinMult  = p => clamp(0.50 + (p.stats.shooting-50)/60, 0.45, 1.55);  // 99→1.32×, 80→1.0, 60→0.67
+const shootContestK = p => 0.90 * (1.18 - 0.42*stat01(p.stats.shooting));        // green lost per unit of contest
+// DUNKING: a wider dunk-takeoff window + finishing through rim contests
+const dunkWinMult   = p => clamp(0.45 + (p.stats.dunking-50)/55, 0.45, 1.5);    // 97→1.30×, 80→1.0, 60→0.63
+const dunkFinishK   = p => 1.25 - 0.55*stat01(p.stats.dunking);                 // ×block chance at the rim (lower = finishes more)
+// ATHLETICS: speed, vertical reach, and stamina economy
+const speedMult        = p => 0.80 + 0.25*stat01(p.stats.athletics);            // 96→1.04, 80→1.0, 50→0.93
+const jumpMult         = p => 0.72 + 0.35*stat01(p.stats.athletics);            // 96→1.06, 80→1.0, 50→0.90
+const staminaDrainMult = p => 1.404 - 0.50*stat01(p.stats.athletics);           // 96→0.92 (slower), 80→1.0
+const staminaRegenMult = p => 0.596 + 0.50*stat01(p.stats.athletics);           // 96→1.08 (faster), 80→1.0
+// DEFENDING: tougher contests, harder swats, quicker hands, faster closeouts
+const defContestMult = d => 0.677 + 0.40*stat01(d.stats.defending);             // 97→1.07, 80→1.0, 74→0.98
+const defBlockMult   = d => 0.515 + 0.60*stat01(d.stats.defending);             // 97→1.10, 80→1.0, 74→0.96
+const defStealMult   = d => 0.555 + 0.55*stat01(d.stats.defending);             // 97→1.09, 80→1.0, 74→0.97
+const defSpeedMult   = d => 0.822 + 0.22*stat01(d.stats.defending);             // 97→1.04, 80→1.0, 74→0.99
+
 // ============================================================ Players
 const JERSEY = [0xff7a3c, 0x3a7bd5];   // home orange, away blue
 const SHORTS = [0xb84a1e, 0x1f4f8f];
@@ -566,41 +601,6 @@ function segPointDist(a,b,p){
 }
 function clamp(v,a,b){ return v<a?a:v>b?b:v; }
 function staminaFrac(p){ return clamp(p.stamina/STAMINA_MAX, 0, 1); }   // 1 = fresh, 0 = gassed
-
-// ============================================================ Player ratings ("the builder")
-// Every player carries a 1–99 rating in four categories that hook straight into the live mechanics.
-// 80 is the "average pro" anchor — every multiplier below sits at ≈1.0 there, so a generic CPU
-// (DEFAULT_STATS) plays like the pre-stats game and a legend's numbers read as better/worse than that.
-// All constants are exposed here so they're easy to tune.
-const DEFAULT_STATS = { shooting:80, dunking:80, athletics:80, defending:80 };
-const LEGENDS = [
-  { key:'curry',  short:'CURRY',  name:'STEPHEN CURRY',     shooting:99, dunking:60, athletics:82, defending:74,
-    blurb:'Greatest shooter alive — huge green from deep, but he can\'t throw down.' },
-  { key:'jordan', short:'JORDAN', name:'MICHAEL JORDAN',    shooting:88, dunking:97, athletics:95, defending:95,
-    blurb:'The GOAT — elite at everything: posterizes and locks you down.' },
-  { key:'lebron', short:'LEBRON', name:'LEBRON JAMES',      shooting:85, dunking:93, athletics:96, defending:88,
-    blurb:'Freight train — top athleticism, a monster finisher at the rim.' },
-  { key:'wemby',  short:'WEMBY',  name:'VICTOR WEMBANYAMA', shooting:84, dunking:91, athletics:84, defending:97,
-    blurb:'Rim eraser — blocks everything; gas tank runs out a touch sooner.' },
-];
-const stat01 = v => clamp(v/99, 0, 1);   // rating → 0..1 skill
-// --- per-stat multipliers, each ≈1.0 at an 80 rating so the 80-stat CPU keeps the old feel ---
-// SHOOTING: a wider green window + holding more of it through a closeout
-const shootWinMult  = p => clamp(0.50 + (p.stats.shooting-50)/60, 0.45, 1.55);  // 99→1.32×, 80→1.0, 60→0.67
-const shootContestK = p => 0.90 * (1.18 - 0.42*stat01(p.stats.shooting));        // green lost per unit of contest
-// DUNKING: a wider dunk-takeoff window + finishing through rim contests
-const dunkWinMult   = p => clamp(0.45 + (p.stats.dunking-50)/55, 0.45, 1.5);    // 97→1.30×, 80→1.0, 60→0.63
-const dunkFinishK   = p => 1.25 - 0.55*stat01(p.stats.dunking);                 // ×block chance at the rim (lower = finishes more)
-// ATHLETICS: speed, vertical reach, and stamina economy
-const speedMult        = p => 0.80 + 0.25*stat01(p.stats.athletics);            // 96→1.04, 80→1.0, 50→0.93
-const jumpMult         = p => 0.72 + 0.35*stat01(p.stats.athletics);            // 96→1.06, 80→1.0, 50→0.90
-const staminaDrainMult = p => 1.404 - 0.50*stat01(p.stats.athletics);           // 96→0.92 (slower), 80→1.0
-const staminaRegenMult = p => 0.596 + 0.50*stat01(p.stats.athletics);           // 96→1.08 (faster), 80→1.0
-// DEFENDING: tougher contests, harder swats, quicker hands, faster closeouts
-const defContestMult = d => 0.677 + 0.40*stat01(d.stats.defending);             // 97→1.07, 80→1.0, 74→0.98
-const defBlockMult   = d => 0.515 + 0.60*stat01(d.stats.defending);             // 97→1.10, 80→1.0, 74→0.96
-const defStealMult   = d => 0.555 + 0.55*stat01(d.stats.defending);             // 97→1.09, 80→1.0, 74→0.97
-const defSpeedMult   = d => 0.822 + 0.22*stat01(d.stats.defending);             // 97→1.04, 80→1.0, 74→0.99
 function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2))-Math.PI; return a+d*t; }
 function forwardVec(yaw){ return new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)); }
 
