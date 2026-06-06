@@ -457,15 +457,16 @@ makeHoop(1); makeHoop(-1);
 // (DEFAULT_STATS) plays like the pre-stats game and a legend's numbers read as better/worse than that.
 // Declared up here (before makePlayer runs) so the players can be built with stats. All tunable.
 const DEFAULT_STATS = { shooting:80, dunking:80, athletics:80, defending:80 };
+// `height` scales the player model (1.0 = baseline ~6'6"); `ht` is just the display label.
 const LEGENDS = [
   { key:'curry',  short:'CURRY',  name:'STEPHEN CURRY',     shooting:99, dunking:60, athletics:82, defending:74,
-    blurb:'Greatest shooter alive — huge green from deep, but he can\'t throw down.' },
+    height:0.90, ht:'6\'2"', blurb:'Greatest shooter alive — huge green from deep, but he can\'t throw down.' },
   { key:'jordan', short:'JORDAN', name:'MICHAEL JORDAN',    shooting:88, dunking:97, athletics:95, defending:95,
-    blurb:'The GOAT — elite at everything: posterizes and locks you down.' },
+    height:1.00, ht:'6\'6"', blurb:'The GOAT — elite at everything: posterizes and locks you down.' },
   { key:'lebron', short:'LEBRON', name:'LEBRON JAMES',      shooting:85, dunking:93, athletics:96, defending:88,
-    blurb:'Freight train — top athleticism, a monster finisher at the rim.' },
+    height:1.06, ht:'6\'9"', blurb:'Freight train — top athleticism, a monster finisher at the rim.' },
   { key:'wemby',  short:'WEMBY',  name:'VICTOR WEMBANYAMA', shooting:84, dunking:91, athletics:84, defending:97,
-    blurb:'Rim eraser — blocks everything; gas tank runs out a touch sooner.' },
+    height:1.20, ht:'7\'4"', blurb:'Rim eraser — blocks everything; gas tank runs out a touch sooner.' },
 ];
 const stat01 = v => clamp(v/99, 0, 1);   // rating → 0..1 skill  (clamp is a hoisted fn decl below)
 // --- per-stat multipliers, each ≈1.0 at an 80 rating so the 80-stat CPU keeps the old feel ---
@@ -2091,7 +2092,8 @@ function buildBuilderCards(){
              + `<span class="sval">${v}</span></div>`;
       }).join('');
     return `<div class="builder-card${L.key===selectedLegend.key?' selected':''}" data-legend="${L.key}">`
-         + `<div class="bname">${L.name}</div>${rows}<div class="bblurb">${L.blurb}</div></div>`;
+         + `<div class="bname">${L.name} <span style="color:#7888a8;font-size:11px;font-weight:600">${L.ht}</span></div>`
+         + `${rows}<div class="bblurb">${L.blurb}</div></div>`;
   }).join('');
   grid.querySelectorAll('.builder-card').forEach(card=>{
     card.onclick=()=>{
@@ -2105,6 +2107,10 @@ function buildBuilderCards(){
 function applyLegend(L){
   Object.assign(userPlayer.stats, { shooting:L.shooting, dunking:L.dunking, athletics:L.athletics, defending:L.defending });
   document.getElementById('homeLabel').textContent = L.short;
+  // scale the model so size is visible on the floor: tall & rangy for Wemby, small for Curry.
+  // Group origin sits at the feet, so scaling Y just grows them upward; width tracks at half the rate.
+  const h = L.height || 1, w = 1 + (h-1)*0.5;
+  userPlayer.mesh.scale.set(w, h, w);
 }
 function showBuilder(next){
   builderNext = next;
