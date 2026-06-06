@@ -44,6 +44,40 @@
     position:absolute; left:-3px; width:calc(100% + 6px); height:3px; bottom:0;
     background:#fff; border-radius:2px; display:none; transition:opacity .15s;
   }
+  /* opponent shot readout — sits just left of your meter, cool-blue so it never reads as yours */
+  #oppmeter {
+    position:fixed; right:96px; bottom:90px; width:22px; height:200px;
+    background:rgba(8,12,20,.7); border:2px solid #3a5a86; border-radius:14px;
+    z-index:10; display:none; overflow:hidden;
+  }
+  #oppmeter .green {
+    position:absolute; left:0; width:100%; background:rgba(80,200,255,.30);
+    border-top:1px solid #6fd0ff; border-bottom:1px solid #6fd0ff;
+  }
+  #oppmeter .fill {
+    position:absolute; bottom:0; left:0; width:100%; height:0%;
+    background:linear-gradient(#7fd4ff,#3a78c8); opacity:.5;
+  }
+  #oppmeter .marker {
+    position:absolute; left:-3px; width:calc(100% + 6px); height:3px; bottom:0;
+    background:#fff; border-radius:2px; display:none;
+  }
+  /* contest grade text above the opponent meter */
+  #oppgrade {
+    position:fixed; right:48px; bottom:300px; width:120px; text-align:center;
+    font-size:13px; font-weight:800; letter-spacing:1px; z-index:11; display:none;
+    text-shadow:0 2px 10px rgba(0,0,0,.7);
+  }
+  #oppgrade small { display:block; font-size:9px; letter-spacing:2px; color:#8aa0c4; font-weight:700; }
+
+  /* contest grade above YOUR shot meter — live while aiming, frozen briefly after release */
+  #mygrade {
+    position:fixed; right:14px; bottom:300px; width:120px; text-align:center;
+    font-size:13px; font-weight:800; letter-spacing:1px; z-index:11; display:none;
+    text-shadow:0 2px 10px rgba(0,0,0,.7);
+  }
+  #mygrade small { display:block; font-size:9px; letter-spacing:2px; color:#8aa0c4; font-weight:700; }
+
   /* stamina bar */
   #stamina {
     position:fixed; left:24px; bottom:24px; width:210px; height:18px;
@@ -125,6 +159,33 @@
   .ability-card.selected .icon { color:#ffe14f; }
   .ability-card .name { font-size:15px; font-weight:800; letter-spacing:1px; color:#cfe; }
   .ability-card .sub { font-size:11px; color:#7888a8; letter-spacing:1px; }
+
+  /* player select ("the builder") */
+  #builderScreen { display:none; }
+  .builder-grid { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-bottom:22px; }
+  .builder-card {
+    width:200px; border-radius:14px; cursor:pointer; padding:16px 16px 14px;
+    background:rgba(10,14,22,.6); border:1px solid #2a3550;
+    display:flex; flex-direction:column; gap:9px; text-align:left;
+    transition:transform .12s, border-color .12s, box-shadow .12s;
+  }
+  .builder-card:hover { transform:translateY(-4px); border-color:#ff7a3c; }
+  .builder-card.selected { border-color:#ffe14f; box-shadow:0 0 0 2px #ffe14f, 0 8px 28px rgba(255,225,79,.25); }
+  .builder-card .bname { font-size:16px; font-weight:800; letter-spacing:.5px; color:#fff; }
+  .builder-card .statrow { display:grid; grid-template-columns:62px 1fr 26px; align-items:center; gap:7px; }
+  .builder-card .slbl { font-size:9px; font-weight:800; letter-spacing:1px; color:#8aa0c4; }
+  .builder-card .sbar { height:9px; background:rgba(8,12,20,.8); border-radius:6px; overflow:hidden; }
+  .builder-card .sfilll { height:100%; border-radius:6px; }
+  .builder-card .sval { font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; color:#cfe; }
+  .builder-card .bblurb { font-size:10.5px; color:#8aa0c4; line-height:1.45; margin-top:2px; min-height:30px; }
+  /* stat key explaining what each rating does in play */
+  .stat-key {
+    display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)); gap:6px 22px;
+    max-width:600px; margin:-6px 0 24px; font-size:12px; color:#9fb0d0;
+    background:rgba(10,14,22,.55); border:1px solid #2a3550; border-radius:12px; padding:14px 20px; text-align:left;
+  }
+  .stat-key b { letter-spacing:1px; }
+
   #endScreen { display:none; }
   #endScreen .final { font-size:40px; margin-bottom:24px; font-variant-numeric:tabular-nums; }
 </style>
@@ -132,7 +193,7 @@
 <body>
 
 <div id="scoreboard">
-  <span class="team home">YOU</span>
+  <span class="team home" id="homeLabel">YOU</span>
   <span class="score" id="homeScore">0</span>
   <span class="sep">:</span>
   <span class="score" id="awayScore">0</span>
@@ -144,6 +205,10 @@
 <div id="heat"></div>
 
 <div id="shotmeter"><div class="green" id="meterGreen"></div><div class="fill" id="meterFill"></div><div class="marker" id="meterMark"></div></div>
+<!-- opponent shot readout: flashes the AI's green window + release after they shoot, so you can read how well you contested -->
+<div id="oppmeter"><div class="green" id="oppGreen"></div><div class="fill" id="oppFill"></div><div class="marker" id="oppMark"></div></div>
+<div id="oppgrade"></div>
+<div id="mygrade"></div>
 <div id="stamina"><div class="sfill" id="stamFill"></div><div class="slabel">STAMINA</div></div>
 <div id="feedback"></div>
 <div id="hint"><b>WASD</b> move &nbsp; <b>Shift</b> sprint &nbsp; <b>C</b> crossover &nbsp; <b>V</b> hesi &nbsp; <b>Space</b> shoot/jump &nbsp; <b>E</b> dunk/steal &nbsp; <b>Q</b> pass &nbsp; <b>RMB</b> lockdown D &nbsp; <b>B</b> new ball (playground)</div>
@@ -176,17 +241,34 @@
   <h1>CHOOSE YOUR ABILITY</h1>
   <h2>Pick a special to take into the match</h2>
   <div class="ability-grid" id="abilityGrid">
-    <div class="ability-card" data-ability="heatCheck"><div class="icon">🔥</div><div class="name">HEAT CHECK</div><div class="sub">3 IN A ROW → 60s BOOST</div></div>
-    <div class="ability-card" data-ability="slot2"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
-    <div class="ability-card" data-ability="slot3"><div class="icon">?</div><div class="name">—</div><div class="sub">COMING SOON</div></div>
+    <div class="ability-card" data-ability="heatCheck"><div class="icon">🔥</div><div class="name">HEAT CHECK</div><div class="sub">3 MAKES → 60s ON FIRE</div></div>
+    <div class="ability-card" data-ability="lockdown"><div class="icon">🔒</div><div class="name">LOCKDOWN</div><div class="sub">2 STEALS → 45s CLAMP</div></div>
+    <div class="ability-card" data-ability="floorGeneral"><div class="icon">🎯</div><div class="name">FLOOR GENERAL</div><div class="sub">BIG TANK • 4 DIMES → BURST</div></div>
   </div>
-  <div style="max-width:520px;font-size:13px;color:#9fb0d0;margin:-14px 0 26px;line-height:1.5">
-    <b style="color:#ffe14f">HEAT CHECK</b> — drain 3 shots in a row and you catch fire for one minute:
-    your green release window swells, and deep shots that normally can't be greened become makeable.
+  <div style="max-width:540px;font-size:13px;color:#9fb0d0;margin:-14px 0 26px;line-height:1.55;text-align:left">
+    <b style="color:#ffe14f">🔥 HEAT CHECK</b> — drain 3 shots in a row to catch fire for a minute: your green window swells and deep shots become makeable.<br>
+    <b style="color:#7fe4ff">🔒 LOCKDOWN</b> — get 2 steals to clamp down for 45s: sharply higher steal rate and tougher shot contests.<br>
+    <b style="color:#8dff9a">🎯 FLOOR GENERAL</b> — deeper gas tank all game (drains slower, recovers faster); complete 4 passes to get IN RHYTHM — a near-free, faster crossover burst.
   </div>
   <div class="menu">
     <button id="confirmAbilityBtn">START MATCH</button>
     <button id="backBtn" class="secondary">BACK</button>
+  </div>
+</div>
+
+<div class="overlay" id="builderScreen">
+  <h1>THE BUILDER</h1>
+  <h2>Pick your legend — their ratings load into your player</h2>
+  <div class="builder-grid" id="builderGrid"></div>
+  <div class="stat-key">
+    <div><b style="color:#4fff9c">SHOOTING</b> — bigger green window on jumpers/3s; loses less green when contested.</div>
+    <div><b style="color:#ff9b3c">DUNKING</b> — bigger green on the dunk meter; finishes through rim contests.</div>
+    <div><b style="color:#7fd4ff">ATHLETICS</b> — move speed + jump/dunk reach + a deeper gas tank (drains slower).</div>
+    <div><b style="color:#ff5b9b">DEFENDING</b> — tighter closeouts, more blocks at the rim, quicker hands on steals.</div>
+  </div>
+  <div class="menu">
+    <button id="builderContinueBtn">CONTINUE</button>
+    <button id="builderBackBtn" class="secondary">BACK</button>
   </div>
 </div>
 
@@ -429,6 +511,7 @@ function makePlayer(team, isUser){
     balance:0, fallenT:0,                                           // defender imbalance / ankle-broken timer
     stamina:STAMINA_MAX,                                            // gas tank (0..STAMINA_MAX)
     parked:false,                                                   // playground: sat out & hidden
+    stats:{...DEFAULT_STATS},                                       // 1–99 ratings; the user's are set by the builder
   };
 }
 
@@ -483,6 +566,41 @@ function segPointDist(a,b,p){
 }
 function clamp(v,a,b){ return v<a?a:v>b?b:v; }
 function staminaFrac(p){ return clamp(p.stamina/STAMINA_MAX, 0, 1); }   // 1 = fresh, 0 = gassed
+
+// ============================================================ Player ratings ("the builder")
+// Every player carries a 1–99 rating in four categories that hook straight into the live mechanics.
+// 80 is the "average pro" anchor — every multiplier below sits at ≈1.0 there, so a generic CPU
+// (DEFAULT_STATS) plays like the pre-stats game and a legend's numbers read as better/worse than that.
+// All constants are exposed here so they're easy to tune.
+const DEFAULT_STATS = { shooting:80, dunking:80, athletics:80, defending:80 };
+const LEGENDS = [
+  { key:'curry',  short:'CURRY',  name:'STEPHEN CURRY',     shooting:99, dunking:60, athletics:82, defending:74,
+    blurb:'Greatest shooter alive — huge green from deep, but he can\'t throw down.' },
+  { key:'jordan', short:'JORDAN', name:'MICHAEL JORDAN',    shooting:88, dunking:97, athletics:95, defending:95,
+    blurb:'The GOAT — elite at everything: posterizes and locks you down.' },
+  { key:'lebron', short:'LEBRON', name:'LEBRON JAMES',      shooting:85, dunking:93, athletics:96, defending:88,
+    blurb:'Freight train — top athleticism, a monster finisher at the rim.' },
+  { key:'wemby',  short:'WEMBY',  name:'VICTOR WEMBANYAMA', shooting:84, dunking:91, athletics:84, defending:97,
+    blurb:'Rim eraser — blocks everything; gas tank runs out a touch sooner.' },
+];
+const stat01 = v => clamp(v/99, 0, 1);   // rating → 0..1 skill
+// --- per-stat multipliers, each ≈1.0 at an 80 rating so the 80-stat CPU keeps the old feel ---
+// SHOOTING: a wider green window + holding more of it through a closeout
+const shootWinMult  = p => clamp(0.50 + (p.stats.shooting-50)/60, 0.45, 1.55);  // 99→1.32×, 80→1.0, 60→0.67
+const shootContestK = p => 0.90 * (1.18 - 0.42*stat01(p.stats.shooting));        // green lost per unit of contest
+// DUNKING: a wider dunk-takeoff window + finishing through rim contests
+const dunkWinMult   = p => clamp(0.45 + (p.stats.dunking-50)/55, 0.45, 1.5);    // 97→1.30×, 80→1.0, 60→0.63
+const dunkFinishK   = p => 1.25 - 0.55*stat01(p.stats.dunking);                 // ×block chance at the rim (lower = finishes more)
+// ATHLETICS: speed, vertical reach, and stamina economy
+const speedMult        = p => 0.80 + 0.25*stat01(p.stats.athletics);            // 96→1.04, 80→1.0, 50→0.93
+const jumpMult         = p => 0.72 + 0.35*stat01(p.stats.athletics);            // 96→1.06, 80→1.0, 50→0.90
+const staminaDrainMult = p => 1.404 - 0.50*stat01(p.stats.athletics);           // 96→0.92 (slower), 80→1.0
+const staminaRegenMult = p => 0.596 + 0.50*stat01(p.stats.athletics);           // 96→1.08 (faster), 80→1.0
+// DEFENDING: tougher contests, harder swats, quicker hands, faster closeouts
+const defContestMult = d => 0.677 + 0.40*stat01(d.stats.defending);             // 97→1.07, 80→1.0, 74→0.98
+const defBlockMult   = d => 0.515 + 0.60*stat01(d.stats.defending);             // 97→1.10, 80→1.0, 74→0.96
+const defStealMult   = d => 0.555 + 0.55*stat01(d.stats.defending);             // 97→1.09, 80→1.0, 74→0.97
+const defSpeedMult   = d => 0.822 + 0.22*stat01(d.stats.defending);             // 97→1.04, 80→1.0, 74→0.99
 function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2))-Math.PI; return a+d*t; }
 function forwardVec(yaw){ return new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)); }
 
@@ -533,6 +651,10 @@ function contestLevel(p){
   const inLane = clamp((cos+0.25)/1.25, 0.3, 1);   // ~1 dead in front, 0.3 on your hip/back
   // stack them — jump & stance count for more the closer he is
   let c = prox*0.70 + jump*0.65*Math.max(prox,0.4) + stance*0.22;
+  // DEFENDING rating: a better defender's closeout simply bothers the shot more
+  c *= defContestMult(def);
+  // LOCKDOWN: when the user is the contesting defender, his hand bothers the shot harder
+  if(def===userPlayer && lockActive()) c *= LOCK_CONTEST_MULT;
   return clamp(c*inLane, 0, 1.3);
 }
 // green release window half-width — hitting it is an automatic make, so its SIZE is the difficulty.
@@ -550,20 +672,24 @@ function shotWindowHalf(p){
   } else {
     half = Math.max(0, 0.15 - (d-THREE_DIST)*0.038);                       // collapses ~4m past the line (deep half-court ≈ no green)
   }
+  // SHOOTING rating: a pure shooter simply gets a bigger green to aim for
+  half *= shootWinMult(p);
   // HEAT CHECK (user only): while on fire the window swells (×1.5) and gains a flat bonus so deep
   // shots that normally floor to ~0 green become legitimately makeable. Applied before contest, so
   // a defender's hand still squeezes it.
   if(p===userPlayer && heatActive()) half = half*1.5 + 0.06;
   // fatigue: tired legs = a smaller, harder window (full stamina ×1 → gassed ×0.45)
   half *= 0.45 + 0.55*staminaFrac(p);
-  // a defender's contest squeezes the green — a clean, fully-extended point-blank contest can ERASE it
-  half *= clamp(1 - contestLevel(p)*0.9, 0, 1);
+  // a defender's contest squeezes the green — a clean, fully-extended point-blank contest can ERASE it.
+  // A better shooter (higher SHOOTING) loses LESS of the window to that closeout.
+  half *= clamp(1 - contestLevel(p)*shootContestK(p), 0, 1);
   return Math.max(0, half);                       // floor of 0: extreme range / smothered = no auto-make green at all
 }
 // dunk takeoff window — forgiving when you've got a clear lane, tight when a rim protector is there
 function dunkWindowHalf(p){
   let half = 0.30 * clamp(1 - contestLevel(p)*0.7, 0.18, 1);
-  return Math.max(0.07, half);
+  half *= dunkWinMult(p);   // DUNKING rating: explosive finishers get a bigger takeoff window
+  return Math.max(0.05, half);
 }
 
 // ============================================================ Possession / reset
@@ -631,7 +757,7 @@ function onShootRelease(){
     const q = 1 - clamp(off/Math.max(half,1e-3), 0, 1);
     userPlayer.shootQuality = (frac>1.05) ? 0.1 : q;     // held too long = bad
     launchShot(userPlayer, userPlayer.shootQuality, true, green);
-    userPlayer.state='shoot'; userPlayer.stateT=0; userPlayer.vy=4.6;
+    userPlayer.state='shoot'; userPlayer.stateT=0; userPlayer.vy=4.6*jumpMult(userPlayer);
     showReleaseMarker(frac, green, half);   // keep the meter up briefly so you can read your release
   }
 }
@@ -646,8 +772,11 @@ function aiShootRelease(p){
   const off   = Math.abs(frac-0.85);
   const green = (half > 0) && (off <= half) && (frac <= 1.05);
   const q     = 1 - clamp(off/Math.max(half,1e-3), 0, 1);
+  const contest = contestLevel(p);
   launchShot(p, green ? 1 : q, false, green);
-  p.state='shoot'; p.stateT=0; p.vy=4.4;
+  p.state='shoot'; p.stateT=0; p.vy=4.4*jumpMult(p);
+  // show the defender (you) how tight the window was on an opponent's shot
+  if(p.team !== userPlayer.team) showOppShot(frac, green, half, contest);
 }
 
 function onDunkRelease(){
@@ -696,9 +825,9 @@ function tryUserActions(){
       // Space press -> begin aim (jump shot) OR instant layup if very close
       if(pressedThisFrame[' '] && p.state!=='aim' && p.state!=='dunkaim' && p.state!=='shoot' && p.cool.shoot<=0){
         if(dHoop < LAYUP_RANGE){
-          // quick layup, decent quality
-          launchShot(p, 0.7, true);
-          p.state='shoot'; p.stateT=0; p.vy=4.0;
+          // quick layup — finish quality scales with DUNKING (rim touch); reach scales with ATHLETICS
+          launchShot(p, clamp(0.50 + 0.30*stat01(p.stats.dunking), 0, 0.95), true);
+          p.state='shoot'; p.stateT=0; p.vy=4.0*jumpMult(p);
         } else {
           p.state='aim'; p.shootHold=0;
           shotMeterEl.style.display='block';
@@ -716,7 +845,7 @@ function tryUserActions(){
       if(mate){ startPass(mate, p); mate.cool.pass=0.4; }
     }
     if(pressedThisFrame[' '] && p.y<=0 && p.cool.jump<=0){
-      p.vy = 5.2; p.state='jump'; p.stateT=0; p.cool.jump=0.6;   // block / rebound jump
+      p.vy = 5.2*jumpMult(p); p.state='jump'; p.stateT=0; p.cool.jump=0.6;   // block / rebound jump
     }
   }
 }
@@ -727,6 +856,35 @@ function launchShot(p, quality, isUserShot, forceMake){
   const start = handPosFor(p);
   const d = dist2D(p.pos, hoop);
   const points = d > THREE_DIST ? 3 : 2;
+
+  // ---- SHOT BLOCK (DEFENDING): a defender who's gone vertical right in the shot can swat it ----
+  // Reach scales with the defender's DEFENDING (and how high he got — his jump comes from ATHLETICS),
+  // so a rim protector like Wemby erases jumpers near the basket. Shared by the user & the AI.
+  {
+    let bestDef=null, bestChance=0;
+    for(const q of players){
+      if(q.team===p.team || q.parked) continue;
+      const dd = dist2D(p.pos, q.pos);
+      if(dd > 1.8 || q.y < 0.45) continue;                       // must be right there AND airborne
+      const toHx=hoop.x-p.pos.x, toHz=hoop.z-p.pos.z, hl=Math.hypot(toHx,toHz)||1;
+      const cos=((q.pos.x-p.pos.x)*toHx+(q.pos.z-p.pos.z)*toHz)/(hl*Math.max(dd,1e-3));
+      if(cos < 0.1) continue;                                    // behind/beside the shooter — can't get a hand on it
+      const prox=1-dd/1.8, height=clamp(q.y/1.6,0,1);
+      const bc=clamp(prox*height*1.15*defBlockMult(q)*clamp(cos,0,1)/(1+d*0.18), 0, 0.85);  // harder to block from deep
+      if(bc>bestChance){ bestChance=bc; bestDef=q; }
+    }
+    if(bestDef && Math.random()<bestChance){
+      B.pos.copy(start); B.state='loose'; B.holder=null; B.lastTeam=p.team;
+      const aw=new THREE.Vector3(p.pos.x-bestDef.pos.x,0,p.pos.z-bestDef.pos.z);
+      if(aw.lengthSq()<1e-4) aw.set(Math.random()-0.5,0,Math.random()-0.5);
+      aw.normalize();
+      B.vel.set(aw.x*5+(Math.random()-0.5)*2, 3.2, aw.z*5+(Math.random()-0.5)*2);
+      p.cool.shoot=0.6; p.state='shoot'; p.stateT=0;
+      showFeedbackIf(p.isUser, 'BLOCKED!', '#ff5b2e');
+      showFeedbackIf(bestDef.isUser, 'BLOCK! 🚫', '#4fd4ff');
+      return;
+    }
+  }
 
   // base make % by distance — beyond the arc it keeps falling ~8.5%/m, so a contested
   // half-court chuck lands near the floor instead of a flat ~38%.
@@ -788,19 +946,24 @@ function startDunk(p, timed){
   if(make){
     let block = 0;
     for(const q of players){
-      if(q.team===p.team) continue;
+      if(q.team===p.team || q.parked) continue;
       const d = dist2D(p.pos, q.pos);
       if(d >= CONTEST_R) continue;
       const prox = 1 - d/CONTEST_R;                    // 0 at the edge of contest range .. 1 right in your chest
       let c = 0.45*prox;                               // a body in the lane bothers it even flat-footed on the ground
       if(q.y > 0.4)  c += 0.50*prox;                   // actually went up to meet you at the rim = much tougher
       if(q.stance)   c += 0.12*prox;                   // squared-up and ready
-      block += c;                                      // two defenders add together
+      block += c * defBlockMult(q);                    // DEFENDING: a rim protector's swat counts for more
     }
+    block *= dunkFinishK(p);                           // DUNKING: an explosive finisher throws it down through contact
     if(Math.random() < Math.min(block, 0.96)) make=false;
   }
   p.dunkInfo = { hoop, make, timed, t:0, done:false, startPos:p.pos.clone() };
   B.holder = p; B.state='dunk_hold';
+  // show the defender (you) how well you challenged an opponent's dunk at the rim
+  if(p.team !== userPlayer.team){
+    showOppShot(timed ? 0.85 : 0.62, !!timed, dunkWindowHalf(p), contestLevel(p), 'RIM CONTEST');
+  }
 }
 
 // How likely a reach-in actually rips the ball, 0..1. A real strip needs the rock EXPOSED at the
@@ -829,7 +992,11 @@ function stealChance(def, h){
   const ready = def.stance ? 1.0 : 0.7;
   // 6) the handler's gas tank — a gassed ball-handler loses the rock far more easily (up to +70%)
   const tired = 1 + (1 - staminaFrac(h))*0.7;
-  return clamp(0.95 * prox * expo * angle * (1-speedProtect) * ready * tired, 0, 0.95);
+  let chance = 0.95 * prox * expo * angle * (1-speedProtect) * ready * tired;
+  chance *= defStealMult(def);   // DEFENDING rating: quicker hands rip it loose more often
+  // LOCKDOWN: the user's hands are quicker while clamped down
+  if(def===userPlayer && lockActive()) chance *= LOCK_STEAL_MULT;
+  return clamp(chance, 0, 0.97);
 }
 
 function attemptSteal(p){
@@ -845,6 +1012,7 @@ function attemptSteal(p){
     B.lastTeam = p.team;
     showFeedbackIf(p.isUser, 'STEAL!',    '#4fff9c');
     showFeedbackIf(h.isUser, 'STRIPPED!', '#ff5b2e');
+    if(p.isUser) noteUserSteal();   // LOCKDOWN: build toward the buff
   } else {
     // whiff -> you lunged in and got caught leaning; long recovery so reaches are never free
     p.cool.steal = 1.1;
@@ -864,7 +1032,7 @@ function startPass(from, to){
   const d = Math.max(0.5, dir.length()); dir.normalize();
   const speed = clamp(11 + d*0.6, 10, 16);
   B.vel.set(dir.x*speed, 1.4, dir.z*speed);
-  B.state='pass'; B.holder=null; B.passTo=to; B.lastTeam=from.team;
+  B.state='pass'; B.holder=null; B.passTo=to; B.passFrom=from; B.lastTeam=from.team;
   B.passTime = 0;
 }
 
@@ -876,7 +1044,10 @@ function startCrossover(p){
   p.crossDir.copy(dir);
   p.crossT = CROSS_DUR;
   p.cool.cross = 0.7;
-  p.stamina = Math.max(0, p.stamina - STAM_CROSS);   // the big tax — crossover empties the tank fast
+  // FLOOR GENERAL: IN RHYTHM turns the crossover into a near-free speed burst
+  let cost = STAM_CROSS;
+  if(p===userPlayer && dimeActive()) cost *= 0.4;
+  p.stamina = Math.max(0, p.stamina - cost);   // the big tax — crossover empties the tank fast
   p.state = 'cross';
   applyMove(p, p.crossDir, 0.34, 'CROSSOVER');
 }
@@ -1049,7 +1220,7 @@ function aiThink(p, dt){
     const toOwn = new THREE.Vector3(ownHoop.x-man.pos.x,0,ownHoop.z-man.pos.z).normalize();
     const guardPos = new THREE.Vector3(man.pos.x + toOwn.x*gap, 0, man.pos.z + toOwn.z*gap);
     move.set(guardPos.x-p.pos.x,0,guardPos.z-p.pos.z);
-    setMove(p, move, onBall ? 1.0 : 0.9, dt);   // stay attached to the ball handler
+    setMove(p, move, (onBall ? 1.0 : 0.9)*defSpeedMult(p), dt);   // DEFENDING: tighter, faster closeouts
     faceDir(p, new THREE.Vector3(man.pos.x-p.pos.x,0,man.pos.z-p.pos.z), dt);
     // lock into a stance when closely guarding the ball handler
     p.stance = (onBall && md<2.8);
@@ -1058,7 +1229,7 @@ function aiThink(p, dt){
       if(md<STEAL_R && p.cool.steal<=0 && stealChance(p,man)>0.25 && Math.random()<0.08) attemptSteal(p);
       // jump to contest during the wind-up (aim), not just after the ball's gone
       if((man.state==='aim'||man.state==='shoot') && md<2.4 && p.y<=0 && p.cool.jump<=0 && Math.random()<0.5){
-        p.vy=5.0; p.state='jump'; p.cool.jump=0.8;
+        p.vy=5.0*jumpMult(p); p.state='jump'; p.cool.jump=0.8;
       }
     }
   }
@@ -1067,7 +1238,7 @@ function aiThink(p, dt){
 function setMove(p, dir, speedScale, dt){
   if(dir.lengthSq()<1e-5){ p.vel.x*=0.6; p.vel.z*=0.6; return; }
   dir.normalize();
-  const sp = RUN*speedScale*(0.7 + 0.3*staminaFrac(p));   // tired legs run slower
+  const sp = RUN*speedScale*speedMult(p)*(0.7 + 0.3*staminaFrac(p));   // ATHLETICS speed + tired legs run slower
   p.vel.x = dir.x*sp; p.vel.z = dir.z*sp;
 }
 function faceDir(p, dir, dt){
@@ -1108,8 +1279,9 @@ function userMove(dt){
   if(p.crossT>0){
     p.crossT -= dt;
     if(p.crossT>0){
-      p.vel.x = p.crossDir.x*CROSS_SPEED;
-      p.vel.z = p.crossDir.z*CROSS_SPEED;
+      const cs = (p===userPlayer && dimeActive()) ? CROSS_SPEED*1.18 : CROSS_SPEED;   // FLOOR GENERAL burst
+      p.vel.x = p.crossDir.x*cs;
+      p.vel.z = p.crossDir.z*cs;
       faceDir(p, p.crossDir, dt*4);
       return;
     }
@@ -1143,6 +1315,8 @@ function userMove(dt){
   let speedMul = keys['Shift'] ? SPRINT : RUN;
   if(p.state==='aim' || p.state==='dunkaim') speedMul = RUN*0.35;
   if(p.stance)        speedMul = RUN*0.55;   // defensive slide is slower than a sprint
+  speedMul *= speedMult(p);                  // ATHLETICS: raw foot speed
+  if(p.stance) speedMul *= defSpeedMult(p);  // DEFENDING: quicker closeouts cover more ground
   speedMul *= 0.7 + 0.3*staminaFrac(p);      // tired legs run slower
 
   if(dir.lengthSq()>1e-4){
@@ -1213,8 +1387,18 @@ function updatePlayer(p, dt){
       const opp = nearestOpponent(p);
       if(opp.p && opp.d < 1.5) drain += STAM_STANCE_TIGHT;
     }
-    if(drain>0) p.stamina = Math.max(0, p.stamina - drain*dt);
-    else        p.stamina = Math.min(STAMINA_MAX, p.stamina + (sp>0.5?STAM_REGEN_MOVE:STAM_REGEN)*dt);
+    // FLOOR GENERAL: the user's legs hold up better all game — less drain, faster recovery
+    const fg = (p===userPlayer && floorGeneral());
+    if(drain>0){
+      drain *= staminaDrainMult(p);   // ATHLETICS: better-conditioned legs burn gas slower
+      if(fg) drain *= 0.75;
+      p.stamina = Math.max(0, p.stamina - drain*dt);
+    } else {
+      let regen = (sp>0.5?STAM_REGEN_MOVE:STAM_REGEN);
+      regen *= staminaRegenMult(p);   // ATHLETICS: and recover it faster
+      if(fg) regen *= 1.5;
+      p.stamina = Math.min(STAMINA_MAX, p.stamina + regen*dt);
+    }
   }
 
   // state timing
@@ -1248,7 +1432,7 @@ function updatePlayer(p, dt){
     const tx = di.hoop.x - Math.sign(di.hoop.x)*0.25;
     p.pos.x += (tx - p.pos.x)*Math.min(1,dt*6);
     p.pos.z += (di.hoop.z - p.pos.z)*Math.min(1,dt*6);
-    p.y = Math.sin(k*Math.PI)*1.85;
+    p.y = Math.sin(k*Math.PI)*1.85*jumpMult(p);   // ATHLETICS: higher fliers rise further above the rim
     if(!di.done && k>=0.5){
       di.done=true;
       if(di.make){
@@ -1444,7 +1628,9 @@ function updateBall(dt){
       // swept catch: catch if we're close OR the path this frame swept past the receiver
       const chest = new THREE.Vector3(to.pos.x, 1.25, to.pos.z);
       if(dist < 1.1 || segPointDist(prev, B.pos, chest) < 1.0){
-        giveBall(to); B.passTo = null;
+        // FLOOR GENERAL: a completed pass from the user to a teammate builds rhythm
+        if(B.passFrom===userPlayer && to!==userPlayer && to.team===userPlayer.team) notePlaymakerPass();
+        giveBall(to); B.passTo = null; B.passFrom = null;
       } else if(B.passTime > 2.5){
         B.state='loose';            // safety valve so a pass can never get stuck
       }
@@ -1566,14 +1752,46 @@ const shotMeterEl=document.getElementById('shotmeter');
 const meterFill=document.getElementById('meterFill');
 const meterGreen=document.getElementById('meterGreen');
 const meterMark=document.getElementById('meterMark');
+const oppMeterEl=document.getElementById('oppmeter');
+const oppFill=document.getElementById('oppFill');
+const oppGreen=document.getElementById('oppGreen');
+const oppMark=document.getElementById('oppMark');
+const oppGradeEl=document.getElementById('oppgrade');
+const myGradeEl=document.getElementById('mygrade');
 const staminaEl=document.getElementById('stamina');
 const stamFill=document.getElementById('stamFill');
 const feedbackEl=document.getElementById('feedback');
 let feedbackT=0;
 // post-release readout: freeze the meter for a beat showing where you let go vs the green window
-let meterHoldT=0, meterHoldFrac=0, meterHoldGreen=false, meterHoldWin=0.3;
+let meterHoldT=0, meterHoldFrac=0, meterHoldGreen=false, meterHoldWin=0.3, meterHoldContest=0;
 function showReleaseMarker(frac, green, half){
   meterHoldT=0.9; meterHoldFrac=frac; meterHoldGreen=green; meterHoldWin=half;
+  meterHoldContest = contestLevel(userPlayer);   // remember how contested you were, for the frozen readout
+}
+
+// contest readout: the contest % is exactly how much defense shrank the green window,
+// so a higher % literally means a smaller makeable window. Shared by your meter and the opponent's.
+let oppHoldT=0, oppFrac=0, oppGreenHit=false, oppWin=0.3;
+// contestLevel*0.9 is the same factor shotWindowHalf uses to squeeze the window; expose it as 0-100%.
+function contestPct(c){ return Math.round(clamp(c*0.9, 0, 1) * 100); }
+function contestGrade(pct){
+  if(pct>=75) return ['SMOTHERED',    '#4fff9c'];
+  if(pct>=40) return ['GOOD DEFENSE', '#9bff6a'];
+  if(pct>=15) return ['LIGHT D',      '#ffae4f'];
+  return ['WIDE OPEN', '#ff5b2e'];
+}
+function applyGrade(el, contest, label){
+  const pct = contestPct(contest);
+  const g = contestGrade(pct);
+  el.innerHTML =
+    '<small>'+label+'</small>' +
+    '<span style="font-size:20px">'+pct+'%</span><br>' +
+    '<span style="font-size:11px;letter-spacing:1px">'+g[0]+'</span>';
+  el.style.color = g[1];
+}
+function showOppShot(frac, green, half, contest, label){
+  oppHoldT=1.7; oppFrac=frac; oppGreenHit=green; oppWin=half;
+  applyGrade(oppGradeEl, contest, label||'YOUR CONTEST');
 }
 
 // green zone display (center 0.85, half 0.12 of meter height)
@@ -1613,12 +1831,32 @@ function updateHUD(dt){
     heatEl.style.color='#ffd24f';
     heatEl.style.textShadow='0 0 10px rgba(255,140,40,.9), 0 0 22px rgba(255,90,30,.6)';
     heatEl.textContent=`🔥 ON FIRE — ${Math.ceil(heat.timer)}s`;
+  } else if(lockActive()){
+    heatEl.style.display='block';
+    heatEl.style.color='#7fe4ff';
+    heatEl.style.textShadow='0 0 10px rgba(60,180,255,.9), 0 0 22px rgba(40,120,255,.6)';
+    heatEl.textContent=`🔒 LOCKDOWN — ${Math.ceil(lock.timer)}s`;
+  } else if(dimeActive()){
+    heatEl.style.display='block';
+    heatEl.style.color='#8dff9a';
+    heatEl.style.textShadow='0 0 10px rgba(70,230,120,.9), 0 0 22px rgba(40,180,90,.6)';
+    heatEl.textContent=`🎯 IN RHYTHM — ${Math.ceil(dime.timer)}s`;
   } else if(selectedAbility==='heatCheck' && heat.streak>0){
     // building a streak: show progress toward igniting
     heatEl.style.display='block';
     heatEl.style.color='#9fb0d0';
     heatEl.style.textShadow='none';
     heatEl.textContent=`MAKES: ${heat.streak}/${HEAT_STREAK}`;
+  } else if(selectedAbility==='lockdown' && lock.streak>0){
+    heatEl.style.display='block';
+    heatEl.style.color='#9fb0d0';
+    heatEl.style.textShadow='none';
+    heatEl.textContent=`STEALS: ${lock.streak}/${LOCK_STREAK}`;
+  } else if(selectedAbility==='floorGeneral' && dime.passes>0){
+    heatEl.style.display='block';
+    heatEl.style.color='#9fb0d0';
+    heatEl.style.textShadow='none';
+    heatEl.textContent=`DIMES: ${dime.passes}/${DIME_PASSES}`;
   } else {
     heatEl.style.display='none';
   }
@@ -1631,6 +1869,9 @@ function updateHUD(dt){
     const half=(typeof userPlayer.curWindow==='number')?userPlayer.curWindow:0.30;
     meterGreen.style.bottom=((0.85-half)*100)+'%';
     meterGreen.style.height=(2*half*100)+'%';
+    // live contest % so you can read the defense before you let it go
+    applyGrade(myGradeEl, contestLevel(userPlayer), 'CONTEST');
+    myGradeEl.style.display='block'; myGradeEl.style.opacity='1';
   } else if(meterHoldT>0){
     // frozen readout after the shot: fill locked at the release height, a line marking exactly where you let go
     meterHoldT-=dt;
@@ -1646,7 +1887,29 @@ function updateHUD(dt){
     meterMark.style.background=col;
     meterMark.style.boxShadow='0 0 8px '+col;
     meterMark.style.opacity = meterHoldT<0.25 ? (meterHoldT/0.25).toFixed(2) : '1';   // fade out at the end
-    if(meterHoldT<=0){ shotMeterEl.style.display='none'; meterMark.style.display='none'; meterFill.style.opacity='1'; }
+    // frozen contest % from the moment you released
+    applyGrade(myGradeEl, meterHoldContest, 'CONTEST');
+    myGradeEl.style.display='block';
+    myGradeEl.style.opacity = (meterHoldT<0.25 ? (meterHoldT/0.25) : 1).toFixed(2);
+    if(meterHoldT<=0){ shotMeterEl.style.display='none'; meterMark.style.display='none'; meterFill.style.opacity='1'; myGradeEl.style.display='none'; }
+  } else {
+    myGradeEl.style.display='none';
+  }
+  // opponent shot readout — their green window + where they released, so you can read your contest
+  if(oppHoldT>0){
+    oppHoldT-=dt;
+    oppMeterEl.style.display='block';
+    oppGradeEl.style.display='block';
+    const pct=Math.min(100,oppFrac*100);
+    oppFill.style.height=pct+'%';
+    oppGreen.style.bottom=((0.85-oppWin)*100)+'%';
+    oppGreen.style.height=(2*oppWin*100)+'%';
+    oppMark.style.display='block';
+    oppMark.style.bottom=pct+'%';
+    const fade = oppHoldT<0.4 ? oppHoldT/0.4 : 1;
+    oppMeterEl.style.opacity = fade.toFixed(2);
+    oppGradeEl.style.opacity = fade.toFixed(2);
+    if(oppHoldT<=0){ oppMeterEl.style.display='none'; oppGradeEl.style.display='none'; }
   }
   if(feedbackT>0){ feedbackT-=dt; feedbackEl.style.opacity=clamp(feedbackT,0,1); }
 }
@@ -1658,6 +1921,8 @@ function loop(){
   let dt=clock.getDelta(); dt=Math.min(dt,0.05);
   if(G.running){
     if(heat.timer>0) heat.timer-=dt;   // HEAT CHECK buff countdown
+    if(lock.timer>0) lock.timer-=dt;   // LOCKDOWN buff countdown
+    if(dime.timer>0) dime.timer-=dt;   // FLOOR GENERAL rhythm countdown
     // clocks & opponents only run in a real match — playground is a free-roam sandbox
     if(G.mode!=='playground'){
       G.clock-=dt; if(G.clock<=0){ G.clock=0; endGame(); }
@@ -1683,6 +1948,7 @@ loop();
 function startGame(){
   G.running=true; G.mode='match'; G.score=[0,0]; G.clock=GAME_TIME; updateScoreboard();
   heat.streak=0; heat.timer=0;   // reset HEAT CHECK each match
+  lock.streak=0; lock.timer=0; dime.passes=0; dime.timer=0;   // reset LOCKDOWN / FLOOR GENERAL
   for(const p of players){ p.parked=false; p.mesh.visible=true; }   // everyone back on the floor
   resetFormation(0);
   // place camera behind player, looking down-court toward the hoop they attack
@@ -1705,6 +1971,7 @@ function spawnPlaygroundBall(){
 function startPlayground(){
   G.running=true; G.mode='playground'; G.score=[0,0]; updateScoreboard();
   heat.streak=0; heat.timer=0;
+  lock.streak=0; lock.timer=0; dime.passes=0; dime.timer=0;
   // bench & hide everyone but you
   for(const p of players){
     if(p.isUser){ p.parked=false; p.mesh.visible=true; }
@@ -1763,13 +2030,100 @@ function noteUserShot(make){
     heat.streak = 0;
   }
 }
+
+// --- LOCKDOWN ability state (defense) ---
+// Notch LOCK_STREAK steals → clamp down for a fixed window: your steal rate jumps and your shot
+// contests bite noticeably harder. Same fixed-duration, no-refresh-while-active rule as HEAT CHECK.
+const LOCK_DURATION = 45;     // seconds active
+const LOCK_STREAK   = 2;      // user steals to ignite
+const LOCK_STEAL_MULT   = 1.6;   // steal-chance multiplier while active
+const LOCK_CONTEST_MULT = 1.35;  // contest multiplier while active
+const lock = { streak:0, timer:0 };
+function lockActive(){ return selectedAbility==='lockdown' && lock.timer>0; }
+function noteUserSteal(){
+  if(selectedAbility!=='lockdown') return;
+  lock.streak++;
+  if(lock.streak>=LOCK_STREAK && lock.timer<=0){
+    lock.timer = LOCK_DURATION; lock.streak = 0;
+    showFeedback('LOCKDOWN! 🔒', '#4fd4ff');
+  }
+}
+
+// --- FLOOR GENERAL ability state (playmaking) ---
+// Passive all game: a deeper gas tank (drains slower, regens faster). Charge by completing passes →
+// "IN RHYTHM" window where the crossover is dirt-cheap and a touch faster (a near-free speed burst).
+const DIME_DURATION = 35;     // seconds in rhythm
+const DIME_PASSES   = 4;      // completed passes to ignite
+const dime = { passes:0, timer:0 };
+function floorGeneral(){ return selectedAbility==='floorGeneral'; }
+function dimeActive(){ return floorGeneral() && dime.timer>0; }
+function notePlaymakerPass(){
+  if(!floorGeneral()) return;
+  dime.passes++;
+  if(dime.passes>=DIME_PASSES && dime.timer<=0){
+    dime.timer = DIME_DURATION; dime.passes = 0;
+    showFeedback('IN RHYTHM! 🎯', '#7CFF8A');
+  }
+}
+
+// ============================================================ The builder (player select)
+// Pick one of the four legends; their ratings are copied into the user's existing player object.
+// PLAY routes PLAY → builder → ability → match; PLAYGROUND routes PLAYGROUND → builder → sandbox.
+let selectedLegend = LEGENDS[1];   // default = Jordan (balanced) so there's always a valid pick
+let builderNext = 'ability';       // where CONTINUE goes after a pick
+
+function statColor(v){
+  // red (low) → orange (mid) → green (elite)
+  if(v>=88) return '#4fff9c';
+  if(v>=78) return '#aef36b';
+  if(v>=68) return '#ffe14f';
+  if(v>=55) return '#ff9b3c';
+  return '#ff5b5b';
+}
+function buildBuilderCards(){
+  const grid = document.getElementById('builderGrid');
+  grid.innerHTML = LEGENDS.map(L=>{
+    const rows = [['SHOOTING','shooting'],['DUNKING','dunking'],['ATHLETICS','athletics'],['DEFENDING','defending']]
+      .map(([lbl,k])=>{
+        const v=L[k];
+        return `<div class="statrow"><span class="slbl">${lbl}</span>`
+             + `<div class="sbar"><div class="sfilll" style="width:${v}%;background:${statColor(v)}"></div></div>`
+             + `<span class="sval">${v}</span></div>`;
+      }).join('');
+    return `<div class="builder-card${L.key===selectedLegend.key?' selected':''}" data-legend="${L.key}">`
+         + `<div class="bname">${L.name}</div>${rows}<div class="bblurb">${L.blurb}</div></div>`;
+  }).join('');
+  grid.querySelectorAll('.builder-card').forEach(card=>{
+    card.onclick=()=>{
+      grid.querySelectorAll('.builder-card').forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedLegend = LEGENDS.find(L=>L.key===card.dataset.legend);
+    };
+  });
+}
+// copy the chosen legend's ratings into the live player object + label the scoreboard
+function applyLegend(L){
+  Object.assign(userPlayer.stats, { shooting:L.shooting, dunking:L.dunking, athletics:L.athletics, defending:L.defending });
+  document.getElementById('homeLabel').textContent = L.short;
+}
+function showBuilder(next){
+  builderNext = next;
+  buildBuilderCards();
+  document.getElementById('startScreen').style.display='none';
+  document.getElementById('abilityScreen').style.display='none';
+  document.getElementById('endScreen').style.display='none';
+  document.getElementById('builderScreen').style.display='flex';
+}
+
 function showAbilityScreen(){
   document.getElementById('startScreen').style.display='none';
+  document.getElementById('builderScreen').style.display='none';
   document.getElementById('endScreen').style.display='none';
   document.getElementById('abilityScreen').style.display='flex';
 }
 function showStartScreen(){
   document.getElementById('abilityScreen').style.display='none';
+  document.getElementById('builderScreen').style.display='none';
   document.getElementById('startScreen').style.display='flex';
 }
 document.querySelectorAll('#abilityGrid .ability-card').forEach(card=>{
@@ -1781,10 +2135,16 @@ document.querySelectorAll('#abilityGrid .ability-card').forEach(card=>{
   };
 });
 
-document.getElementById('startBtn').onclick=showAbilityScreen;
-document.getElementById('playgroundBtn').onclick=startPlayground;
+document.getElementById('startBtn').onclick=()=>showBuilder('ability');
+document.getElementById('playgroundBtn').onclick=()=>showBuilder('playground');
+document.getElementById('builderContinueBtn').onclick=()=>{
+  applyLegend(selectedLegend);
+  if(builderNext==='ability'){ showAbilityScreen(); }
+  else { document.getElementById('builderScreen').style.display='none'; startPlayground(); }
+};
+document.getElementById('builderBackBtn').onclick=showStartScreen;
 document.getElementById('confirmAbilityBtn').onclick=()=>{ document.getElementById('abilityScreen').style.display='none'; startGame(); };
-document.getElementById('backBtn').onclick=showStartScreen;
+document.getElementById('backBtn').onclick=()=>showBuilder('ability');   // back to the builder to re-pick a legend
 document.getElementById('rematchBtn').onclick=startGame;
 document.getElementById('exitBtn').onclick=exitGame;
 
