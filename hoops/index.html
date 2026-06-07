@@ -686,9 +686,27 @@ function shotWindowHalf(p){
   half *= clamp(1 - contestLevel(p)*shootContestK(p), 0, 1);
   return Math.max(0, half);                       // floor of 0: extreme range / smothered = no auto-make green at all
 }
-// dunk takeoff window — forgiving when you've got a clear lane, tight when a rim protector is there
+// Aggregate rim defense for a dunk: stacks EVERY defender near the rim (not just the nearest the way
+// contestLevel does), weighting bodies that actually went vertical to meet you. So crowding the paint
+// reads — and plays — as a real wall of arms instead of a single 40%-nearest-man contest. Drives BOTH
+// the RIM CONTEST readout and the dunk's block odds, so the number you see always matches the danger.
+function rimContest(p){
+  let c = 0;
+  for(const q of players){
+    if(q.team===p.team || q.parked) continue;
+    const d = dist2D(p.pos, q.pos);
+    if(d >= CONTEST_R) continue;
+    const prox = 1 - d/CONTEST_R;
+    let qc = 0.45*prox;             // a body in the lane bothers it even flat-footed on the ground
+    if(q.y > 0.4) qc += 0.55*prox;  // went up to meet you at the rim = much tougher
+    if(q.stance)  qc += 0.12*prox;  // squared up and ready
+    c += qc * defBlockMult(q);      // DEFENDING: a rim protector's swat counts for more
+  }
+  return clamp(c, 0, 1.3);
+}
+// dunk takeoff window — forgiving when you've got a clear lane, tight when the paint is packed
 function dunkWindowHalf(p){
-  let half = 0.30 * clamp(1 - contestLevel(p)*0.7, 0.18, 1);
+  let half = 0.30 * clamp(1 - rimContest(p)*0.55, 0.18, 1);
   half *= dunkWinMult(p);   // DUNKING rating: explosive finishers get a bigger takeoff window
   return Math.max(0.05, half);
 }
@@ -945,25 +963,17 @@ function startDunk(p, timed){
   // crowding the rim stacks onto the block chance, so throwing it down over two bodies is rare.
   let make = !!timed;
   if(make){
-    let block = 0;
-    for(const q of players){
-      if(q.team===p.team || q.parked) continue;
-      const d = dist2D(p.pos, q.pos);
-      if(d >= CONTEST_R) continue;
-      const prox = 1 - d/CONTEST_R;                    // 0 at the edge of contest range .. 1 right in your chest
-      let c = 0.45*prox;                               // a body in the lane bothers it even flat-footed on the ground
-      if(q.y > 0.4)  c += 0.50*prox;                   // actually went up to meet you at the rim = much tougher
-      if(q.stance)   c += 0.12*prox;                   // squared-up and ready
-      block += c * defBlockMult(q);                    // DEFENDING: a rim protector's swat counts for more
-    }
-    block *= dunkFinishK(p);                           // DUNKING: an explosive finisher throws it down through contact
+    // every defender crowding the rim stacks (rimContest); a true finisher (dunkFinishK) throws it
+    // down through some of it. One man back-pedaling barely matters; three bodies in the paint is a
+    // near-certain stuff no matter how high your DUNKING rating is.
+    const block = rimContest(p) * dunkFinishK(p);      // DUNKING: an explosive finisher finishes through contact
     if(Math.random() < Math.min(block, 0.96)) make=false;
   }
   p.dunkInfo = { hoop, make, timed, t:0, done:false, startPos:p.pos.clone() };
   B.holder = p; B.state='dunk_hold';
   // show the defender (you) how well you challenged an opponent's dunk at the rim
   if(p.team !== userPlayer.team){
-    showOppShot(timed ? 0.85 : 0.62, !!timed, dunkWindowHalf(p), contestLevel(p), 'RIM CONTEST');
+    showOppShot(timed ? 0.85 : 0.62, !!timed, dunkWindowHalf(p), rimContest(p), 'RIM CONTEST');
   }
 }
 
@@ -1155,9 +1165,11 @@ function aiThink(p, dt){
 
   if(hasBall){
     if(p.decision<=0){ p.decision = 0.3 + Math.random()*0.4; }
-    // dunk / layup if close & lane
+    // dunk / layup if close & lane — but don't launch into a crowd: a packed paint makes the CPU
+    // kick it out or pull up instead of trying to throw it down through three bodies.
     if(dHoop < DUNK_RANGE && p.cool.shoot<=0){
-      if(Math.random()<0.7){ startDunk(p); return; }
+      const dunkChance = clamp(0.80 - rimContest(p)*0.55, 0.10, 0.80);   // wide-open ~80%, smothered ~10%
+      if(Math.random()<dunkChance){ startDunk(p); return; }
     }
     const opp = nearestOpponent(p);
     // open shot — wind up a real jumper (charges the same meter the user does, so it can be contested)
@@ -1212,6 +1224,16 @@ function aiThink(p, dt){
     let md=1e9;
     for(const q of players){ if(q.team===p.team||q===handler) continue; const d=dist2D(p.pos,q.pos); if(d<md){md=d;man=q;} }
     if(!man) man=handler;   // fallback (only two opponents on a 3v3 lineup)
+  }
+  // rim protection: rise to meet ANY opponent throwing one down nearby, not just your own man — this
+  // is what turns a packed paint into an actual wall of arms instead of flat-footed bystanders.
+  for(const q of players){
+    if(q.team===p.team || q.parked) continue;
+    if(q.state!=='dunk' && q.state!=='dunkaim') continue;
+    if(dist2D(p.pos,q.pos) < 2.3 && p.y<=0 && p.cool.jump<=0){
+      p.vy = 5.2*jumpMult(p); p.state='jump'; p.cool.jump=0.8;
+      faceDir(p, new THREE.Vector3(q.pos.x-p.pos.x,0,q.pos.z-p.pos.z), dt);
+    }
   }
   if(man){
     const md = dist2D(p.pos, man.pos);
