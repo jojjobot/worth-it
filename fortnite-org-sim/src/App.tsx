@@ -12,6 +12,7 @@ import Training from './ui/Training'
 import Tournaments from './ui/Tournaments'
 import Results from './ui/Results'
 import WeekReportModal from './ui/WeekReportModal'
+import { PlayerSheetProvider } from './ui/PlayerSheet'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -69,6 +70,7 @@ export default function App() {
   const entriesThisWeek = Object.keys(state.entries).length
 
   return (
+    <PlayerSheetProvider state={state}>
     <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col gap-4 p-4">
       {/* ---------- Header ---------- */}
       <header className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3">
@@ -178,10 +180,11 @@ export default function App() {
       {report && <WeekReportModal report={report} onClose={() => setReport(null)} />}
 
       {toast && (
-        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded border border-cyan-600/50 bg-slate-900 px-4 py-2 text-sm text-cyan-200 shadow-lg">
+        <div className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded border border-cyan-600/50 bg-slate-900 px-4 py-2 text-sm text-cyan-200 shadow-lg">
           {toast}
         </div>
       )}
     </div>
+    </PlayerSheetProvider>
   )
 }

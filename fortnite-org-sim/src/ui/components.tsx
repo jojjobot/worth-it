@@ -9,6 +9,7 @@ import {
   viewSub,
 } from '../engine/players'
 import { realOrgColor } from '../engine/realPlayers'
+import { PlayerLink } from './PlayerSheet'
 import type { CategoryKey, Player, SubKey } from '../engine/types'
 
 export function money(n: number): string {
@@ -370,7 +371,13 @@ export function PlayerHeader({
       <OvrBadge player={player} owned={owned} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate font-semibold text-slate-100">{player.tag}</span>
+          <PlayerLink
+            playerId={player.id}
+            className="truncate font-semibold text-slate-100"
+            title={`Open ${player.tag}'s full stat sheet`}
+          >
+            {player.tag}
+          </PlayerLink>
           {player.isReal && (
             <span
               className="rounded border border-cyan-700/60 bg-cyan-500/10 px-1 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider text-cyan-300"

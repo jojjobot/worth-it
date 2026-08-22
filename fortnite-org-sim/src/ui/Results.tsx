@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { realOrgColor } from '../engine/realPlayers'
+import { PlayerLink } from './PlayerSheet'
 import type { GameState, MatchResult, TournamentResult } from '../engine/types'
 import { EmptyState, money, ordinal, Panel } from './components'
 
@@ -147,6 +148,7 @@ function RivalStandings({ result }: { result: TournamentResult }) {
     ...rivals.map((r) => ({
       name: r.orgName,
       tags: r.playerTags,
+      ids: r.playerIds ?? [],
       points: r.points,
       rank: r.rank,
       you: false,
@@ -154,6 +156,7 @@ function RivalStandings({ result }: { result: TournamentResult }) {
     {
       name: result.duoName,
       tags: result.playerTags,
+      ids: result.playerIds ?? [],
       points: result.points,
       rank: result.rank,
       you: true,
@@ -182,7 +185,20 @@ function RivalStandings({ result }: { result: TournamentResult }) {
                 {row.name}
                 {row.you && <span className="ml-1 text-[9px] text-cyan-500">YOU</span>}
               </span>
-              <span className="flex-1 truncate text-slate-500">{row.tags.join(' + ')}</span>
+              <span className="flex flex-1 flex-wrap items-center gap-1 text-slate-500">
+                {row.tags.map((tag, i) =>
+                  row.ids[i] ? (
+                    <span key={row.ids[i]} className="flex items-center gap-1">
+                      {i > 0 && <span className="text-slate-700">+</span>}
+                      <PlayerLink playerId={row.ids[i]} className="text-slate-500">
+                        {tag}
+                      </PlayerLink>
+                    </span>
+                  ) : (
+                    <span key={tag}>{i > 0 ? ` + ${tag}` : tag}</span>
+                  ),
+                )}
+              </span>
               <span className="shrink-0 text-slate-200">{row.points} pts</span>
             </li>
           )

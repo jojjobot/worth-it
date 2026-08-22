@@ -242,10 +242,14 @@ export function runTournament(
       return {
         orgName: d.orgName,
         playerTags: roster.map((p) => p.tag),
+        playerIds: roster.map((p) => p.id),
         points: theirs.totalPoints,
       }
     })
-    .filter((r): r is { orgName: string; playerTags: string[]; points: number } => !!r)
+    .filter(
+      (r): r is { orgName: string; playerTags: string[]; playerIds: string[]; points: number } =>
+        !!r,
+    )
 
   // One shared anonymous field for the whole event, so every placement in the
   // standings is consistent with every other one.
@@ -260,6 +264,7 @@ export function runTournament(
     {
       orgName: state.orgName,
       playerTags: players.map((p) => p.tag),
+      playerIds: players.map((p) => p.id),
       points: session.totalPoints,
       isYou: true,
     },
@@ -287,6 +292,7 @@ export function runTournament(
     duoId: duo.id,
     duoName: duo.name,
     playerTags: players.map((p) => p.tag),
+    playerIds: players.map((p) => p.id),
     points: session.totalPoints,
     rank,
     fieldSize: ref.fieldSize,

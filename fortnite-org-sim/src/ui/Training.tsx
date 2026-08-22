@@ -5,6 +5,7 @@ import { peakOverall, playerOverall } from '../engine/players'
 import { trainingCost } from '../engine/training'
 import type { AttrKey, GameState, Player } from '../engine/types'
 import { ArchetypeChip, BurnoutBar, EmptyState, money, Panel, ratingColor, sortPlayers } from './components'
+import { PlayerLink } from './PlayerSheet'
 
 /**
  * Training programs are still written in the OLD 11-attribute vocabulary.
@@ -118,7 +119,9 @@ function PlayerTraining({
     <div className="panel p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-100">{player.tag}</span>
+          <PlayerLink playerId={player.id} className="font-semibold text-slate-100">
+            {player.tag}
+          </PlayerLink>
           <ArchetypeChip id={player.archetype} />
           <span className="font-mono text-[11px] text-slate-500">{player.age}y</span>
         </div>

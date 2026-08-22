@@ -226,6 +226,8 @@ export interface RivalDuo {
 export interface RivalStanding {
   orgName: string
   playerTags: string[]
+  /** Ids alongside the tags so the standings table can open a player sheet. */
+  playerIds: string[]
   points: number
   rank: number
 }
@@ -283,6 +285,7 @@ export interface TournamentResult {
   duoId: string
   duoName: string
   playerTags: string[]
+  playerIds: string[]
   points: number
   rank: number
   fieldSize: number

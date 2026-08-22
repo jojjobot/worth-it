@@ -27,6 +27,12 @@ Every player is rated on **7 categories made of 29 sub-stats**, all 1-100.
 | **MENTAL** | Clutch, Under Pressure, Tilt Resistance, Big Stage Nerve, Consistency |
 | **TEAMWORK** | Communication, Decision Making, Adaptivity |
 
+**Click any player name anywhere in the game** — roster, scouting, the duo
+chips on the dashboard, the tournament standings — to open their full stat
+sheet: all 7 categories and all 29 sub-stats at once, with a "Left" column
+showing how much room they have before their ceiling. Scouting rules still
+apply: an unsigned player shows ranges, not numbers.
+
 The category number you see on a player card is a **weighted average, for
 display only**. The match engine never reads it — it always reads the
 individual sub-stats underneath.

@@ -3,6 +3,7 @@ import { computeSynergy, duoStrength } from '../engine/sim'
 import { eventsForWeek } from '../engine/tournament'
 import { expiringContracts } from '../engine/game'
 import { realOrgColor } from '../engine/realPlayers'
+import { PlayerLink } from './PlayerSheet'
 import type { GameState, Player } from '../engine/types'
 import { ArchetypeChip, EmptyState, money, ordinal, Panel, ratingColor } from './components'
 
@@ -81,7 +82,9 @@ export default function Dashboard({
                         className="flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 px-2 py-1 text-xs"
                       >
                         <ArchetypeChip id={p.archetype} small />
-                        <span className="text-slate-200">{p.tag}</span>
+                        <PlayerLink playerId={p.id} className="text-slate-200">
+                          {p.tag}
+                        </PlayerLink>
                       </span>
                     ) : (
                       <span
@@ -170,8 +173,16 @@ export default function Dashboard({
                   </span>
                   <span className="shrink-0 font-mono text-[10px] text-slate-500">{d.region}</span>
                 </div>
-                <div className="mt-1 truncate text-[11px] text-slate-400">
-                  {roster.map((p) => p.tag).join(' + ') || '--'}
+                <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-400">
+                  {roster.length === 0 && '--'}
+                  {roster.map((p, i) => (
+                    <span key={p.id} className="flex items-center gap-1">
+                      {i > 0 && <span className="text-slate-700">+</span>}
+                      <PlayerLink playerId={p.id} className="text-slate-400">
+                        {p.tag}
+                      </PlayerLink>
+                    </span>
+                  ))}
                 </div>
                 <div className="mt-1.5 flex items-center justify-between font-mono text-[10px]">
                   <span className="text-slate-600">
