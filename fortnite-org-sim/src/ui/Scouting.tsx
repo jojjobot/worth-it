@@ -2,9 +2,9 @@ import type { Dispatch, SetStateAction } from 'react'
 import { useMemo, useState } from 'react'
 import { ARCHETYPES, BAL, REGIONS, getArchetype } from '../engine/config'
 import { scoutPlayer, signPlayer, signQuote } from '../engine/game'
-import { uncertaintyFor, viewEgo, viewOverall, viewPotential } from '../engine/players'
+import { uncertaintyFor, viewEgo, viewOverall, viewPeakOverall } from '../engine/players'
 import type { GameState, Player } from '../engine/types'
-import { AttrGrid, EmptyState, Highlights, money, Panel, PlayerHeader } from './components'
+import { EmptyState, Highlights, money, Panel, PlayerHeader, RatingTree } from './components'
 
 export default function Scouting({
   state,
@@ -123,8 +123,8 @@ export default function Scouting({
                 />
 
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-                  <span>
-                    Potential <span className="text-slate-300">{viewPotential(p, false)}</span>
+                  <span title="Their hidden ceiling. Never shown as a number for a player you have not signed - scout them and you get a read, not a rating.">
+                    Ceiling <span className="text-slate-300">{viewPeakOverall(p, false)}</span>
                   </span>
                   <span>
                     Ego <span className="text-slate-300">{viewEgo(p, false)}</span>
@@ -147,7 +147,7 @@ export default function Scouting({
 
                 {open && (
                   <div className="mt-2 space-y-2 border-t border-slate-800 pt-2">
-                    <AttrGrid player={p} owned={false} />
+                    <RatingTree player={p} owned={false} />
                     <Highlights player={p} owned={false} />
                     <p className="text-[11px] italic text-slate-500">
                       {getArchetype(p.archetype).blurb}

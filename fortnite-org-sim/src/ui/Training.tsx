@@ -1,10 +1,21 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { ATTR_LABELS, TRAINING_PROGRAMS, getProgram } from '../engine/config'
+import { LEGACY_BRIDGE, SUB_BY_ID, TRAINING_PROGRAMS, getProgram } from '../engine/config'
 import { setTraining } from '../engine/game'
-import { overall } from '../engine/players'
+import { peakOverall, playerOverall } from '../engine/players'
 import { trainingCost } from '../engine/training'
 import type { AttrKey, GameState, Player } from '../engine/types'
 import { ArchetypeChip, BurnoutBar, EmptyState, money, Panel, ratingColor, sortPlayers } from './components'
+
+/**
+ * Training programs are still written in the OLD 11-attribute vocabulary.
+ * Show the user which real sub-stats a program actually moves, via the bridge
+ * in attributes.json. Build step 6 rewrites the programs directly in sub-stat
+ * terms and this helper goes away.
+ */
+function programTargetLabel(key: AttrKey): string {
+  const subs = LEGACY_BRIDGE[key] ?? []
+  return subs.map((s) => SUB_BY_ID[s].short).join('/')
+}
 
 export default function Training({
   state,
@@ -67,7 +78,7 @@ export default function Training({
                       ? '—'
                       : Object.entries(prog.targets)
                           .sort((a, b) => (b[1] as number) - (a[1] as number))
-                          .map(([k, v]) => `${ATTR_LABELS[k as AttrKey].short} ${v}`)
+                          .map(([k, v]) => `${programTargetLabel(k as AttrKey)} ${v}`)
                           .join(', ')}
                   </td>
                   <td
@@ -98,8 +109,9 @@ function PlayerTraining({
   player: Player
   setState: Dispatch<SetStateAction<GameState | null>>
 }) {
-  const ovr = overall(player.attrs)
-  const headroom = Math.max(0, player.potential - ovr)
+  const ovr = playerOverall(player)
+  const peak = peakOverall(player)
+  const headroom = Math.max(0, peak - ovr)
   const program = getProgram(player.trainingProgram)
 
   return (
@@ -111,8 +123,8 @@ function PlayerTraining({
           <span className="font-mono text-[11px] text-slate-500">{player.age}y</span>
         </div>
         <span className="font-mono text-xs">
-          <span className={ratingColor(ovr)}>{ovr}</span>
-          <span className="text-slate-600"> / {player.potential}</span>
+          <span className={ratingColor(ovr)}>{ovr.toFixed(1)}</span>
+          <span className="text-slate-600" title="Estimated ceiling"> / ~{Math.round(peak)}</span>
         </span>
       </div>
 
@@ -120,7 +132,7 @@ function PlayerTraining({
         <span>
           Headroom{' '}
           <span className={headroom > 8 ? 'text-emerald-300' : headroom > 3 ? 'text-amber-300' : 'text-slate-400'}>
-            +{headroom}
+            +{headroom.toFixed(1)}
           </span>
         </span>
         <BurnoutBar value={player.burnout} />

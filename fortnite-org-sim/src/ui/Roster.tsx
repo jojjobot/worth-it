@@ -11,16 +11,16 @@ import {
   setTrioStrategy,
 } from '../engine/game'
 import { computeSynergy, trioStrength } from '../engine/sim'
-import { viewEgo, viewPotential } from '../engine/players'
+import { viewEgo, viewPeakOverall } from '../engine/players'
 import type { GameState, Player, Strategy } from '../engine/types'
 import {
-  AttrGrid,
   BurnoutBar,
   EmptyState,
   Highlights,
   money,
   Panel,
   PlayerHeader,
+  RatingTree,
   ratingColor,
   sortPlayers,
 } from './components'
@@ -230,8 +230,11 @@ export default function Roster({
                         {p.contractWeeks <= 0 ? 'EXPIRED' : `${p.contractWeeks} wks`}
                       </span>
                     </span>
-                    <span>
-                      Potential <span className="text-slate-300">{viewPotential(p, true)}</span>
+                    <span title="Their hidden ceiling, as your coaching staff estimate it. Always a band - a coach guesses a ceiling, they do not read it off a screen.">
+                      Ceiling <span className="text-slate-300">{viewPeakOverall(p, true)}</span>
+                    </span>
+                    <span title="LAN and Grand Final appearances. The only thing that grows Big Stage Nerve.">
+                      LANs <span className="text-slate-300">{p.lanAppearances}</span>
                     </span>
                     <span>
                       Ego <span className="text-slate-300">{viewEgo(p, true)}</span>
@@ -247,7 +250,7 @@ export default function Roster({
 
                   {open && (
                     <div className="mt-3 space-y-3 border-t border-slate-800 pt-3">
-                      <AttrGrid player={p} owned />
+                      <RatingTree player={p} owned />
                       <Highlights player={p} owned />
                       <p className="text-[11px] italic text-slate-500">
                         {getArchetype(p.archetype).blurb}

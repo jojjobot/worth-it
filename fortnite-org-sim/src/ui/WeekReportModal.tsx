@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { ATTR_LABELS } from '../engine/config'
+import { SUB_BY_ID } from '../engine/config'
 import type { WeekReport } from '../engine/game'
-import type { AttrKey } from '../engine/types'
+import type { SubKey } from '../engine/types'
 import { money } from './components'
 import { TournamentBlock } from './Results'
 
@@ -79,7 +79,7 @@ export default function WeekReportModal({
                     <span className="text-slate-200">{t.tag}</span>
                     {Object.entries(t.gains).map(([k, v]) => (
                       <span key={k} className="font-mono text-emerald-300">
-                        {ATTR_LABELS[k as AttrKey].short} +{(v as number).toFixed(2)}
+                        {SUB_BY_ID[k as SubKey].short} +{(v as number).toFixed(2)}
                       </span>
                     ))}
                   </li>

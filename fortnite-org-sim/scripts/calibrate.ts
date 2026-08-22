@@ -51,7 +51,7 @@ function run(label: string, players: Player[], strategy: Strategy, lobbyRating: 
   const sorted = placements.slice().sort((a, b) => a - b)
   const median = sorted[Math.floor(sorted.length / 2)]
   const strength = trioStrength(players, 60).toFixed(1)
-  const ovrs = players.map((p) => overall(p.attrs)).join('/')
+  const ovrs = players.map((p) => overall(p.current)).join('/')
 
   console.log(
     [
@@ -75,11 +75,11 @@ function run(label: string, players: Player[], strategy: Strategy, lobbyRating: 
 const rng = new Rng(777)
 
 const trios: { label: string; players: Player[] }[] = [
-  { label: 'Amateur (45 ovr, mixed)', players: makeTrio(rng, ['igl', 'wkey_aggro', 'support_anchor'], 45) },
-  { label: 'Solid pro (60 ovr, mixed)', players: makeTrio(rng, ['igl', 'wkey_aggro', 'support_anchor'], 60) },
-  { label: 'Elite (75 ovr, mixed)', players: makeTrio(rng, ['igl', 'wkey_aggro', 'zone_player'], 75) },
-  { label: 'All aggro (60 ovr)', players: makeTrio(rng, ['wkey_aggro', 'wkey_aggro', 'wkey_aggro'], 60) },
-  { label: 'All zone (60 ovr)', players: makeTrio(rng, ['zone_player', 'zone_player', 'igl'], 60) },
+  { label: 'Amateur (45 ovr, mixed)', players: makeTrio(rng, ['igl', 'mech_carry', 'anchor'], 45) },
+  { label: 'Solid pro (60 ovr, mixed)', players: makeTrio(rng, ['igl', 'mech_carry', 'anchor'], 60) },
+  { label: 'Elite (75 ovr, mixed)', players: makeTrio(rng, ['igl', 'mech_carry', 'all_rounder'], 75) },
+  { label: 'All aggro (60 ovr)', players: makeTrio(rng, ['mech_carry', 'fragger', 'prodigy'], 60) },
+  { label: 'All zone (60 ovr)', players: makeTrio(rng, ['all_rounder', 'anchor', 'igl'], 60) },
 ]
 
 console.log('\n=== STRATEGY COMPARISON (lobby 60) ===')

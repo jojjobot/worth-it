@@ -1,28 +1,94 @@
 {
-  "__doc": "Player archetypes. `bias` is added to each attribute at generation (before the 2-3 strengths / 2-3 weaknesses are spiked on top). `strengthPool` and `weaknessPool` bias WHICH attributes get spiked or tanked, so an IGL is unlikely to roll a huge Aim spike. Add your own archetype by copying a block and giving it a new id.",
+  "__doc": "Player archetypes, now written in terms of the 29 SUB-STATS from attributes.json. `bias` is added to a sub-stat at generation, before the 2-3 spikes / 2-3 tanks are applied on top. `strengthPool` and `weaknessPool` decide WHICH sub-stats get spiked or tanked, so an IGL is unlikely to roll a huge Flicks spike. Copy a block and give it a new id to add your own.",
+  "__bias_note": "Any sub-stat you leave out of `bias` is simply 0. You do not have to list all 29.",
+
+  "labelAliases": {
+    "__doc": "Free-text archetype labels used in real_players.json get translated to the ids below. Add a line here if you write a new label into that file.",
+    "Mechanical Aggro Carry": "mech_carry",
+    "Mechanical Carry": "mech_carry",
+    "Aggressive All-Rounder": "all_rounder",
+    "Complete Veteran": "all_rounder",
+    "Veteran Anchor": "anchor",
+    "Anchor": "anchor",
+    "IGL / Zone Anchor": "igl",
+    "Support IGL": "support_igl",
+    "Fragger": "fragger",
+    "Prodigy": "prodigy",
+    "Legend": "legend"
+  },
 
   "archetypes": [
     {
-      "id": "wkey_aggro",
-      "name": "W-Key Aggro",
-      "short": "AGGRO",
+      "id": "mech_carry",
+      "name": "Mechanical Carry",
+      "short": "CARRY",
       "color": "#ff4d4d",
-      "blurb": "Sees a player, hears a player, presses W. Wins games off raw mechanics, throws games off raw impatience.",
+      "blurb": "Fastest hands in the lobby. Wins unwinnable fights, then rotates into the storm because nobody was calling.",
       "bias": {
-        "aim": 9,
-        "buildSpeed": 8,
-        "editing": 7,
-        "pieceControl": 2,
-        "gameSense": -9,
-        "lootPathing": -4,
-        "endgame": -3,
-        "clutch": 4,
-        "consistency": -8,
-        "stamina": -2,
-        "comms": -3
+        "tracking": 6, "flicks": 8, "accuracy": 5, "headshot": 6,
+        "build_speed": 9, "build_efficiency": -4, "edit_speed": 9, "edit_accuracy": 3,
+        "edit_iq": 2, "piece_control": 7, "box_fighting": 8, "hg_retakes": 5, "reset_timing": -5, "movement": 7,
+        "positioning": -8, "rotation": -8, "fight_selection": -9, "resource_mgmt": -9,
+        "drop_accuracy": 3, "fifty_fifties": 5, "offspawn_fights": 6,
+        "clutch": 5, "under_pressure": -2, "tilt_resistance": -5, "consistency": -8,
+        "communication": -3, "decision_making": -9, "adaptivity": 0
       },
-      "strengthPool": ["aim", "buildSpeed", "editing", "clutch"],
-      "weaknessPool": ["gameSense", "consistency", "lootPathing", "endgame", "comms"]
+      "strengthPool": ["build_speed", "edit_speed", "box_fighting", "piece_control", "flicks", "movement", "offspawn_fights"],
+      "weaknessPool": ["positioning", "rotation", "fight_selection", "resource_mgmt", "decision_making", "consistency", "reset_timing"]
+    },
+    {
+      "id": "fragger",
+      "name": "Fragger",
+      "short": "FRAG",
+      "color": "#ff7a3d",
+      "blurb": "Exists to get the first elim. Aim first, questions later. Somebody else has to hold the piece.",
+      "bias": {
+        "tracking": 8, "flicks": 7, "accuracy": 7, "headshot": 9,
+        "build_speed": 4, "build_efficiency": -3, "edit_speed": 4, "edit_accuracy": 1,
+        "edit_iq": 0, "piece_control": 4, "box_fighting": 7, "hg_retakes": 3, "reset_timing": -4, "movement": 4,
+        "positioning": -5, "rotation": -5, "fight_selection": -6, "resource_mgmt": -5,
+        "drop_accuracy": 2, "fifty_fifties": 5, "offspawn_fights": 6,
+        "clutch": 4, "under_pressure": -2, "tilt_resistance": -4, "consistency": -5,
+        "communication": 0, "decision_making": -6, "adaptivity": 1
+      },
+      "strengthPool": ["tracking", "headshot", "accuracy", "flicks", "box_fighting", "offspawn_fights", "fifty_fifties"],
+      "weaknessPool": ["fight_selection", "resource_mgmt", "rotation", "decision_making", "reset_timing", "tilt_resistance"]
+    },
+    {
+      "id": "all_rounder",
+      "name": "Aggressive All-Rounder",
+      "short": "ALLRD",
+      "color": "#ffc94d",
+      "blurb": "No hole anywhere in the tree. Rarely the best fighter on the server, always in the last five teams.",
+      "bias": {
+        "tracking": 3, "flicks": 2, "accuracy": 4, "headshot": 3,
+        "build_speed": 3, "build_efficiency": 3, "edit_speed": 3, "edit_accuracy": 3,
+        "edit_iq": 4, "piece_control": 4, "box_fighting": 3, "hg_retakes": 3, "reset_timing": 4, "movement": 2,
+        "positioning": 4, "rotation": 4, "fight_selection": 4, "resource_mgmt": 4,
+        "drop_accuracy": 2, "fifty_fifties": 2, "offspawn_fights": 2,
+        "clutch": 2, "under_pressure": 3, "tilt_resistance": 3, "consistency": 4,
+        "communication": 3, "decision_making": 3, "adaptivity": 2
+      },
+      "strengthPool": ["accuracy", "piece_control", "reset_timing", "positioning", "fight_selection", "consistency", "under_pressure"],
+      "weaknessPool": ["flicks", "movement", "drop_accuracy", "adaptivity", "clutch"]
+    },
+    {
+      "id": "anchor",
+      "name": "Support-Anchor",
+      "short": "ANCHR",
+      "color": "#8bd66b",
+      "blurb": "Holds the piece, carries the mats, takes the trade so the star gets out. Unspectacular and irreplaceable.",
+      "bias": {
+        "tracking": 0, "flicks": -5, "accuracy": 3, "headshot": 0,
+        "build_speed": -3, "build_efficiency": 9, "edit_speed": -3, "edit_accuracy": 5,
+        "edit_iq": 7, "piece_control": 6, "box_fighting": -2, "hg_retakes": 2, "reset_timing": 8, "movement": -4,
+        "positioning": 8, "rotation": 7, "fight_selection": 7, "resource_mgmt": 10,
+        "drop_accuracy": -2, "fifty_fifties": -3, "offspawn_fights": -2,
+        "clutch": -2, "under_pressure": 5, "tilt_resistance": 7, "consistency": 8,
+        "communication": 7, "decision_making": 6, "adaptivity": 4
+      },
+      "strengthPool": ["resource_mgmt", "build_efficiency", "reset_timing", "positioning", "edit_iq", "consistency", "tilt_resistance"],
+      "weaknessPool": ["flicks", "movement", "box_fighting", "offspawn_fights", "clutch", "edit_speed"]
     },
     {
       "id": "igl",
@@ -31,104 +97,80 @@
       "color": "#4dd2ff",
       "blurb": "Calls the rotates, reads the zone, keeps the trio alive. Rarely the one topping the elim charts.",
       "bias": {
-        "aim": -6,
-        "buildSpeed": -4,
-        "editing": -3,
-        "pieceControl": 2,
-        "gameSense": 11,
-        "lootPathing": 6,
-        "endgame": 6,
-        "clutch": 1,
-        "consistency": 6,
-        "stamina": 2,
-        "comms": 12
+        "tracking": -6, "flicks": -7, "accuracy": -4, "headshot": -5,
+        "build_speed": -2, "build_efficiency": 6, "edit_speed": -2, "edit_accuracy": 4,
+        "edit_iq": 5, "piece_control": 2, "box_fighting": -7, "hg_retakes": -2, "reset_timing": 6, "movement": -4,
+        "positioning": 12, "rotation": 11, "fight_selection": 9, "resource_mgmt": 9,
+        "drop_accuracy": -4, "fifty_fifties": -5, "offspawn_fights": -6,
+        "clutch": -5, "under_pressure": 3, "tilt_resistance": 5, "consistency": 6,
+        "communication": 11, "decision_making": 13, "adaptivity": -2
       },
-      "strengthPool": ["gameSense", "comms", "endgame", "lootPathing", "consistency"],
-      "weaknessPool": ["aim", "buildSpeed", "editing", "clutch"]
+      "strengthPool": ["positioning", "rotation", "decision_making", "communication", "resource_mgmt", "fight_selection", "edit_iq"],
+      "weaknessPool": ["flicks", "tracking", "headshot", "box_fighting", "offspawn_fights", "clutch", "movement"]
     },
     {
-      "id": "support_anchor",
-      "name": "Support-Anchor",
-      "short": "ANCHOR",
-      "color": "#8bd66b",
-      "blurb": "Holds the piece, carries the mats, takes the trade so the star gets out. Unspectacular and irreplaceable.",
+      "id": "support_igl",
+      "name": "Support IGL",
+      "short": "SIGL",
+      "color": "#5ad6c0",
+      "blurb": "Makes the calls without giving anything up mechanically. The calm half of a duo built around somebody else.",
       "bias": {
-        "aim": -3,
-        "buildSpeed": 3,
-        "editing": 1,
-        "pieceControl": 11,
-        "gameSense": 3,
-        "lootPathing": 8,
-        "endgame": 4,
-        "clutch": -3,
-        "consistency": 9,
-        "stamina": 7,
-        "comms": 6
+        "tracking": 0, "flicks": -3, "accuracy": 2, "headshot": 0,
+        "build_speed": 1, "build_efficiency": 5, "edit_speed": 1, "edit_accuracy": 4,
+        "edit_iq": 5, "piece_control": 3, "box_fighting": -2, "hg_retakes": 1, "reset_timing": 6, "movement": -1,
+        "positioning": 7, "rotation": 7, "fight_selection": 7, "resource_mgmt": 7,
+        "drop_accuracy": -2, "fifty_fifties": -3, "offspawn_fights": -2,
+        "clutch": -3, "under_pressure": 2, "tilt_resistance": 4, "consistency": 5,
+        "communication": 9, "decision_making": 10, "adaptivity": 3
       },
-      "strengthPool": ["pieceControl", "lootPathing", "consistency", "stamina", "comms"],
-      "weaknessPool": ["aim", "clutch", "editing", "endgame"]
+      "strengthPool": ["decision_making", "communication", "positioning", "rotation", "reset_timing", "resource_mgmt"],
+      "weaknessPool": ["flicks", "box_fighting", "clutch", "offspawn_fights", "movement"]
     },
     {
-      "id": "zone_player",
-      "name": "Zone Player",
-      "short": "ZONE",
-      "color": "#c58bff",
-      "blurb": "Never takes a fight they do not have to. Lives in the top 10 and lets the lobby kill itself.",
+      "id": "prodigy",
+      "name": "Prodigy",
+      "short": "PRDGY",
+      "color": "#ff4dd2",
+      "blurb": "Fifteen years old and already the scariest player in any box. Cannot rotate, cannot handle a stage, will be the best in the world in two years.",
       "bias": {
-        "aim": -7,
-        "buildSpeed": -2,
-        "editing": -4,
-        "pieceControl": 4,
-        "gameSense": 9,
-        "lootPathing": 10,
-        "endgame": 10,
-        "clutch": -4,
-        "consistency": 7,
-        "stamina": 5,
-        "comms": 1
+        "tracking": 7, "flicks": 9, "accuracy": 6, "headshot": 8,
+        "build_speed": 10, "build_efficiency": -3, "edit_speed": 11, "edit_accuracy": 4,
+        "edit_iq": 1, "piece_control": 8, "box_fighting": 10, "hg_retakes": 6, "reset_timing": -6, "movement": 9,
+        "positioning": -9, "rotation": -9, "fight_selection": -10, "resource_mgmt": -10,
+        "drop_accuracy": 2, "fifty_fifties": 5, "offspawn_fights": 6,
+        "clutch": 4, "under_pressure": -8, "tilt_resistance": -9, "big_stage_nerve": -4, "consistency": -8,
+        "communication": -5, "decision_making": -10, "adaptivity": 4
       },
-      "strengthPool": ["gameSense", "lootPathing", "endgame", "consistency"],
-      "weaknessPool": ["aim", "clutch", "editing", "buildSpeed"]
+      "strengthPool": ["edit_speed", "build_speed", "box_fighting", "movement", "flicks", "piece_control", "headshot"],
+      "weaknessPool": ["fight_selection", "resource_mgmt", "decision_making", "rotation", "positioning", "tilt_resistance", "under_pressure"]
+    },
+    {
+      "id": "legend",
+      "name": "Legend",
+      "short": "LGND",
+      "color": "#e3c15a",
+      "blurb": "Has won everything. The hands have started to go; the reads and the nerve never will.",
+      "bias": {
+        "tracking": -2, "flicks": -6, "accuracy": 3, "headshot": -1,
+        "build_speed": -6, "build_efficiency": 9, "edit_speed": -6, "edit_accuracy": 4,
+        "edit_iq": 9, "piece_control": 4, "box_fighting": -5, "hg_retakes": -1, "reset_timing": 9, "movement": -7,
+        "positioning": 10, "rotation": 10, "fight_selection": 10, "resource_mgmt": 10,
+        "drop_accuracy": -3, "fifty_fifties": -5, "offspawn_fights": -4,
+        "clutch": 2, "under_pressure": 6, "tilt_resistance": 9, "big_stage_nerve": 10, "consistency": 8,
+        "communication": 8, "decision_making": 9, "adaptivity": 4
+      },
+      "strengthPool": ["positioning", "rotation", "fight_selection", "resource_mgmt", "edit_iq", "reset_timing", "tilt_resistance"],
+      "weaknessPool": ["flicks", "edit_speed", "build_speed", "movement", "box_fighting", "offspawn_fights"]
     },
     {
       "id": "flex",
       "name": "Flex",
       "short": "FLEX",
-      "color": "#ffc94d",
+      "color": "#94a3b8",
       "blurb": "Slots into any trio. Fewer glaring holes, fewer god-tier highs.",
-      "bias": {
-        "aim": 2,
-        "buildSpeed": 2,
-        "editing": 2,
-        "pieceControl": 2,
-        "gameSense": 2,
-        "lootPathing": 2,
-        "endgame": 2,
-        "clutch": 2,
-        "consistency": 2,
-        "stamina": 2,
-        "comms": 2
-      },
-      "strengthPool": ["aim", "buildSpeed", "editing", "pieceControl", "gameSense", "lootPathing", "endgame", "clutch", "stamina", "comms"],
-      "weaknessPool": ["aim", "buildSpeed", "editing", "pieceControl", "gameSense", "lootPathing", "endgame", "clutch", "stamina", "comms"]
+      "bias": {},
+      "strengthPool": ["tracking", "flicks", "accuracy", "headshot", "build_speed", "build_efficiency", "edit_speed", "edit_accuracy", "edit_iq", "piece_control", "box_fighting", "hg_retakes", "reset_timing", "movement", "positioning", "rotation", "fight_selection", "resource_mgmt", "drop_accuracy", "fifty_fifties", "offspawn_fights", "clutch", "under_pressure", "tilt_resistance", "consistency", "communication", "decision_making", "adaptivity"],
+      "weaknessPool": ["tracking", "flicks", "accuracy", "headshot", "build_speed", "build_efficiency", "edit_speed", "edit_accuracy", "edit_iq", "piece_control", "box_fighting", "hg_retakes", "reset_timing", "movement", "positioning", "rotation", "fight_selection", "resource_mgmt", "drop_accuracy", "fifty_fifties", "offspawn_fights", "clutch", "under_pressure", "tilt_resistance", "consistency", "communication", "decision_making", "adaptivity"]
     }
-  ],
-
-  "attributes": {
-    "__doc": "Display names and tooltips for the 11 visible ratings. Order here is the order shown in the UI.",
-    "order": ["aim", "buildSpeed", "editing", "pieceControl", "gameSense", "lootPathing", "endgame", "clutch", "consistency", "stamina", "comms"],
-    "labels": {
-      "aim": { "name": "Aim", "short": "AIM", "desc": "Fights won. Raw gunplay in a box fight or an open-field spray." },
-      "buildSpeed": { "name": "Build Speed", "short": "BLD", "desc": "Mechanics under pressure. Getting the wall up before the shot lands." },
-      "editing": { "name": "Editing", "short": "EDT", "desc": "Fast plays, edit courses, cone-and-confirm windows." },
-      "pieceControl": { "name": "Piece Control", "short": "PC", "desc": "Taking and holding the other trio pieces. The endgame skill." },
-      "gameSense": { "name": "Game Sense", "short": "GS", "desc": "Zone reads. Knowing when to fight and when to rotate." },
-      "lootPathing": { "name": "Loot Pathing", "short": "LOOT", "desc": "Early game efficiency. Mats, shields and a clean path out." },
-      "endgame": { "name": "Endgame", "short": "END", "desc": "Final circles, height retakes, surviving the last five teams." },
-      "clutch": { "name": "Clutch", "short": "CLT", "desc": "1v3s and low HP moments. Some players get better as it gets worse." },
-      "consistency": { "name": "Consistency", "short": "CON", "desc": "How much they vary match to match. LOW = boom or bust." },
-      "stamina": { "name": "Stamina", "short": "STA", "desc": "Drop-off over a long session. Matters most in matches 6-10." },
-      "comms": { "name": "Comms", "short": "CMS", "desc": "Raises the whole trio. Callouts, calm, information." }
-    }
-  }
+  ]
 }

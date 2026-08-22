@@ -10,6 +10,69 @@ After a change, run `npm run calibrate` to see what it actually did.
 
 ---
 
+## The attribute tree (`attributes.json`)
+
+Every player is rated on **7 categories made of 29 sub-stats**, all 1-100.
+
+| Category | Sub-stats |
+|---|---|
+| **AIM** | Tracking, Flicks, Accuracy, Headshot Aim |
+| **MECHANICS** | Build Speed, Build Efficiency, Edit Speed, Edit Accuracy |
+| **FIGHTING** | Edit IQ, Piece Control, Box Fighting, HG Retakes, Reset Timing, Movement |
+| **GAME SENSE** | Positioning, Rotation, Fight Selection, Resource Mgmt |
+| **OFFSPAWN** | Drop Accuracy, Fifty-Fifties, Offspawn Fights |
+| **MENTAL** | Clutch, Under Pressure, Tilt Resistance, Big Stage Nerve, Consistency |
+| **TEAMWORK** | Communication, Decision Making, Adaptivity |
+
+The category number you see on a player card is a **weighted average, for
+display only**. The match engine never reads it — it always reads the
+individual sub-stats underneath.
+
+- `categoryWeights` — how much each category counts toward the single OVR
+  number on a player card. Cosmetic. Changing it does not change who wins
+  matches.
+- Each sub-stat has its own `weight` inside its category, for the same purpose.
+- `displayCalibration` — a final scale/offset on OVR so the numbers line up with
+  the hand-written overalls in `real_players.json`. Set `scale: 1, offset: 0`
+  to see the raw maths.
+
+### Current vs peak
+
+Every player carries **two full sets of all 29 sub-stats**:
+
+- **current** — what they are right now. This is what the roster shows and what
+  the sim uses.
+- **peak** — their ceiling. **Hidden.** Scouting only ever gives you a band or a
+  phrase, never an exact number, and unsigned players never show a number at
+  all.
+
+Players drift toward peak every week, and start declining past
+`progression.declineStartAge` in `balance.json` (currently 22).
+
+- `peakModel.gapByAge` — how much room a player of a given age has left.
+- `peakModel.categoryGapScale` — per category. Hands (aim, mechanics) are nearly
+  finished early; heads (game sense, mental, teamwork) keep growing for years.
+- `decline.categoryDeclineScale` — what falls off after the decline age. A
+  **negative** value means the category keeps *growing*, which is how a veteran
+  loses their hands but keeps improving their reads.
+
+### Big Stage Nerve — the one stat that must be earned
+
+Big Stage Nerve applies **only at LAN and Grand Final events** and is ignored
+everywhere else. **No training program can move it.** It grows purely from
+turning up to LANs, in `attributes.json` -> `bigStageNerve`:
+
+- `startByAge` — where a player starts before their first LAN. Harsh on kids on
+  purpose: this is why the 17-year-old world #1 loses the Grand Final.
+- `peakBonusByAge` — how much they can eventually add. A 17-year-old starting on
+  72 tops out around 94; a 22-year-old barely moves.
+- `gainPerLan` / `gainDecayPerLan` — points per appearance, and how quickly
+  later LANs stop teaching them anything.
+- `goodResultMultiplier` / `badResultMultiplier` — winning on stage teaches more
+  than getting rolled on stage.
+
+---
+
 ## "The game is too hard / too easy"
 
 **One dial fixes most of it:** `lobbyRating` on each event in

@@ -16,11 +16,12 @@
 
 import trainingJson from '../data/training.json'
 import namesJson from '../data/names.json'
-import { BAL, pointsFor } from './config'
+import { BAL, legacyAttrs, pointsFor } from './config'
 import { Rng, clamp, winChance } from './rng'
 import {
   PERF_ATTRS,
   type AttrKey,
+  type Attributes,
   type MatchResult,
   type Player,
   type SessionResult,
@@ -31,6 +32,18 @@ import {
 // Burnout penalty and POI flavour text both live in the data files.
 const BAL_TRAIN_BURNOUT_PENALTY = (trainingJson as any).model.burnout.matchPenaltyAtMax as number
 const BAL_POIS = (namesJson as any).pois as { hot: string[]; medium: string[]; cold: string[] }
+
+// TEMPORARY BRIDGE (build step 3 deletes this). The engine below still speaks
+// the old 11-attribute vocabulary; players now carry 29 sub-stats. legacyAttrs
+// collapses one into the other using attributes.json -> legacyBridge, so the
+// old phases keep running unchanged until they are rewritten around the new
+// tree and the Fighting multiplier.
+/** Archetypes that press W. Drives contest chance and mid-game fight count. */
+const AGGRO_ARCHETYPES = new Set(['mech_carry', 'fragger', 'prodigy'])
+
+function la(p: Player): Attributes {
+  return legacyAttrs(p.current)
+}
 
 export interface SessionOptions {
   matches: number
@@ -60,9 +73,11 @@ export function computeSynergy(players: Player[], gamesTogether: number): Synerg
     return { total: 0, comms: 0, ego: 0, chemistry: 0, composition: 0, notes }
   }
 
-  const avgComms = alive.reduce((a, p) => a + p.attrs.comms, 0) / alive.length
-  const avgEgo = alive.reduce((a, p) => a + p.ego, 0) / alive.length
-  const maxEgo = Math.max(...alive.map((p) => p.ego))
+  const avgComms = alive.reduce((a, p) => a + la(p).comms, 0) / alive.length
+  // Real reference players have no ego rating at all - treat them as neutral.
+  const egos = alive.map((p) => p.ego ?? 50)
+  const avgEgo = egos.reduce((a, b) => a + b, 0) / egos.length
+  const maxEgo = Math.max(...egos)
 
   const comms = (avgComms - 50) * s.commsWeight
   const ego = -(Math.max(0, avgEgo - 50) * s.egoPenaltyWeight)
@@ -80,13 +95,13 @@ export function computeSynergy(players: Player[], gamesTogether: number): Synerg
   } else {
     notes.push('No IGL - nobody is calling the rotates.')
   }
-  if (ids.includes('support_anchor')) composition += c.hasSupportAnchor
-  if (ids.includes('zone_player')) composition += c.hasZonePlayer
+  if (ids.includes('anchor')) composition += c.hasSupportAnchor
+  if (ids.includes('all_rounder')) composition += c.hasZonePlayer
   if (ids.length === 3 && ids[0] === ids[1] && ids[1] === ids[2]) {
     composition += c.threeOfSameArchetype
     notes.push('Three of the same archetype - the roles overlap badly.')
   }
-  const aggroCount = ids.filter((a) => a === 'wkey_aggro').length
+  const aggroCount = ids.filter((a) => AGGRO_ARCHETYPES.has(a)).length
   if (aggroCount >= 2) {
     composition += c.twoOrMoreAggro
     notes.push('Two or more aggro players - somebody has to hold the piece.')
@@ -108,14 +123,14 @@ export function fatigueAmount(player: Player, matchIndex: number): number {
   const f = BAL.simulation.fatigue
   const over = Math.max(0, matchIndex + 1 - f.freeMatches)
   const raw = over * f.perMatch
-  const resistance = (player.attrs.stamina / 99) * f.staminaScale
+  const resistance = (la(player).stamina / 99) * f.staminaScale
   return raw * (1 - resistance)
 }
 
 /** Per-match form roll. Low Consistency = huge swings. */
 function formRoll(player: Player, rng: Rng): number {
   const cm = BAL.simulation.consistencyModel
-  const sigma = cm.baseSigma * (1 - (player.attrs.consistency / 99) * cm.consistencyScale)
+  const sigma = cm.baseSigma * (1 - (player.current.consistency / 99) * cm.consistencyScale)
   return rng.gauss(0, sigma)
 }
 
@@ -136,11 +151,12 @@ function buildTeamSnapshot(
 
   const form = players.map((p) => formRoll(p, rng))
   const fatigue = players.map((p) => fatigueAmount(p, matchIndex))
+  const legacy = players.map((p) => la(p))
 
   const stats = {} as Record<AttrKey, number>
   for (const key of PERF_ATTRS) {
     const values = players.map((p, i) => {
-      let v = p.attrs[key]
+      let v = legacy[i][key]
       v -= fatigue[i] * (sens[key] ?? 1)
       v -= (p.burnout / 100) * BAL_TRAIN_BURNOUT_PENALTY
       v += form[i]
@@ -152,8 +168,8 @@ function buildTeamSnapshot(
     stats[key] = avg * (1 - a) + best * a + synergy
   }
   // Non-performance attributes pass through as plain averages for display.
-  stats.consistency = players.reduce((a, p) => a + p.attrs.consistency, 0) / players.length
-  stats.stamina = players.reduce((a, p) => a + p.attrs.stamina, 0) / players.length
+  stats.consistency = players.reduce((a, p) => a + p.current.consistency, 0) / players.length
+  stats.stamina = legacy.reduce((a, l) => a + l.stamina, 0) / players.length
   return { stats, form, fatigue }
 }
 
@@ -200,7 +216,7 @@ export function simulateMatch(
   let mats = 0
   let shield = 0
 
-  const aggroCount = players.filter((p) => p.archetype === 'wkey_aggro').length
+  const aggroCount = players.filter((p) => AGGRO_ARCHETYPES.has(p.archetype)).length
 
   // --- PHASE 1: DROP -------------------------------------------------------
   const d = S.drop
@@ -469,9 +485,10 @@ export function trioStrength(players: Player[], gamesTogether: number): number {
   const synergy = computeSynergy(players, gamesTogether).total
   const agg = BAL.simulation.teamAggregation as Record<string, number>
   const S = BAL.simulation
+  const legacy = players.map((p) => la(p))
   const stats = {} as Record<AttrKey, number>
   for (const key of PERF_ATTRS) {
-    const values = players.map((p) => p.attrs[key])
+    const values = legacy.map((l) => l[key])
     const avg = values.reduce((a, b) => a + b, 0) / values.length
     const best = Math.max(...values)
     const a = agg[key] ?? 0.4

@@ -1,7 +1,14 @@
-import React from 'react'
-import { ATTR_LABELS, ATTR_ORDER, getArchetype, getRegion } from '../engine/config'
-import { overall, profileHighlights, viewAttr, viewOverall } from '../engine/players'
-import type { AttrKey, Player } from '../engine/types'
+import React, { useState } from 'react'
+import { CATEGORIES, SUB_BY_ID, getArchetype, getRegion } from '../engine/config'
+import {
+  playerOverall,
+  profileHighlights,
+  viewCategory,
+  viewOverall,
+  viewPeakSub,
+  viewSub,
+} from '../engine/players'
+import type { CategoryKey, Player, SubKey } from '../engine/types'
 
 export function money(n: number): string {
   const sign = n < 0 ? '-' : ''
@@ -103,7 +110,7 @@ export function OvrBadge({ player, owned }: { player: Player; owned: boolean }) 
       <span
         className={`font-mono text-lg font-bold leading-none ${v.known ? ratingColor(v.value) : 'text-slate-400'}`}
       >
-        {v.known ? v.value : mid}
+        {v.known ? Math.round(v.value) : mid}
       </span>
       <span className="text-[8px] uppercase tracking-widest text-slate-500">
         {v.known ? 'OVR' : `±${band}`}
@@ -112,38 +119,86 @@ export function OvrBadge({ player, owned }: { player: Player; owned: boolean }) 
   )
 }
 
-/** One attribute row: bar plus number, or a shaded band when unscouted. */
-export function AttrRow({
-  player,
-  attr,
-  owned,
+// ---------------------------------------------------------------------------
+// THE RATING TREE
+//
+// Seven category rollups, each one expandable to its sub-stats. The category
+// number is a weighted average and is DISPLAY ONLY - the match engine reads the
+// sub-stats underneath it.
+//
+// The faint tick on each bar is the player's PEAK. It is only drawn for players
+// you own, or unsigned players you have scouted far enough - and it is never
+// printed as an exact number.
+// ---------------------------------------------------------------------------
+
+/** One bar: a filled current value, an optional shaded uncertainty band, and a peak tick. */
+function RatingBar({
+  low,
+  high,
+  value,
+  known,
+  peak,
+  thick = false,
 }: {
-  player: Player
-  attr: AttrKey
-  owned: boolean
+  low: number
+  high: number
+  value: number
+  known: boolean
+  peak?: { low: number; high: number } | null
+  thick?: boolean
 }) {
-  const view = viewAttr(player, attr, owned)
-  const label = ATTR_LABELS[attr]
   return (
-    <div className="flex items-center gap-2" title={label.desc}>
-      <span className="w-10 shrink-0 font-mono text-[10px] uppercase text-slate-500">
-        {label.short}
-      </span>
-      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-slate-800">
-        {view.known ? (
-          <div
-            className={`h-full rounded-full ${ratingBg(view.value)}`}
-            style={{ width: `${view.value}%` }}
-          />
-        ) : (
-          <div
-            className="h-full rounded-full bg-slate-600/70"
-            style={{ left: `${view.low}%`, width: `${view.high - view.low}%`, position: 'absolute' }}
-          />
-        )}
-      </div>
+    <div
+      className={`relative flex-1 overflow-hidden rounded-full bg-slate-800 ${thick ? 'h-2' : 'h-1.5'}`}
+    >
+      {known ? (
+        <div
+          className={`h-full rounded-full ${ratingBg(value)}`}
+          style={{ width: `${clampPct(value)}%` }}
+        />
+      ) : (
+        <div
+          className="absolute h-full rounded-full bg-slate-600/70"
+          style={{ left: `${clampPct(low)}%`, width: `${Math.max(1, clampPct(high) - clampPct(low))}%` }}
+        />
+      )}
+      {peak && (
+        <div
+          className="absolute top-0 h-full border-l border-dashed border-slate-300/45"
+          style={{ left: `${clampPct((peak.low + peak.high) / 2)}%` }}
+        />
+      )}
+    </div>
+  )
+}
+
+function clampPct(v: number): number {
+  return Math.max(0, Math.min(100, v))
+}
+
+function SubRow({ player, sub, owned }: { player: Player; sub: SubKey; owned: boolean }) {
+  const view = viewSub(player, sub, owned)
+  const peak = viewPeakSub(player, sub, owned)
+  const def = SUB_BY_ID[sub]
+  const headroom = peak ? peak.value - view.value : 0
+  return (
+    <div
+      className="flex items-center gap-2 py-[1px]"
+      title={
+        def.desc +
+        (peak ? `\n\nCeiling: roughly ${peak.low}-${peak.high} (${headroom > 1 ? `+${Math.round(headroom)} to go` : 'about there already'})` : '')
+      }
+    >
+      <span className="w-[104px] shrink-0 truncate text-[11px] text-slate-400">{def.name}</span>
+      <RatingBar
+        low={view.low}
+        high={view.high}
+        value={view.value}
+        known={view.known}
+        peak={peak}
+      />
       <span
-        className={`w-14 shrink-0 text-right font-mono text-[11px] ${
+        className={`w-12 shrink-0 text-right font-mono text-[11px] ${
           view.known ? ratingColor(view.value) : 'text-slate-500'
         }`}
       >
@@ -153,12 +208,119 @@ export function AttrRow({
   )
 }
 
-export function AttrGrid({ player, owned }: { player: Player; owned: boolean }) {
+function CategoryBlock({
+  player,
+  category,
+  owned,
+  open,
+  onToggle,
+}: {
+  player: Player
+  category: CategoryKey
+  owned: boolean
+  open: boolean
+  onToggle: () => void
+}) {
+  const def = CATEGORIES.find((c) => c.id === category)!
+  const view = viewCategory(player, category, owned)
+
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
-      {ATTR_ORDER.map((attr) => (
-        <AttrRow key={attr} player={player} attr={attr} owned={owned} />
+    <div className="rounded border border-slate-800/80 bg-slate-950/40">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 px-2 py-1.5 text-left transition hover:bg-slate-900/60"
+        title={def.blurb}
+      >
+        <span
+          className="w-4 shrink-0 text-center font-mono text-[10px] text-slate-500"
+          aria-hidden
+        >
+          {open ? '−' : '+'}
+        </span>
+        <span
+          className="w-[74px] shrink-0 font-mono text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color: def.color }}
+        >
+          {def.short}
+        </span>
+        <RatingBar
+          low={view.low}
+          high={view.high}
+          value={view.value}
+          known={view.known}
+          thick
+        />
+        <span
+          className={`w-12 shrink-0 text-right font-mono text-xs font-semibold ${
+            view.known ? ratingColor(view.value) : 'text-slate-500'
+          }`}
+        >
+          {view.known ? view.value.toFixed(1) : `${view.low}-${view.high}`}
+        </span>
+      </button>
+
+      {open && (
+        <div className="space-y-px border-t border-slate-800/80 px-2 py-1.5 pl-6">
+          {def.subs.map((s) => (
+            <SubRow key={s.id} player={player} sub={s.id} owned={owned} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The full 7-category tree. Categories start collapsed; click one to see the
+ * sub-stats the match engine actually reads.
+ */
+export function RatingTree({
+  player,
+  owned,
+  defaultOpen = [],
+}: {
+  player: Player
+  owned: boolean
+  defaultOpen?: CategoryKey[]
+}) {
+  const [open, setOpen] = useState<Set<CategoryKey>>(new Set(defaultOpen))
+  const allOpen = open.size === CATEGORIES.length
+
+  const toggle = (id: CategoryKey) =>
+    setOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="label">Attributes</span>
+        <button
+          className="text-[10px] uppercase tracking-wider text-slate-500 transition hover:text-cyan-300"
+          onClick={() =>
+            setOpen(allOpen ? new Set() : new Set(CATEGORIES.map((c) => c.id as CategoryKey)))
+          }
+        >
+          {allOpen ? 'Collapse all' : 'Expand all'}
+        </button>
+      </div>
+      {CATEGORIES.map((c) => (
+        <CategoryBlock
+          key={c.id}
+          player={player}
+          category={c.id as CategoryKey}
+          owned={owned}
+          open={open.has(c.id as CategoryKey)}
+          onToggle={() => toggle(c.id as CategoryKey)}
+        />
       ))}
+      <p className="pt-0.5 text-[10px] leading-relaxed text-slate-600">
+        Category numbers are a weighted average for display only — the match engine always reads the
+        individual sub-stats. The dashed tick on a bar is their hidden ceiling.
+      </p>
     </div>
   )
 }
@@ -179,13 +341,13 @@ export function Highlights({ player, owned }: { player: Player; owned: boolean }
       <div>
         <span className="text-emerald-400">STRONG </span>
         <span className="text-slate-300">
-          {strengths.map((k) => ATTR_LABELS[k].name).join(', ') || 'nothing stands out'}
+          {strengths.map((k) => SUB_BY_ID[k].name).join(', ') || 'nothing stands out'}
         </span>
       </div>
       <div>
         <span className="text-rose-400">WEAK </span>
         <span className="text-slate-300">
-          {weaknesses.map((k) => ATTR_LABELS[k].name).join(', ') || 'no glaring holes'}
+          {weaknesses.map((k) => SUB_BY_ID[k].name).join(', ') || 'no glaring holes'}
         </span>
       </div>
     </div>
@@ -212,6 +374,14 @@ export function PlayerHeader({
           <span className="font-mono text-[10px] text-slate-500">
             {region.id} · {player.age}y
           </span>
+          {player.lanAppearances > 0 && (
+            <span
+              className="font-mono text-[10px] text-slate-500"
+              title="LAN and Grand Final appearances. This is what grows Big Stage Nerve."
+            >
+              · {player.lanAppearances} LAN
+            </span>
+          )}
         </div>
         <div className="mt-0.5 text-[11px] text-slate-500">
           {player.orgName ? player.orgName : 'Free agent'} · {money(player.salary)}/wk
@@ -245,5 +415,5 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
 }
 
 export function sortPlayers(players: Player[]): Player[] {
-  return [...players].sort((a, b) => overall(b.attrs) - overall(a.attrs))
+  return [...players].sort((a, b) => playerOverall(b) - playerOverall(a))
 }

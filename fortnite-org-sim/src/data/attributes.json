@@ -1,0 +1,212 @@
+{
+  "__doc": "THE ATTRIBUTE TREE. 7 categories, 29 sub-stats, every one rated 1-100. Category scores are a WEIGHTED AVERAGE of their sub-stats and exist ONLY for display - the match engine always reads individual sub-stats. Everything in this file is safe to tune: change a weight, save, and the app hot-reloads.",
+  "__count_note": "The design brief said 26 sub-stats but then listed 29 of them. The list won, so there are 29. To drop three, delete them from a category's `subs` array AND from every player in real_players.json.",
+
+  "displayCalibration": {
+    "__doc": "Final tweak applied to the single OVR number only: ovr = weightedCategoryAverage * scale + offset. It exists so the OVR shown under a real player lands close to the value written in real_players.json. Set scale 1 / offset 0 to see the raw maths.",
+    "scale": 1.0,
+    "offset": 0.6
+  },
+
+  "categoryWeights": {
+    "__doc": "How much each CATEGORY counts toward the single OVR number. Only the ratios matter - they get normalised. Raising `fighting` makes fighters look better on paper; it does NOT change how the match engine behaves (that is balance.json).",
+    "aim": 1.15,
+    "mechanics": 1.05,
+    "fighting": 1.25,
+    "game_sense": 1.1,
+    "offspawn": 0.85,
+    "mental": 1.0,
+    "teamwork": 0.9
+  },
+
+  "categories": [
+    {
+      "id": "aim",
+      "name": "Aim",
+      "short": "AIM",
+      "color": "#ff5c5c",
+      "blurb": "Raw shooting. What the crosshair does before anything else is considered.",
+      "subs": [
+        { "id": "tracking", "name": "Tracking", "short": "TRK", "weight": 1.1, "desc": "Holding the crosshair on a moving target - sprays, ARs, close-range SMG duels." },
+        { "id": "flicks", "name": "Flicks", "short": "FLK", "weight": 0.9, "desc": "Snapping onto a target that just appeared. Shotgun and sniper timing." },
+        { "id": "accuracy", "name": "Accuracy", "short": "ACC", "weight": 1.1, "desc": "Overall hit rate. How much of the magazine actually lands." },
+        { "id": "headshot", "name": "Headshot Aim", "short": "HS", "weight": 0.9, "desc": "Finding heads under pressure. Turns a two-shot into a one-shot." }
+      ]
+    },
+    {
+      "id": "mechanics",
+      "name": "Mechanics",
+      "short": "MECH",
+      "color": "#ffb43d",
+      "blurb": "Raw building and editing speed. Hands, not decisions.",
+      "subs": [
+        { "id": "build_speed", "name": "Build Speed", "short": "BSP", "weight": 1.1, "desc": "Getting the wall, ramp and cone up before the shot lands." },
+        { "id": "build_efficiency", "name": "Build Efficiency", "short": "BEF", "weight": 1.0, "desc": "Doing it without burning 400 mats. Directly extends how long they last in an endgame." },
+        { "id": "edit_speed", "name": "Edit Speed", "short": "ESP", "weight": 1.0, "desc": "How fast an edit goes through, confirmed and reset." },
+        { "id": "edit_accuracy", "name": "Edit Accuracy", "short": "EAC", "weight": 0.9, "desc": "Hitting the edit they meant to hit. Misedits under pressure get people killed." }
+      ]
+    },
+    {
+      "id": "fighting",
+      "name": "Fighting",
+      "short": "FGT",
+      "color": "#ff4dd2",
+      "blurb": "How much raw ability actually CONVERTS in a real fight. In the sim this is a MULTIPLIER on Aim and Mechanics, not another additive stat.",
+      "subs": [
+        { "id": "edit_iq", "name": "Edit IQ", "short": "EIQ", "weight": 1.1, "desc": "Choosing the RIGHT edit, reading the shape of the opponent build." },
+        { "id": "piece_control", "name": "Piece Control", "short": "PC", "weight": 1.2, "desc": "Taking and holding opponent pieces instead of trading them straight back." },
+        { "id": "box_fighting", "name": "Box Fighting", "short": "BOX", "weight": 1.1, "desc": "Close-quarters box exchanges. The most common way a fight is actually decided." },
+        { "id": "hg_retakes", "name": "HG Retakes", "short": "HGR", "weight": 1.0, "desc": "Retaking high ground once it has been lost." },
+        { "id": "reset_timing", "name": "Reset Timing", "short": "RST", "weight": 1.0, "desc": "Knowing when to disengage instead of committing. The difference between cracked and good." },
+        { "id": "movement", "name": "Movement", "short": "MOV", "weight": 0.9, "desc": "Mantles, resets and repositioning mid-fight." }
+      ]
+    },
+    {
+      "id": "game_sense",
+      "name": "Game Sense",
+      "short": "GS",
+      "color": "#4dd2ff",
+      "blurb": "Everything decided on the map rather than inside a box.",
+      "subs": [
+        { "id": "positioning", "name": "Positioning", "short": "POS", "weight": 1.2, "desc": "Where they sit in zone, and how exposed that spot is to a third party." },
+        { "id": "rotation", "name": "Rotation", "short": "ROT", "weight": 1.1, "desc": "Route quality AND how much damage they take getting there." },
+        { "id": "fight_selection", "name": "Fight Selection", "short": "FSL", "weight": 1.1, "desc": "Picking mid-game fights they will actually win. Gates whether a fight even happens." },
+        { "id": "resource_mgmt", "name": "Resource Mgmt", "short": "RES", "weight": 1.0, "desc": "Mat and heal budgeting. Running dry in zone 8 is usually fatal." }
+      ]
+    },
+    {
+      "id": "offspawn",
+      "name": "Offspawn",
+      "short": "OFF",
+      "color": "#8bd66b",
+      "blurb": "The first ninety seconds. Bad loot caps how much everything else matters.",
+      "subs": [
+        { "id": "drop_accuracy", "name": "Drop Accuracy", "short": "DRP", "weight": 1.0, "desc": "Drop quality and raw speed to the ground." },
+        { "id": "fifty_fifties", "name": "Fifty-Fifties", "short": "5050", "weight": 1.1, "desc": "Winning a contested chest race for the first gun." },
+        { "id": "offspawn_fights", "name": "Offspawn Fights", "short": "OSF", "weight": 1.1, "desc": "Fighting with bad loot, or none at all." }
+      ]
+    },
+    {
+      "id": "mental",
+      "name": "Mental",
+      "short": "MNT",
+      "color": "#c58bff",
+      "blurb": "The head. Half of this category only shows up once something has already gone wrong.",
+      "subs": [
+        { "id": "clutch", "name": "Clutch", "short": "CLT", "weight": 1.0, "desc": "1v2s and 1v3s. Only checked when they are actually the last one alive." },
+        { "id": "under_pressure", "name": "Under Pressure", "short": "PRS", "weight": 1.1, "desc": "Last game of a session, got landed on, must-win situations." },
+        { "id": "tilt_resistance", "name": "Tilt Resistance", "short": "TLT", "weight": 0.9, "desc": "Bouncing back after a disaster match. Applies to the match AFTER the bad one." },
+        { "id": "big_stage_nerve", "name": "Big Stage Nerve", "short": "LAN", "weight": 1.0, "desc": "LAN and Grand Finals ONLY - completely ignored at every other event. GROWS with LAN appearances: a young player with no LAN record starts low and has to earn it." },
+        { "id": "consistency", "name": "Consistency", "short": "CON", "weight": 0.8, "desc": "Controls the SIZE of their random variance roll. Low = boom or bust. It is not a quality rating." }
+      ]
+    },
+    {
+      "id": "teamwork",
+      "name": "Teamwork",
+      "short": "TMW",
+      "color": "#7f8cff",
+      "blurb": "What they add to the players sitting next to them.",
+      "subs": [
+        { "id": "communication", "name": "Communication", "short": "COM", "weight": 1.0, "desc": "Callout quality. Lifts the whole trio." },
+        { "id": "decision_making", "name": "Decision Making", "short": "DEC", "weight": 1.2, "desc": "Drives the team rotations and calls. The IGL stat." },
+        { "id": "adaptivity", "name": "Adaptivity", "short": "ADP", "weight": 0.8, "desc": "How fast they gel with a new partner. Controls the synergy ramp." }
+      ]
+    }
+  ],
+
+  "peakModel": {
+    "__doc": "PEAK is every player's hidden ceiling, stored per sub-stat exactly like CURRENT. Generated players get peak = current + a gap. Peak is never shown as a number for an unsigned player.",
+
+    "gapByAge": {
+      "__doc": "Base gap (mu) and spread (sigma) in rating points, by age. Ages in between are interpolated. A 14-year-old has a lot of room left; a 24-year-old has none.",
+      "13": { "mu": 24, "sigma": 7 },
+      "16": { "mu": 16, "sigma": 6 },
+      "18": { "mu": 10, "sigma": 5 },
+      "20": { "mu": 5, "sigma": 3 },
+      "22": { "mu": 2, "sigma": 2 },
+      "25": { "mu": 0, "sigma": 1 }
+    },
+
+    "categoryGapScale": {
+      "__doc": "Multiplier on that gap, per category. Hands (aim, mechanics) are nearly finished early - a 17-year-old is already close to their mechanical ceiling. Heads (game sense, mental, teamwork) keep growing for years, which is why veterans stay relevant.",
+      "aim": 0.7,
+      "mechanics": 0.6,
+      "fighting": 1.0,
+      "game_sense": 1.5,
+      "offspawn": 0.9,
+      "mental": 1.3,
+      "teamwork": 1.4
+    },
+
+    "ceiling": 99,
+    "__ceiling": "No peak value may ever exceed this."
+  },
+
+  "bigStageNerve": {
+    "__doc": "THE HEADLINE PROGRESSION MECHANIC. Big Stage Nerve is the one sub-stat a player cannot train - it is earned by turning up to LANs and Grand Finals. Read by the progression code in players.ts.",
+
+    "startByAge": {
+      "__doc": "Where a freshly generated player's CURRENT Big Stage Nerve sits before they have played a single LAN. Interpolated between the listed ages. Deliberately brutal for kids - this is why the 17-year-old world #1 loses the Grand Final.",
+      "13": 58,
+      "15": 64,
+      "17": 72,
+      "19": 78,
+      "21": 82,
+      "24": 84
+    },
+    "startSigma": 5,
+    "__startSigma": "Random spread on that starting value.",
+
+    "peakBonusByAge": {
+      "__doc": "How much Big Stage Nerve a player can EVENTUALLY add on top of their starting value, by the age they were generated at. This is the single biggest source of hidden upside on a young player: a 17-year-old starting on 72 tops out around 94, while a 22-year-old is already most of the way to whatever they will ever be. Replaces the normal peak gap for this one sub-stat.",
+      "13": 26,
+      "16": 22,
+      "18": 16,
+      "20": 10,
+      "22": 6,
+      "25": 3
+    },
+    "peakBonusSigma": 4,
+    "__peakBonusSigma": "Random spread on that bonus.",
+
+    "gainPerLan": 2.6,
+    "__gainPerLan": "Points of Big Stage Nerve gained per LAN / Grand Final appearance, before the modifiers below. Raise this to make players harden faster.",
+    "gainDecayPerLan": 0.86,
+    "__gainDecayPerLan": "Each LAN is worth this fraction of the previous one, so the first LAN teaches far more than the twentieth. Set to 1.0 for flat linear growth.",
+    "goodResultMultiplier": 1.8,
+    "__goodResultMultiplier": "Applied when they finish in the top third of a LAN. Winning on stage teaches more than getting rolled on stage.",
+    "badResultMultiplier": 0.5,
+    "__badResultMultiplier": "Applied when they finish in the bottom third. They still learn something, just not much.",
+    "cannotBeTrained": true,
+    "__cannotBeTrained": "If true, no training program may move Big Stage Nerve. Leave this on - the entire point is that it has to be earned at events."
+  },
+
+  "decline": {
+    "__doc": "What happens after the decline age (progression.declineStartAge in balance.json, currently 22). Raw speed goes first; reads and mental keep climbing toward peak. Kami in real_players.json is the calibration case.",
+    "categoryDeclineScale": {
+      "aim": 1.2,
+      "mechanics": 1.5,
+      "fighting": 0.8,
+      "game_sense": -0.4,
+      "offspawn": 1.0,
+      "mental": -0.5,
+      "teamwork": -0.6
+    },
+    "__categoryDeclineScale": "Multiplier on the weekly decline rate. NEGATIVE means the category still GROWS after the decline age - a 24-year-old's game sense and mental are still improving while their hands fall off."
+  },
+
+  "legacyBridge": {
+    "__doc": "TEMPORARY SCAFFOLDING. Maps the 11 old attribute names onto groups of new sub-stats so the old match engine and the old training programs keep working while the sim is rewritten (build step 3) and training is rewired (build step 6). DELETE THIS BLOCK once both are done. Nothing the player sees depends on it.",
+    "aim": ["tracking", "flicks", "accuracy", "headshot"],
+    "buildSpeed": ["build_speed", "build_efficiency"],
+    "editing": ["edit_speed", "edit_accuracy"],
+    "pieceControl": ["piece_control", "box_fighting", "edit_iq"],
+    "gameSense": ["positioning", "rotation", "fight_selection"],
+    "lootPathing": ["drop_accuracy", "fifty_fifties", "resource_mgmt"],
+    "endgame": ["hg_retakes", "reset_timing", "movement"],
+    "clutch": ["clutch", "under_pressure", "offspawn_fights"],
+    "consistency": ["consistency"],
+    "stamina": ["tilt_resistance"],
+    "comms": ["communication", "decision_making", "adaptivity"]
+  }
+}

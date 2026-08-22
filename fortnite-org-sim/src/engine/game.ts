@@ -25,7 +25,9 @@ import type {
   WeeklyFinance,
 } from './types'
 
-export const SAVE_VERSION = 1
+// Bumped to 2 by the attribute-tree rewrite: saves from version 1 store the old
+// 11-attribute `attrs` object and cannot be migrated, so they are discarded.
+export const SAVE_VERSION = 2
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T
@@ -69,7 +71,7 @@ export function createNewGame(orgName: string, region: string, seedLabel: string
   const taken = new Set<string>()
 
   // Three starters, deliberately mediocre and deliberately different.
-  const startingArchetypes = ['igl', 'wkey_aggro', 'support_anchor']
+  const startingArchetypes = ['igl', 'mech_carry', 'anchor']
   for (const archetype of startingArchetypes) {
     const p = generatePlayer(rng, taken, {
       baseRating: rng.gauss(org.startingPlayerRating.mu, org.startingPlayerRating.sigma),
@@ -375,7 +377,7 @@ export function advanceWeek(state: GameState): { state: GameState; report: WeekR
       .map((id) => (id ? s.players[id] : null))
       .filter((p): p is Player => !!p)
     if (members.length === 0) continue
-    const coachComms = Math.max(...members.map((p) => p.attrs.comms))
+    const coachComms = Math.max(...members.map((p) => p.current.communication))
     for (const p of members) {
       training.push(applyTraining(p, coachComms, rng))
     }
@@ -496,7 +498,7 @@ export function renewContract(state: GameState, playerId: string, weeks: number)
   if (!p) return state
   const rng = new Rng(s.rngState)
   // Players re-price themselves on renewal based on what they are now.
-  const ovr = overall(p.attrs)
+  const ovr = overall(p.current)
   const demand = Math.round(
     p.salary * (1 + Math.max(-0.2, (ovr - 55) / 100)) * (1 + rng.range(0, 0.12)),
   )
