@@ -1,0 +1,134 @@
+{
+  "__doc": "Player archetypes. `bias` is added to each attribute at generation (before the 2-3 strengths / 2-3 weaknesses are spiked on top). `strengthPool` and `weaknessPool` bias WHICH attributes get spiked or tanked, so an IGL is unlikely to roll a huge Aim spike. Add your own archetype by copying a block and giving it a new id.",
+
+  "archetypes": [
+    {
+      "id": "wkey_aggro",
+      "name": "W-Key Aggro",
+      "short": "AGGRO",
+      "color": "#ff4d4d",
+      "blurb": "Sees a player, hears a player, presses W. Wins games off raw mechanics, throws games off raw impatience.",
+      "bias": {
+        "aim": 9,
+        "buildSpeed": 8,
+        "editing": 7,
+        "pieceControl": 2,
+        "gameSense": -9,
+        "lootPathing": -4,
+        "endgame": -3,
+        "clutch": 4,
+        "consistency": -8,
+        "stamina": -2,
+        "comms": -3
+      },
+      "strengthPool": ["aim", "buildSpeed", "editing", "clutch"],
+      "weaknessPool": ["gameSense", "consistency", "lootPathing", "endgame", "comms"]
+    },
+    {
+      "id": "igl",
+      "name": "IGL",
+      "short": "IGL",
+      "color": "#4dd2ff",
+      "blurb": "Calls the rotates, reads the zone, keeps the trio alive. Rarely the one topping the elim charts.",
+      "bias": {
+        "aim": -6,
+        "buildSpeed": -4,
+        "editing": -3,
+        "pieceControl": 2,
+        "gameSense": 11,
+        "lootPathing": 6,
+        "endgame": 6,
+        "clutch": 1,
+        "consistency": 6,
+        "stamina": 2,
+        "comms": 12
+      },
+      "strengthPool": ["gameSense", "comms", "endgame", "lootPathing", "consistency"],
+      "weaknessPool": ["aim", "buildSpeed", "editing", "clutch"]
+    },
+    {
+      "id": "support_anchor",
+      "name": "Support-Anchor",
+      "short": "ANCHOR",
+      "color": "#8bd66b",
+      "blurb": "Holds the piece, carries the mats, takes the trade so the star gets out. Unspectacular and irreplaceable.",
+      "bias": {
+        "aim": -3,
+        "buildSpeed": 3,
+        "editing": 1,
+        "pieceControl": 11,
+        "gameSense": 3,
+        "lootPathing": 8,
+        "endgame": 4,
+        "clutch": -3,
+        "consistency": 9,
+        "stamina": 7,
+        "comms": 6
+      },
+      "strengthPool": ["pieceControl", "lootPathing", "consistency", "stamina", "comms"],
+      "weaknessPool": ["aim", "clutch", "editing", "endgame"]
+    },
+    {
+      "id": "zone_player",
+      "name": "Zone Player",
+      "short": "ZONE",
+      "color": "#c58bff",
+      "blurb": "Never takes a fight they do not have to. Lives in the top 10 and lets the lobby kill itself.",
+      "bias": {
+        "aim": -7,
+        "buildSpeed": -2,
+        "editing": -4,
+        "pieceControl": 4,
+        "gameSense": 9,
+        "lootPathing": 10,
+        "endgame": 10,
+        "clutch": -4,
+        "consistency": 7,
+        "stamina": 5,
+        "comms": 1
+      },
+      "strengthPool": ["gameSense", "lootPathing", "endgame", "consistency"],
+      "weaknessPool": ["aim", "clutch", "editing", "buildSpeed"]
+    },
+    {
+      "id": "flex",
+      "name": "Flex",
+      "short": "FLEX",
+      "color": "#ffc94d",
+      "blurb": "Slots into any trio. Fewer glaring holes, fewer god-tier highs.",
+      "bias": {
+        "aim": 2,
+        "buildSpeed": 2,
+        "editing": 2,
+        "pieceControl": 2,
+        "gameSense": 2,
+        "lootPathing": 2,
+        "endgame": 2,
+        "clutch": 2,
+        "consistency": 2,
+        "stamina": 2,
+        "comms": 2
+      },
+      "strengthPool": ["aim", "buildSpeed", "editing", "pieceControl", "gameSense", "lootPathing", "endgame", "clutch", "stamina", "comms"],
+      "weaknessPool": ["aim", "buildSpeed", "editing", "pieceControl", "gameSense", "lootPathing", "endgame", "clutch", "stamina", "comms"]
+    }
+  ],
+
+  "attributes": {
+    "__doc": "Display names and tooltips for the 11 visible ratings. Order here is the order shown in the UI.",
+    "order": ["aim", "buildSpeed", "editing", "pieceControl", "gameSense", "lootPathing", "endgame", "clutch", "consistency", "stamina", "comms"],
+    "labels": {
+      "aim": { "name": "Aim", "short": "AIM", "desc": "Fights won. Raw gunplay in a box fight or an open-field spray." },
+      "buildSpeed": { "name": "Build Speed", "short": "BLD", "desc": "Mechanics under pressure. Getting the wall up before the shot lands." },
+      "editing": { "name": "Editing", "short": "EDT", "desc": "Fast plays, edit courses, cone-and-confirm windows." },
+      "pieceControl": { "name": "Piece Control", "short": "PC", "desc": "Taking and holding the other trio pieces. The endgame skill." },
+      "gameSense": { "name": "Game Sense", "short": "GS", "desc": "Zone reads. Knowing when to fight and when to rotate." },
+      "lootPathing": { "name": "Loot Pathing", "short": "LOOT", "desc": "Early game efficiency. Mats, shields and a clean path out." },
+      "endgame": { "name": "Endgame", "short": "END", "desc": "Final circles, height retakes, surviving the last five teams." },
+      "clutch": { "name": "Clutch", "short": "CLT", "desc": "1v3s and low HP moments. Some players get better as it gets worse." },
+      "consistency": { "name": "Consistency", "short": "CON", "desc": "How much they vary match to match. LOW = boom or bust." },
+      "stamina": { "name": "Stamina", "short": "STA", "desc": "Drop-off over a long session. Matters most in matches 6-10." },
+      "comms": { "name": "Comms", "short": "CMS", "desc": "Raises the whole trio. Callouts, calm, information." }
+    }
+  }
+}

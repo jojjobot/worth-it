@@ -1,0 +1,183 @@
+{
+  "__doc": "Tournament formats, the points table and the season calendar. Everything here is tunable. `lobbyRating` is how strong the rest of the field is and is the single biggest difficulty dial in the game. It is measured on the TEAM POWER scale shown next to each of your trios - a trio competes when the lobby is about 10 below its strength, and dominates about 25 below. Region modifiers in regions.json are added on top (EU is +7).",
+
+  "scoringTables": {
+    "__doc": "Points awarded per match. `placement` bands are inclusive. `elimPoints` is per elimination.",
+    "standard": {
+      "name": "Standard Trios Scoring",
+      "elimPoints": 2,
+      "placement": [
+        { "from": 1, "to": 1, "points": 60 },
+        { "from": 2, "to": 3, "points": 50 },
+        { "from": 4, "to": 5, "points": 45 },
+        { "from": 6, "to": 10, "points": 40 },
+        { "from": 11, "to": 15, "points": 30 },
+        { "from": 16, "to": 25, "points": 20 },
+        { "from": 26, "to": 100, "points": 0 }
+      ]
+    },
+    "elimHeavy": {
+      "__doc": "Alternative table for a more aggressive meta. Not used by default - set `scoring: \"elimHeavy\"` on an event to try it.",
+      "name": "Elim Heavy",
+      "elimPoints": 4,
+      "placement": [
+        { "from": 1, "to": 1, "points": 45 },
+        { "from": 2, "to": 3, "points": 38 },
+        { "from": 4, "to": 5, "points": 34 },
+        { "from": 6, "to": 10, "points": 28 },
+        { "from": 11, "to": 15, "points": 20 },
+        { "from": 16, "to": 25, "points": 12 },
+        { "from": 26, "to": 100, "points": 0 }
+      ]
+    }
+  },
+
+  "prizeDistributions": {
+    "__doc": "Share of the prize pool by finishing rank. Anything below the last band earns nothing.",
+    "openCup": [
+      { "from": 1, "to": 1, "share": 0.12 },
+      { "from": 2, "to": 3, "share": 0.07 },
+      { "from": 4, "to": 10, "share": 0.035 },
+      { "from": 11, "to": 25, "share": 0.015 },
+      { "from": 26, "to": 50, "share": 0.005 },
+      { "from": 51, "to": 100, "share": 0.0015 }
+    ],
+    "cashCup": [
+      { "from": 1, "to": 1, "share": 0.07 },
+      { "from": 2, "to": 3, "share": 0.05 },
+      { "from": 4, "to": 10, "share": 0.025 },
+      { "from": 11, "to": 25, "share": 0.012 },
+      { "from": 26, "to": 50, "share": 0.006 },
+      { "from": 51, "to": 100, "share": 0.0028 },
+      { "from": 101, "to": 200, "share": 0.0012 }
+    ],
+    "major": [
+      { "from": 1, "to": 1, "share": 0.11 },
+      { "from": 2, "to": 2, "share": 0.075 },
+      { "from": 3, "to": 3, "share": 0.055 },
+      { "from": 4, "to": 5, "share": 0.04 },
+      { "from": 6, "to": 10, "share": 0.025 },
+      { "from": 11, "to": 25, "share": 0.012 },
+      { "from": 26, "to": 50, "share": 0.006 }
+    ],
+    "finals": [
+      { "from": 1, "to": 1, "share": 0.18 },
+      { "from": 2, "to": 2, "share": 0.115 },
+      { "from": 3, "to": 3, "share": 0.08 },
+      { "from": 4, "to": 5, "share": 0.055 },
+      { "from": 6, "to": 10, "share": 0.032 },
+      { "from": 11, "to": 20, "share": 0.016 },
+      { "from": 21, "to": 33, "share": 0.009 }
+    ]
+  },
+
+  "events": [
+    {
+      "id": "open_qualifier",
+      "name": "Open Practice Cup",
+      "type": "session",
+      "tier": 1,
+      "__tier": "Tier scales reputation gain and how seriously the scene takes the result.",
+      "blurb": "Free entry, weak lobbies, tiny money. Where no-name orgs build match count and trio synergy.",
+      "matches": 8,
+      "lobbyRating": 52,
+      "fieldSize": 400,
+      "prizePool": 15000,
+      "prizeDistribution": "openCup",
+      "scoring": "standard",
+      "entryFee": 0,
+      "minReputation": 0,
+      "schedule": { "everyWeeks": 1, "offsetWeek": 0 }
+    },
+    {
+      "id": "weekly_cash_cup",
+      "name": "Weekly Cash Cup",
+      "type": "session",
+      "tier": 2,
+      "blurb": "10 matches, one session, top finishers get paid. The bread and butter of a working org.",
+      "matches": 10,
+      "lobbyRating": 70,
+      "fieldSize": 1500,
+      "prizePool": 150000,
+      "prizeDistribution": "cashCup",
+      "scoring": "standard",
+      "entryFee": 0,
+      "minReputation": 0,
+      "schedule": { "everyWeeks": 1, "offsetWeek": 0 }
+    },
+    {
+      "id": "elite_cash_cup",
+      "name": "Elite Cash Cup",
+      "type": "session",
+      "tier": 3,
+      "blurb": "Invite-only money cup. The lobby is nothing but known trios.",
+      "matches": 10,
+      "lobbyRating": 82,
+      "fieldSize": 800,
+      "prizePool": 300000,
+      "prizeDistribution": "cashCup",
+      "scoring": "standard",
+      "entryFee": 0,
+      "minReputation": 22,
+      "schedule": { "everyWeeks": 2, "offsetWeek": 1 }
+    },
+    {
+      "id": "fncs",
+      "name": "FNCS",
+      "type": "series",
+      "tier": 5,
+      "blurb": "The season. Qualifier into Major into Finals - points carry inside each stage, and only the top cut advances.",
+      "scoring": "standard",
+      "entryFee": 0,
+      "minReputation": 0,
+      "stages": [
+        {
+          "id": "qualifier",
+          "name": "FNCS Qualifier",
+          "matches": 10,
+          "lobbyRating": 72,
+          "fieldSize": 2000,
+          "advanceCount": 300,
+          "__advanceCount": "How many trios move on to the next stage.",
+          "prizePool": 0,
+          "prizeDistribution": "cashCup",
+          "tier": 3,
+          "schedule": { "everyWeeks": 8, "offsetWeek": 2 }
+        },
+        {
+          "id": "major",
+          "name": "FNCS Major",
+          "matches": 12,
+          "lobbyRating": 84,
+          "fieldSize": 300,
+          "advanceCount": 33,
+          "prizePool": 1000000,
+          "prizeDistribution": "major",
+          "tier": 4,
+          "schedule": { "everyWeeks": 8, "offsetWeek": 4 }
+        },
+        {
+          "id": "finals",
+          "name": "FNCS Grand Finals",
+          "matches": 12,
+          "lobbyRating": 90,
+          "fieldSize": 33,
+          "advanceCount": 0,
+          "prizePool": 2500000,
+          "prizeDistribution": "finals",
+          "tier": 5,
+          "schedule": { "everyWeeks": 8, "offsetWeek": 6 }
+        }
+      ]
+    }
+  ],
+
+  "tierReputationMultiplier": {
+    "__doc": "Reputation from a result is multiplied by this, by event tier, then again by the region multiplier in regions.json.",
+    "1": 0.5,
+    "2": 1.0,
+    "3": 1.6,
+    "4": 2.4,
+    "5": 3.5
+  }
+}

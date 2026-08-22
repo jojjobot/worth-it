@@ -1,0 +1,78 @@
+{
+  "__doc": "Word banks for generated content. All gamertags, org names and locations are FICTIONAL and assembled from these lists - no real pros, no real map names. Add or remove words freely; the generator just picks from whatever is here.",
+
+  "gamertagPatterns": {
+    "__doc": "How a gamertag is assembled. `weight` is relative likelihood.",
+    "patterns": [
+      { "template": "{prefix}{Core}", "weight": 22 },
+      { "template": "{Core}{suffix}", "weight": 20 },
+      { "template": "{Core}{number}", "weight": 14 },
+      { "template": "{Adj}{Core}", "weight": 14 },
+      { "template": "{prefix}{Core}{number}", "weight": 10 },
+      { "template": "{Core}", "weight": 8 },
+      { "template": "{Core}.{suffix}", "weight": 6 },
+      { "template": "{Adj}{Core}{number}", "weight": 6 }
+    ]
+  },
+
+  "prefixes": ["v", "z", "k", "x", "n", "ry", "sh", "vy", "kr", "zy", "lu", "mo", "ne", "qi", "sy", "tr", "vi", "wz", "ax", "eb"],
+  "cores": [
+    "rift", "surge", "haze", "volt", "flick", "sable", "onyx", "quartz", "havoc", "drift",
+    "spectre", "lumen", "vapor", "crux", "ember", "frost", "nova", "pulse", "ridge", "vane",
+    "glyph", "marrow", "cinder", "atlas", "kite", "helix", "orbit", "shard", "wraith", "zenith",
+    "cobalt", "prism", "raven", "solace", "tundra", "vertex", "willow", "ashen", "brisk", "coil",
+    "dune", "echo", "fable", "gale", "hollow", "iris", "jolt", "knox", "lark", "mirage",
+    "nomad", "opal", "pique", "quill", "relay", "static", "talon", "umber", "vessel", "wisp"
+  ],
+  "suffixes": ["ee", "yy", "zz", "ix", "os", "en", "ah", "io", "ez", "xo", "ky", "nn", "up", "sy", "ow", "ka", "ux", "ai"],
+  "adjectives": ["Cold", "Silent", "Quick", "Vivid", "Grim", "Neon", "Hyper", "Pale", "Sharp", "Molten", "Fluid", "Numb", "Sober", "Lucid", "Feral", "Blunt", "Tidal", "Stark"],
+  "numbers": ["7", "9", "11", "17", "21", "27", "33", "42", "47", "63", "77", "88", "99", "004", "1v9", "360"],
+
+  "orgNames": {
+    "__doc": "Rival organisations. Used for flavour on the transfer market and the scene ticker.",
+    "prefixes": ["Team", "", "", "", "Clan", ""],
+    "cores": [
+      "Meridian", "Blackline", "Northwind", "Halcyon", "Ironroot", "Sablecrest", "Ninth Circle",
+      "Duskfall", "Grand Slate", "Verdigris", "Pale Horse", "Longshot", "Overtone", "Kilowatt",
+      "Cadence", "Bluecoast", "Ashfield", "Redshift", "Sundial", "Thornwood", "Vantage", "Wolfpit"
+    ],
+    "suffixes": ["", "", "", "Esports", "Gaming", "GG", "Collective"]
+  },
+
+  "playerOrgAffiliation": {
+    "__doc": "Chance a generated player is already signed to a rival org (and therefore costs a buyout).",
+    "signedChance": 0.45
+  },
+
+  "pois": {
+    "__doc": "Fictional drop spots used in the match log. Rename these to whatever you like - they are pure flavour. `hot` spots are more likely to be contested and give better loot.",
+    "hot": [
+      "Cobalt Spires", "The Foundry", "Neon Row", "Grand Terminal", "Saltworks",
+      "Vault District", "Crownfall", "The Aviary"
+    ],
+    "medium": [
+      "Willow Bend", "Ridgeline Camp", "Copper Flats", "Old Quarry", "Sunken Docks",
+      "Pinewatch", "Marrow Mill", "Static Fields"
+    ],
+    "cold": [
+      "Quiet Hollow", "Fern Gully", "Lonely Silo", "The Overlook", "Grey Marsh",
+      "Backwater Bay", "Dry Creek", "Nowhere Gas"
+    ]
+  },
+
+  "storyBeats": {
+    "__doc": "Short flavour lines shown in the weekly scene ticker. {player}, {org} and {region} are replaced.",
+    "lines": [
+      "{player} clipped a 1v3 in ranked and the clip is everywhere.",
+      "{org} are reportedly rebuilding their roster before the next Major.",
+      "Scene talk: {region} lobbies are considered the hardest right now.",
+      "{player} posted a cryptic message about their trio. Nobody knows what it means.",
+      "An analyst desk called {org} the most overrated roster in the region.",
+      "{player} has been grinding creative maps 10 hours a day, allegedly.",
+      "Rumour: {org} offered a huge buyout for {player} and got laughed at.",
+      "{player} says they are done dropping contested. We will see.",
+      "Coaches across {region} are all copying the same rotate. It is not working.",
+      "{org} announced a new sponsor nobody has heard of."
+    ]
+  }
+}

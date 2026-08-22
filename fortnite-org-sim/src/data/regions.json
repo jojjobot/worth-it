@@ -1,0 +1,76 @@
+{
+  "__doc": "Competitive regions. `lobbyModifier` is added to every tournament lobby rating in that region (EU is the hardest region in the game). `reputationMultiplier` scales the reputation you earn there, so winning in EU is worth far more than winning in OCE. `talentModifier` shifts the average quality of players generated from that region.",
+
+  "regions": [
+    {
+      "id": "EU",
+      "name": "Europe",
+      "lobbyModifier": 7,
+      "reputationMultiplier": 1.35,
+      "talentModifier": 5,
+      "prizeMultiplier": 1.15,
+      "playerShare": 0.3,
+      "blurb": "The deepest and most brutal region. Everything is contested, nothing is free."
+    },
+    {
+      "id": "NAC",
+      "name": "NA Central",
+      "lobbyModifier": 4,
+      "reputationMultiplier": 1.2,
+      "talentModifier": 3,
+      "prizeMultiplier": 1.15,
+      "playerShare": 0.22,
+      "blurb": "Loud, mechanical and stacked at the top. Second only to EU."
+    },
+    {
+      "id": "NAW",
+      "name": "NA West",
+      "lobbyModifier": -1,
+      "reputationMultiplier": 0.95,
+      "talentModifier": -1,
+      "prizeMultiplier": 0.95,
+      "playerShare": 0.1,
+      "blurb": "Thin at the top but a real region. Good place to farm early points."
+    },
+    {
+      "id": "BR",
+      "name": "Brazil",
+      "lobbyModifier": 1,
+      "reputationMultiplier": 1.0,
+      "talentModifier": 1,
+      "prizeMultiplier": 0.9,
+      "playerShare": 0.14,
+      "blurb": "Fearless drop-and-fight culture. Aggro archetypes are everywhere."
+    },
+    {
+      "id": "ASIA",
+      "name": "Asia",
+      "lobbyModifier": -2,
+      "reputationMultiplier": 0.9,
+      "talentModifier": -2,
+      "prizeMultiplier": 0.85,
+      "playerShare": 0.1,
+      "blurb": "Small competitive scene, but the mechanics ceiling is real."
+    },
+    {
+      "id": "OCE",
+      "name": "Oceania",
+      "lobbyModifier": -6,
+      "reputationMultiplier": 0.75,
+      "talentModifier": -4,
+      "prizeMultiplier": 0.7,
+      "playerShare": 0.08,
+      "blurb": "The easiest lobbies in the world. Great for prize money, terrible for respect."
+    },
+    {
+      "id": "ME",
+      "name": "Middle East",
+      "lobbyModifier": -3,
+      "reputationMultiplier": 0.85,
+      "talentModifier": -2,
+      "prizeMultiplier": 0.8,
+      "playerShare": 0.06,
+      "blurb": "Ping-cursed and underrated. Quietly produces monsters."
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "__doc": "Weekly training. Each player is assigned ONE program per week. Gains are gated by hidden Potential (you cannot train past it) and by age (young players learn faster). Hard programs build attributes quickly but stack Burnout, which hurts match performance until the player rests.",
+
+  "model": {
+    "baseGainPerWeek": 1.6,
+    "__baseGainPerWeek": "Attribute points per week for a program with weight 1.0 on that attribute, before every modifier below.",
+
+    "headroomExponent": 0.75,
+    "__headroomExponent": "Gains scale by ((potential - current) / 20) ^ this, capped at 1. Players close to their potential barely improve.",
+
+    "ageFactor": {
+      "__doc": "Learning speed multiplier by age. Ages in between are interpolated.",
+      "13": 1.6,
+      "16": 1.35,
+      "19": 1.0,
+      "22": 0.6,
+      "25": 0.3,
+      "28": 0.15
+    },
+
+    "randomness": 0.45,
+    "__randomness": "Random spread on each weekly gain. 0 = perfectly predictable training.",
+
+    "commsCoachBonus": 0.15,
+    "__commsCoachBonus": "Bonus to gains per point of the trio highest Comms above 60. Good comms players lift the room.",
+
+    "burnout": {
+      "__doc": "Burnout runs 0-100. It is subtracted from match performance (scaled) and slows training.",
+      "recoveryPerWeek": 14,
+      "__recoveryPerWeek": "Burnout removed each week automatically, on top of anything a Rest program removes.",
+      "matchPenaltyAtMax": 12,
+      "__matchPenaltyAtMax": "Attribute points lost in matches at 100 burnout, scaled linearly.",
+      "trainingPenaltyAtMax": 0.7,
+      "__trainingPenaltyAtMax": "Fraction of training gains lost at 100 burnout.",
+      "staminaResistance": 0.5,
+      "__staminaResistance": "How much high Stamina reduces burnout gain."
+    }
+  },
+
+  "programs": [
+    {
+      "id": "rest",
+      "name": "Rest Week",
+      "desc": "No training. Clears burnout fast and keeps a tired roster from falling apart.",
+      "targets": {},
+      "burnout": -30,
+      "costPerWeek": 0,
+      "synergyGain": 0
+    },
+    {
+      "id": "aim_lab",
+      "name": "Aim Lab Block",
+      "desc": "Raw gunplay drills. Builds Aim and a little Clutch.",
+      "targets": { "aim": 1.0, "clutch": 0.3 },
+      "burnout": 12,
+      "costPerWeek": 80,
+      "synergyGain": 0
+    },
+    {
+      "id": "box_fights",
+      "name": "Box Fight Grind",
+      "desc": "Thousands of box fights. Build Speed and Editing under pressure.",
+      "targets": { "buildSpeed": 0.85, "editing": 0.6, "pieceControl": 0.35 },
+      "burnout": 16,
+      "costPerWeek": 90,
+      "synergyGain": 0
+    },
+    {
+      "id": "edit_course",
+      "name": "Edit Course Reps",
+      "desc": "Pure mechanics. Fastest way to move Editing.",
+      "targets": { "editing": 1.1, "buildSpeed": 0.35 },
+      "burnout": 14,
+      "costPerWeek": 70,
+      "synergyGain": 0
+    },
+    {
+      "id": "piece_control",
+      "name": "Piece Control Lab",
+      "desc": "Taking and holding the other trio pieces. Slow to move, decides endgames.",
+      "targets": { "pieceControl": 1.0, "editing": 0.35, "buildSpeed": 0.25 },
+      "burnout": 15,
+      "costPerWeek": 100,
+      "synergyGain": 0
+    },
+    {
+      "id": "vod_review",
+      "name": "VOD Review",
+      "desc": "Sitting in a room watching deaths. Boring, and the only real way to move Game Sense.",
+      "targets": { "gameSense": 0.9, "endgame": 0.4, "comms": 0.5 },
+      "burnout": 6,
+      "costPerWeek": 120,
+      "synergyGain": 0.6
+    },
+    {
+      "id": "zone_practice",
+      "name": "Rotation Practice",
+      "desc": "Zone reads and clean early rotates. Loot Pathing and Game Sense.",
+      "targets": { "lootPathing": 0.9, "gameSense": 0.5, "endgame": 0.3 },
+      "burnout": 8,
+      "costPerWeek": 80,
+      "synergyGain": 0.4
+    },
+    {
+      "id": "endgame_scrims",
+      "name": "Endgame Scrims",
+      "desc": "Nothing but final circles. Hardest program in the game and the most valuable.",
+      "targets": { "endgame": 0.95, "pieceControl": 0.45, "clutch": 0.4 },
+      "burnout": 20,
+      "costPerWeek": 175,
+      "synergyGain": 1.2
+    },
+    {
+      "id": "full_scrims",
+      "name": "Full Scrim Block",
+      "desc": "Real trio scrims. Small gains everywhere, big gains in chemistry and match count.",
+      "targets": { "aim": 0.2, "buildSpeed": 0.2, "editing": 0.2, "pieceControl": 0.25, "gameSense": 0.3, "lootPathing": 0.25, "endgame": 0.3, "clutch": 0.2, "comms": 0.4 },
+      "burnout": 18,
+      "costPerWeek": 200,
+      "synergyGain": 2.0,
+      "gamesTogether": 12,
+      "__gamesTogether": "Matches added to the trio chemistry counter, same as playing real tournaments together."
+    },
+    {
+      "id": "conditioning",
+      "name": "Conditioning and Routine",
+      "desc": "Sleep, food, structure. Moves Stamina and Consistency, which nothing else touches.",
+      "targets": { "stamina": 0.9, "consistency": 0.7 },
+      "burnout": -5,
+      "costPerWeek": 100,
+      "synergyGain": 0.2
+    },
+    {
+      "id": "clutch_drills",
+      "name": "1v3 Drills",
+      "desc": "Deliberately bad situations, over and over. Clutch and Aim.",
+      "targets": { "clutch": 1.0, "aim": 0.35 },
+      "burnout": 17,
+      "costPerWeek": 110,
+      "synergyGain": 0
+    },
+    {
+      "id": "comms_workshop",
+      "name": "Comms Workshop",
+      "desc": "Callouts, tone, who makes the final call. Lifts the whole trio through the Comms rating.",
+      "targets": { "comms": 1.1, "gameSense": 0.3 },
+      "burnout": 5,
+      "costPerWeek": 90,
+      "synergyGain": 1.0
+    }
+  ]
+}

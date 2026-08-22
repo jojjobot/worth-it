@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #080a11;
+  color: #e6e9f2;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle grid backdrop so the dark UI does not feel flat. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(90, 120, 200, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 120, 200, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1019;
+}
+::-webkit-scrollbar-thumb {
+  background: #232a3d;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #33405e;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-lg border border-slate-800 bg-slate-900/60 backdrop-blur;
+  }
+  .label {
+    @apply text-[10px] uppercase tracking-[0.15em] text-slate-500 font-semibold;
+  }
+  .btn {
+    @apply rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm font-medium
+           text-slate-200 transition hover:border-slate-500 hover:bg-slate-700
+           disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-slate-800;
+  }
+  .btn-primary {
+    @apply rounded border border-cyan-500/60 bg-cyan-500/15 px-3 py-1.5 text-sm font-semibold
+           text-cyan-200 transition hover:bg-cyan-500/25
+           disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-danger {
+    @apply rounded border border-rose-600/50 bg-rose-600/10 px-3 py-1.5 text-sm font-medium
+           text-rose-300 transition hover:bg-rose-600/20;
+  }
+  .input {
+    @apply rounded border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm text-slate-100
+           outline-none focus:border-cyan-500;
+  }
+}

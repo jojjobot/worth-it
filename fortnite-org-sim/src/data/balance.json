@@ -1,0 +1,331 @@
+{
+  "__doc": "MASTER TUNING FILE. Every number the simulation uses lives here. Edit values, save, and the app hot-reloads. Keys starting with __ are comments and are ignored by the game.",
+
+  "overallWeights": {
+    "__doc": "How the single OVR number shown on a player card is calculated. Weights are normalised, so only their ratio matters. This number is cosmetic - the simulation always uses the individual attributes.",
+    "aim": 1.3,
+    "buildSpeed": 1.1,
+    "editing": 0.9,
+    "pieceControl": 1.2,
+    "gameSense": 1.3,
+    "lootPathing": 0.8,
+    "endgame": 1.2,
+    "clutch": 0.9,
+    "consistency": 0.8,
+    "stamina": 0.6,
+    "comms": 0.9
+  },
+
+  "playerGeneration": {
+    "__doc": "Controls how new players are created (free agents, youth prospects, rivals).",
+    "ageRange": { "min": 13, "max": 27 },
+    "__ageRange": "Fortnite is a young scene. 13-16 = prospect, 17-21 = prime, 22+ = veteran.",
+
+    "attrFloor": 18,
+    "attrCeiling": 99,
+    "__attrFloor": "No attribute may go below/above these, even after strengths and weaknesses are applied.",
+
+    "strengthCount": { "min": 2, "max": 3 },
+    "weaknessCount": { "min": 2, "max": 3 },
+    "strengthBonus": { "min": 11, "max": 24 },
+    "weaknessPenalty": { "min": 11, "max": 27 },
+    "__strengthCount": "CORE RULE: every player gets 2-3 spiked attributes and 2-3 tanked ones so nobody is well-rounded. Raising these numbers makes players more extreme and specialised.",
+
+    "archetypeBiasStrength": 1.0,
+    "__archetypeBiasStrength": "Multiplier on the per-archetype attribute bias in archetypes.json. 0 = archetype has no effect on ratings.",
+
+    "noiseSigma": 6,
+    "__noiseSigma": "Random wobble added to every attribute at creation.",
+
+    "potentialGapByAge": {
+      "__doc": "Hidden Potential = current overall + a gap. Younger players get bigger gaps (more room to grow). Ages between the listed ones are interpolated.",
+      "13": { "mu": 26, "sigma": 8 },
+      "17": { "mu": 15, "sigma": 7 },
+      "20": { "mu": 8, "sigma": 5 },
+      "23": { "mu": 3, "sigma": 3 },
+      "26": { "mu": 0, "sigma": 2 }
+    },
+    "potentialCeiling": 97,
+
+    "ego": { "mu": 45, "sigma": 20, "min": 1, "max": 99 },
+    "__ego": "Hidden. High ego drags trio synergy down. Star players tend to have more of it (see egoStarBonus).",
+    "egoStarBonus": 0.35,
+    "__egoStarBonus": "Ego points added per overall point above 70. Stars are divas.",
+
+    "salary": {
+      "__doc": "Weekly salary in dollars. salary = base * exp(growth * (overall - pivot)) + potentialBonus * (potential - overall)",
+      "base": 220,
+      "growth": 0.075,
+      "pivot": 55,
+      "potentialBonus": 14,
+      "randomness": 0.15
+    },
+    "contract": {
+      "__doc": "Contract length in weeks offered by free agents, and buyout cost for players at rival orgs.",
+      "lengthWeeks": { "min": 12, "max": 52 },
+      "buyoutMultiplier": { "min": 8, "max": 20 },
+      "__buyoutMultiplier": "Buyout = weekly salary * this. Only applies to players already signed to a rival org."
+    }
+  },
+
+  "simulation": {
+    "__doc": "The match engine. See MATCH-SIM.md for how the five phases fit together.",
+
+    "duelScale": 11,
+    "__duelScale": "Logistic softness of every contested check. WinChance = 1/(1+e^-(myPower-theirPower)/duelScale). LOWER = skill matters more and upsets are rarer. HIGHER = more chaos.",
+
+    "lobbySigma": 7,
+    "__lobbySigma": "Spread of opponent strength inside a lobby. Higher = you meet more sweats AND more bots.",
+
+    "__SCALE_NOTE": "IMPORTANT: lobbyRating in tournaments.json is on the TEAM POWER scale, not the individual rating scale. Three players averaging 50 OVR make a trio worth roughly 68 team power, because specialists carry (teamAggregation) and chemistry adds on top. Rule of thumb: a trio COMPETES when lobbyRating is about 10 below its strength number, and DOMINATES about 25 below. The Dashboard shows each trio strength, so compare that with the lobby rating shown on the Tournaments screen.",
+
+    "teamAggregation": {
+      "__doc": "How three players combine into one team number, per attribute. 0.0 = plain average (everyone must have it). 1.0 = only the best player matters (one specialist carries the trio).",
+      "aim": 0.45,
+      "buildSpeed": 0.4,
+      "editing": 0.4,
+      "pieceControl": 0.5,
+      "gameSense": 0.65,
+      "lootPathing": 0.35,
+      "endgame": 0.5,
+      "clutch": 0.6,
+      "consistency": 0.0,
+      "stamina": 0.0,
+      "comms": 0.15
+    },
+
+    "fatigue": {
+      "__doc": "Long sessions grind players down. Applied from match freeMatches+1 onwards.",
+      "freeMatches": 4,
+      "perMatch": 3.4,
+      "__perMatch": "Raw fatigue points added per match after the free ones.",
+      "staminaScale": 0.9,
+      "__staminaScale": "How much Stamina cancels fatigue. At stamina 99 a player keeps only (1 - 0.9) of the penalty.",
+      "sensitivity": {
+        "__doc": "Which attributes suffer when tired. 1.0 = full fatigue hit, 0 = immune.",
+        "aim": 1.0,
+        "buildSpeed": 1.1,
+        "editing": 1.2,
+        "pieceControl": 0.9,
+        "gameSense": 0.6,
+        "lootPathing": 0.4,
+        "endgame": 0.8,
+        "clutch": 0.9,
+        "comms": 0.5
+      }
+    },
+
+    "consistencyModel": {
+      "__doc": "Per-match form roll. Low Consistency = boom or bust.",
+      "baseSigma": 15,
+      "consistencyScale": 0.85,
+      "__consistencyScale": "sigma = baseSigma * (1 - consistency/99 * consistencyScale). At consistency 99 the roll is nearly flat.",
+      "perCheckJitter": 3.5,
+      "__perCheckJitter": "Extra small noise on each individual duel so the same match never plays out identically."
+    },
+
+    "synergy": {
+      "__doc": "Trio chemistry. Result is a flat plus/minus applied to every team attribute.",
+      "commsWeight": 0.16,
+      "__commsWeight": "Points of synergy per point of average Comms above 50.",
+      "egoPenaltyWeight": 0.09,
+      "__egoPenaltyWeight": "Synergy lost per point of average Ego above 50.",
+      "egoTopDogPenalty": 0.05,
+      "__egoTopDogPenalty": "Extra penalty per point of the HIGHEST ego in the trio above 50. One diva ruins a lockerroom.",
+      "gamesTogetherFull": 120,
+      "gamesTogetherBonus": 5.0,
+      "__gamesTogetherBonus": "Max bonus once the trio has played gamesTogetherFull matches together. Ramps on a square-root curve.",
+      "composition": {
+        "__doc": "Bonus or penalty for the mix of archetypes in the trio.",
+        "hasIGL": 3.0,
+        "hasSupportAnchor": 1.5,
+        "hasZonePlayer": 1.0,
+        "threeOfSameArchetype": -3.5,
+        "twoOrMoreAggro": -1.5,
+        "noAggro": -1.0
+      },
+      "clamp": { "min": -12, "max": 12 }
+    },
+
+    "drop": {
+      "__doc": "PHASE 1. Contested drops are high risk, high reward.",
+      "contestChanceByStrategy": { "contest": 0.92, "balanced": 0.45, "safe": 0.1 },
+      "__contestChanceByStrategy": "Chance the chosen POI is actually fought over. Strategy is set per trio in the UI.",
+      "aggroContestBonus": 0.09,
+      "__aggroContestBonus": "Added to contest chance per W-Key Aggro player in the trio.",
+      "power": { "aim": 0.55, "buildSpeed": 0.3, "editing": 0.15 },
+      "__power": "Attribute weights that decide a drop fight.",
+      "winElims": { "min": 1, "max": 3 },
+      "winMats": 250,
+      "winShieldBonus": 30,
+      "loseDeathChance": 0.72,
+      "__loseDeathChance": "Chance losing the drop fight simply ends your game. Otherwise you survive on scraps.",
+      "losePlacement": { "min": 68, "max": 96 },
+      "loseMatsPenalty": 220,
+      "loseShieldPenalty": 45,
+      "uncontestedMatsBonus": 120
+    },
+
+    "loot": {
+      "__doc": "PHASE 2. Loot Pathing turns into mats and shield. Game Sense decides the rotate.",
+      "matsBase": 380,
+      "matsPerLootPathing": 5.6,
+      "__matsPerLootPathing": "Mats gained per point of team Loot Pathing.",
+      "matsCap": 1300,
+      "shieldBase": 30,
+      "shieldPerLootPathing": 0.72,
+      "shieldCap": 100,
+      "rotatePower": { "gameSense": 0.7, "lootPathing": 0.3 },
+      "rotateDifficultyBonus": 4,
+      "__rotateDifficultyBonus": "Added to lobby rating for the rotate check. Bad rotates punish everyone.",
+      "failDeathChance": 0.38,
+      "failPlacement": { "min": 38, "max": 72 },
+      "failMatsPenalty": 200,
+      "failShieldPenalty": 40,
+      "thirdPartyElimChance": 0.3,
+      "__thirdPartyElimChance": "If you survive a bad rotate you sometimes trade. Chance of picking up an elim anyway."
+    },
+
+    "midGame": {
+      "__doc": "PHASE 3. How many fights the trio takes before top 15, and how they go.",
+      "baseFights": 1.1,
+      "aggroFightsPerPlayer": 0.75,
+      "__aggroFightsPerPlayer": "Extra expected fights per W-Key Aggro in the trio.",
+      "strategyFightMod": { "contest": 1.35, "balanced": 1.0, "safe": 0.65 },
+      "maxFights": 6,
+      "power": { "aim": 0.4, "buildSpeed": 0.22, "pieceControl": 0.2, "editing": 0.18 },
+      "winElims": { "min": 1, "max": 3 },
+      "winMats": 160,
+      "loseDeathChance": 0.8,
+      "losePlacement": { "min": 14, "max": 46 },
+      "matsPerFight": 130,
+      "lowMatsPenalty": 9,
+      "__lowMatsPenalty": "Power lost in a fight when under lowMatsThreshold mats.",
+      "lowMatsThreshold": 200,
+      "healOffShield": 25,
+
+      "forcedEncounters": 2,
+      "__forcedEncounters": "Unavoidable pressure checks between the mid game and the top 15 - shrinking zone, third parties, teams stacking your side. Nobody can play around these, which is what stops passive trios from reaching every endgame. THIS IS THE MAIN DIAL FOR HOW HARD IT IS TO MAKE TOP 15.",
+      "forcedPower": { "gameSense": 0.4, "pieceControl": 0.25, "endgame": 0.2, "buildSpeed": 0.15 },
+      "forcedDeathChance": 0.86,
+      "forcedPlacement": { "min": 16, "max": 48 },
+      "forcedElimChance": 0.35,
+      "forcedMatsCost": 110
+    },
+
+    "endGame": {
+      "__doc": "PHASE 4. Runs from 15th place down to the win, one check per circle.",
+      "startPlacement": 15,
+      "power": { "pieceControl": 0.36, "endgame": 0.34, "clutch": 0.18, "buildSpeed": 0.12 },
+      "difficultyRamp": 1.9,
+      "__difficultyRamp": "Lobby rating added per circle survived. The last few circles are all sweats.",
+      "matsPerCircle": 95,
+      "matsSavedByPieceControl": 0.45,
+      "__matsSavedByPieceControl": "Mats per circle saved per point of team Piece Control above 50.",
+      "outOfMatsPenalty": 26,
+      "__outOfMatsPenalty": "Brutal power loss when you hit 0 mats in a final circle. This is what kills greedy trios.",
+      "lowShieldPenalty": 7,
+      "lowShieldThreshold": 50,
+      "elimChancePerCircle": 0.42,
+      "elimsPerCircle": { "min": 1, "max": 2 },
+      "clutchSaveChance": 0.22,
+      "__clutchSaveChance": "Max chance a failed endgame check is rescued anyway, scaled by team Clutch above 50."
+    },
+
+    "aiField": {
+      "__doc": "The rest of the leaderboard, modelled statistically instead of fully simulated so tournaments resolve instantly.",
+      "strengthSigma": 8,
+      "__strengthSigma": "Spread of rival trio strength around the tournament lobby rating.",
+      "pointsPerMatchBase": 11.0,
+      "__pointsPerMatchBase": "Expected points per match for a rival trio sitting exactly AT the lobby rating. Calibrated against the real phase simulation - run npm run calibrate after changing it.",
+      "slopePerRatingPoint": 0.85,
+      "__slopePerRatingPoint": "Extra expected points per match per point of team strength above the lobby.",
+      "matchSigma": 8.0,
+      "minPointsPerMatch": 0
+    }
+  },
+
+  "economy": {
+    "__doc": "Org money, reputation and fans.",
+    "startingCash": 60000,
+    "startingReputation": 5,
+    "startingFans": 10000,
+    "weeklyOverhead": 750,
+    "__weeklyOverhead": "Fixed running cost of the org per week, on top of salaries.",
+    "reputationMax": 100,
+    "fansPerReputationPoint": 2500,
+    "__fansPerReputationPoint": "Fans drift toward fansPerReputationPoint * reputation^fanReputationExponent each week. Fans are where most of your income comes from, so this is the master income dial.",
+    "fanReputationExponent": 0.85,
+    "__fanReputationExponent": "Below 1.0 this gives diminishing returns, so a famous org does not print infinite money. Set to 1.0 for a straight line.",
+    "fanDriftRate": 0.18,
+    "baseSponsorIncomePerWeek": 1200,
+    "__baseSponsorIncomePerWeek": "Flat weekly sponsor money every org gets, even at zero reputation. This is the floor that keeps a new org alive while it builds a following.",
+    "sponsorIncomePerFanPerWeek": 0.12,
+    "__sponsorIncomePerFanPerWeek": "Weekly sponsor money = fans * this * (1 + reputation/100). Prize money is the jackpot; sponsors are what actually pay the salaries, exactly like the real scene.",
+    "reputationDecayPerWeek": 0.05,
+    "__reputationDecayPerWeek": "Reputation you lose per week if you do nothing. Stay relevant.",
+    "reputationPerTournament": {
+      "__doc": "Reputation gained by finishing in the top X percent of a tournament, before region and tier multipliers.",
+      "win": 9,
+      "top1pct": 6.5,
+      "top5pct": 4,
+      "top15pct": 2.6,
+      "top40pct": 1.2,
+      "rest": -0.25
+    },
+    "bankruptcyGraceWeeks": 6,
+    "__bankruptcyGraceWeeks": "Weeks you may run a negative balance before the org folds (game over)."
+  },
+
+  "org": {
+    "__doc": "Roster limits and the quality of players you start with / find on the market.",
+    "rosterLimit": 9,
+    "trioLimit": 3,
+    "startingPlayerRating": { "mu": 48, "sigma": 5 },
+    "__startingPlayerRating": "Average quality of the three players you begin with. Raise this for an easier start.",
+    "startingContractWeeks": 26,
+    "marketRating": {
+      "__doc": "Quality of players appearing on the free agent / transfer market. Most are journeymen, a few are stars.",
+      "commonMu": 47,
+      "commonSigma": 8,
+      "starChance": 0.14,
+      "starMu": 70,
+      "starSigma": 7,
+      "prospectChance": 0.22,
+      "__prospectChance": "Chance a market player is generated young, with lower ratings but a much higher hidden potential.",
+      "prospectAgeRange": { "min": 13, "max": 16 }
+    }
+  },
+
+  "scouting": {
+    "__doc": "Unknown players show as RANGES. Scouting narrows them.",
+    "pointsPerWeek": 6,
+    "__pointsPerWeek": "Scout actions available each week. Refills on week advance.",
+    "costPerReport": 1,
+    "cashCostPerReport": 450,
+    "maxLevel": 4,
+    "uncertaintyByLevel": [16, 11, 7, 3, 0],
+    "__uncertaintyByLevel": "Plus/minus shown on each attribute at scout level 0,1,2,3,4. Level 4 = exact numbers.",
+    "hiddenRevealLevel": {
+      "__doc": "Scout level required before hidden traits are shown at all, and even then only as a vague band.",
+      "potential": 3,
+      "ego": 4
+    },
+    "freeAgentPoolSize": 14,
+    "poolRefreshWeeks": 4,
+    "__poolRefreshWeeks": "How often unsigned free agents are rotated out for fresh faces."
+  },
+
+  "progression": {
+    "__doc": "How players grow and decline week to week, independent of training.",
+    "peakAge": 20,
+    "declineStartAge": 22,
+    "declinePerWeek": 0.045,
+    "__declinePerWeek": "Attribute points lost per week per year of age past declineStartAge.",
+    "matchExperienceGain": 0.012,
+    "__matchExperienceGain": "Passive growth per match played, scaled by remaining potential.",
+    "weeksPerYear": 52,
+    "retirementAgeMin": 24,
+    "retirementChancePerYearOver": 0.12
+  }
+}

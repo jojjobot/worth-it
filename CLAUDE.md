@@ -22,6 +22,24 @@ To play any game: open the `.html` file directly in a browser.
 | `tictactoe.html` | 2-player Tic Tac Toe with score tracking. Dark/neon theme (`#1a1a2e` bg, `#e94560` X, `#a8dadc` O). |
 | `shooter_game.html` | 2D side-scrolling Canvas shooter (800×450px). Player: cyan. 3 enemy types. Physics with gravity, 6 platforms, particle effects. Game states: start → playing → gameover. |
 | `hoops/index.html` | 3D basketball quick match (Three.js, NBA-2K-style). 3v3 full court; you control one MyPlayer. Timing-based shot meter, dunking, AI teammates/opponents, 3:00 + 24s shot clock. Block-primitive models. |
+| `fortnite-org-sim/` | **Exception to the single-file rule** — a React + Vite + TypeScript + Tailwind app (esports org management sim). Run with `START.bat` or `npm start`. See its own README.md / TUNING.md / MATCH-SIM.md. |
+
+## fortnite-org-sim (APEX ORG)
+
+The only project here with a build step, because the user asked for React + Vite
++ TypeScript + Tailwind explicitly. Key rule: **all balance numbers live in
+`src/data/*.json`** (commented with `__`-prefixed keys) so a non-developer can
+tune the game without touching code. Never hard-code balance in `src/engine/`.
+
+- `src/engine/` — rng (seeded mulberry32, state serialises into the save),
+  players (generation with 2-3 spiked / 2-3 tanked attributes), sim (5-phase
+  match engine), tournament (calendar + statistical rival field), training,
+  game (state + advanceWeek), save (localStorage + JSON export/import).
+- `src/ui/` — one file per screen.
+- `npm run calibrate` runs thousands of simulated sessions and prints balance
+  stats. Run it after touching the engine or `balance.json`.
+- `lobbyRating` in `tournaments.json` is on the TEAM POWER scale, not the
+  individual rating scale (a trio of 50-OVR players is ~68 team power).
 
 ## shooter_game.html Architecture
 
