@@ -1,5 +1,11 @@
 # Tuning guide
 
+**Getting around:** the home screen is the **season calendar** — every cup in
+the cycle, which ones you are entered in, and how the weeks you have played
+went. Everything else lives behind the **MENU button in the bottom-left
+corner**: Results, The Scene, Roster & Duos, Training, Scouting, Finances and
+Front Office.
+
 **The game mode is DUOS** — two players per team, up to four duos on a roster
 of eight.
 
@@ -28,7 +34,7 @@ Every player is rated on **7 categories made of 29 sub-stats**, all 1-100.
 | **TEAMWORK** | Communication, Decision Making, Adaptivity |
 
 **Click any player name anywhere in the game** — roster, scouting, the duo
-chips on the dashboard, the tournament standings — to open their full stat
+chips on the season calendar, the tournament standings — to open their full stat
 sheet: all 7 categories and all 29 sub-stats at once, with a "Left" column
 showing how much room they have before their ceiling. Scouting rules still
 apply: an unsigned player shows ranges, not numbers.
@@ -144,7 +150,7 @@ overalls still match the authored ones, and that every org fields a full duo.
 `tournaments.json`. It is how strong the rest of the field is.
 
 It is measured on the **team power** scale, which is the number shown next to
-each of your duos on the Dashboard — *not* the individual player ratings. Three
+each of your duos on The Scene screen — *not* the individual player ratings. Two
 50-rated players make a duo worth roughly 68 team power, because specialists
 carry the duo and chemistry adds on top.
 

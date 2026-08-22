@@ -1,38 +1,56 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BAL } from './engine/config'
-import { advanceWeek, weeklyBurn, type WeekReport } from './engine/game'
-import { clearLocal, exportSave, importSave, loadFromLocal, saveToLocal } from './engine/save'
+import { advanceWeek, expiringContracts, weeklyBurn, type WeekReport } from './engine/game'
+import { loadFromLocal, saveToLocal } from './engine/save'
+import { importSave } from './engine/save'
+import { seasonOf } from './engine/tournament'
 import type { GameState } from './engine/types'
-import { money, Stat } from './ui/components'
+import { money } from './ui/components'
+import { HUB_ITEMS, HubButton, HubMenu } from './ui/Hub'
 import NewGame from './ui/NewGame'
-import Dashboard from './ui/Dashboard'
+import Season from './ui/Season'
 import Roster from './ui/Roster'
 import Scouting from './ui/Scouting'
 import Training from './ui/Training'
-import Tournaments from './ui/Tournaments'
 import Results from './ui/Results'
+import Scene from './ui/Scene'
+import Finances from './ui/Finances'
+import FrontOffice from './ui/FrontOffice'
 import WeekReportModal from './ui/WeekReportModal'
 import { PlayerSheetProvider } from './ui/PlayerSheet'
 
-const TABS = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'roster', label: 'Roster & Duos' },
-  { id: 'scouting', label: 'Scouting' },
-  { id: 'training', label: 'Training' },
-  { id: 'tournaments', label: 'Tournaments' },
-  { id: 'results', label: 'Results' },
-] as const
+type ScreenId = (typeof HUB_ITEMS)[number]['id']
 
-type TabId = (typeof TABS)[number]['id']
+/** The top strip: one number per thing you can run out of. */
+function HeadlineStat({
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  label: string
+  value: string
+  sub?: string
+  tone?: string
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="label truncate">{label}</div>
+      <div className="k-num truncate text-[17px] leading-tight" style={{ color: tone }}>
+        {value}
+      </div>
+      {sub && <div className="truncate text-[10px] text-[var(--text-faint)]">{sub}</div>}
+    </div>
+  )
+}
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(() => loadFromLocal())
-  const [tab, setTab] = useState<TabId>('dashboard')
+  const [screen, setScreen] = useState<ScreenId>('season')
+  const [menuOpen, setMenuOpen] = useState(false)
   const [report, setReport] = useState<WeekReport | null>(null)
   const [toast, setToast] = useState<string | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
 
-  // Autosave on every change.
   useEffect(() => {
     if (state) saveToLocal(state)
   }, [state])
@@ -51,6 +69,21 @@ export default function App() {
     })
   }, [])
 
+  // Alerts on the menu rows, so you know what needs attention without opening
+  // every screen.
+  const badges = useMemo(() => {
+    if (!state) return {}
+    const out: Record<string, { text: string; tone: 'accent' | 'warn' | 'bad' }> = {}
+    const entered = Object.keys(state.entries).length
+    if (entered > 0) out.season = { text: `${entered} in`, tone: 'accent' }
+    const expiring = expiringContracts(state).length
+    if (expiring > 0) out.roster = { text: `${expiring} exp`, tone: 'warn' }
+    if (state.scoutPoints > 0) out.scouting = { text: `${state.scoutPoints} pts`, tone: 'accent' }
+    const burn = weeklyBurn(state)
+    if (state.cash < burn * 3) out.finances = { text: 'low', tone: 'bad' }
+    return out
+  }, [state])
+
   if (!state) {
     return (
       <NewGame
@@ -67,124 +100,107 @@ export default function App() {
   }
 
   const burn = weeklyBurn(state)
-  const entriesThisWeek = Object.keys(state.entries).length
+  const here = seasonOf(state.week)
+  const active = HUB_ITEMS.find((i) => i.id === screen) ?? HUB_ITEMS[0]
 
   return (
     <PlayerSheetProvider state={state}>
-    <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col gap-4 p-4">
-      {/* ---------- Header ---------- */}
-      <header className="panel flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <div className="flex items-baseline gap-3">
-          <h1 className="font-mono text-lg font-bold tracking-tight text-cyan-300">
-            {state.orgName}
-          </h1>
-          <span className="label">
-            {state.region} · Week {state.week}
-          </span>
-        </div>
+      <div className="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-4 p-4 pb-24">
+        {/* ---------- Header ---------- */}
+        <header className="panel flex flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-3">
+          <div className="rule-accent min-w-0">
+            <div className="label">
+              Season {here.season} · Week {state.week}
+            </div>
+            <h1 className="truncate text-[19px] font-extrabold uppercase tracking-wider">
+              {state.orgName}
+            </h1>
+          </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button className="btn" onClick={() => exportSave(state)} title="Download your save as a JSON file">
-            Export save
-          </button>
-          <button className="btn" onClick={() => fileRef.current?.click()}>
-            Import save
-          </button>
+          <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
+            <HeadlineStat
+              label="Cash"
+              value={money(state.cash)}
+              sub={`${money(burn)}/wk burn`}
+              tone={state.cash < 0 ? 'var(--bad)' : state.cash > burn * 6 ? 'var(--good)' : undefined}
+            />
+            <HeadlineStat
+              label="Reputation"
+              value={state.reputation.toFixed(1)}
+              sub={`of ${BAL.economy.reputationMax}`}
+            />
+            <HeadlineStat label="Fans" value={state.fans.toLocaleString()} />
+            <HeadlineStat
+              label="Roster"
+              value={`${state.rosterIds.length}/${BAL.org.rosterLimit}`}
+            />
+            <HeadlineStat
+              label="Scout pts"
+              value={`${state.scoutPoints}/${BAL.scouting.pointsPerWeek}`}
+              sub="refills weekly"
+            />
+          </div>
+
           <button
-            className="btn-danger"
-            onClick={() => {
-              if (confirm('Delete this save and start a brand new org?')) {
-                clearLocal()
-                setState(null)
-              }
-            }}
-          >
-            New org
-          </button>
-          <button
-            className="btn-primary"
+            className="btn-primary shrink-0"
             disabled={!!state.gameOver}
             onClick={onAdvance}
-            title="Runs every tournament you entered, applies training, and pays the bills"
+            title="Runs every event you entered, applies training, and pays the bills"
           >
-            Advance week {entriesThisWeek > 0 ? `(${entriesThisWeek} entered)` : ''} →
+            Advance week →
           </button>
-        </div>
-      </header>
+        </header>
 
-      {/* ---------- Top-line numbers ---------- */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Stat
-          label="Cash"
-          value={money(state.cash)}
-          sub={`${money(burn)}/wk burn`}
-          tone={state.cash < 0 ? 'bad' : state.cash > burn * 6 ? 'good' : 'default'}
+        {state.gameOver && (
+          <div
+            className="panel p-4"
+            style={{ borderColor: 'var(--bad)', background: 'rgba(255,77,99,0.08)' }}
+          >
+            <strong className="hud-title" style={{ color: 'var(--bad)' }}>
+              Game over
+            </strong>
+            <p className="mt-1 text-[13px] text-[var(--text-dim)]">{state.gameOver}</p>
+          </div>
+        )}
+
+        {/* ---------- Screen ---------- */}
+        <main className="flex-1">
+          {screen === 'season' && (
+            <Season state={state} setState={setState} onAdvance={onAdvance} flash={flash} />
+          )}
+          {screen === 'roster' && <Roster state={state} setState={setState} flash={flash} />}
+          {screen === 'scouting' && <Scouting state={state} setState={setState} flash={flash} />}
+          {screen === 'training' && <Training state={state} setState={setState} />}
+          {screen === 'results' && <Results state={state} />}
+          {screen === 'scene' && <Scene state={state} />}
+          {screen === 'finances' && <Finances state={state} />}
+          {screen === 'office' && (
+            <FrontOffice state={state} setState={setState} flash={flash} />
+          )}
+        </main>
+
+        {/* ---------- The hub ---------- */}
+        <HubMenu
+          open={menuOpen}
+          active={screen}
+          badges={badges}
+          onPick={(id) => setScreen(id as ScreenId)}
+          onClose={() => setMenuOpen(false)}
         />
-        <Stat label="Reputation" value={state.reputation.toFixed(1)} sub={`of ${BAL.economy.reputationMax}`} />
-        <Stat label="Fans" value={state.fans.toLocaleString()} />
-        <Stat label="Roster" value={`${state.rosterIds.length}/${BAL.org.rosterLimit}`} />
-        <Stat label="Scout points" value={`${state.scoutPoints}/${BAL.scouting.pointsPerWeek}`} sub="refills each week" />
+        <HubButton
+          open={menuOpen}
+          activeLabel={active.label}
+          onToggle={() => setMenuOpen((o) => !o)}
+        />
+
+        {report && <WeekReportModal report={report} onClose={() => setReport(null)} />}
+
+        {toast && (
+          <div className="panel-raised fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 px-4 py-2 text-[12px] text-[var(--accent)]">
+            {toast}
+          </div>
+        )}
       </div>
-
-      {state.gameOver && (
-        <div className="panel border-rose-700/60 bg-rose-950/40 p-4 text-rose-200">
-          <strong className="font-mono uppercase tracking-widest">Game over</strong>
-          <p className="mt-1 text-sm">{state.gameOver}</p>
-        </div>
-      )}
-
-      {/* ---------- Tabs ---------- */}
-      <nav className="flex flex-wrap gap-1 border-b border-slate-800 pb-px">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`rounded-t px-3 py-2 text-sm font-medium transition ${
-              tab === t.id
-                ? 'border-b-2 border-cyan-400 text-cyan-200'
-                : 'border-b-2 border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
-
-      <main className="flex-1 pb-10">
-        {tab === 'dashboard' && <Dashboard state={state} setState={setState} onAdvance={onAdvance} goto={setTab} />}
-        {tab === 'roster' && <Roster state={state} setState={setState} flash={flash} />}
-        {tab === 'scouting' && <Scouting state={state} setState={setState} flash={flash} />}
-        {tab === 'training' && <Training state={state} setState={setState} />}
-        {tab === 'tournaments' && <Tournaments state={state} setState={setState} flash={flash} />}
-        {tab === 'results' && <Results state={state} />}
-      </main>
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept="application/json"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0]
-          if (!file) return
-          try {
-            setState(await importSave(file))
-            flash('Save imported.')
-          } catch (err) {
-            flash((err as Error).message)
-          }
-          e.target.value = ''
-        }}
-      />
-
-      {report && <WeekReportModal report={report} onClose={() => setReport(null)} />}
-
-      {toast && (
-        <div className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded border border-cyan-600/50 bg-slate-900 px-4 py-2 text-sm text-cyan-200 shadow-lg">
-          {toast}
-        </div>
-      )}
-    </div>
     </PlayerSheetProvider>
   )
 }

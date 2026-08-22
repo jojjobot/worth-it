@@ -46,7 +46,14 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
   (the real roster + rival orgs), sim (5-phase match engine), tournament
   (calendar + statistical field + named real-org standings), training,
   game (state + advanceWeek), save (localStorage + JSON export/import).
-- `src/ui/` — one file per screen.
+- `src/ui/` — one file per screen. The shell is a **season calendar home page**
+  plus a bottom-left **hub menu** (`Hub.tsx`) for every other screen; there is
+  no tab bar. `Season.tsx` is the home page and also handles tournament entry.
+  `PlayerSheet.tsx` is the click-any-player full stat sheet, opened through a
+  context provider so any screen can trigger it.
+- The look is broadcast-sports: near-black ground, one electric accent, hard
+  edges, wide-tracked uppercase labels, tabular numbers. All tokens live at the
+  top of `src/index.css` as CSS variables — restyle there, not per component.
 - `npm run calibrate` runs thousands of simulated sessions and prints balance
   stats. Run it after touching the engine or `balance.json`.
 - `lobbyRating` in `tournaments.json` is on the TEAM POWER scale, not the

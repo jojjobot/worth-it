@@ -37,9 +37,13 @@ function isScheduled(week: number, schedule: Schedule): boolean {
   return (week - schedule.offsetWeek) % schedule.everyWeeks === 0
 }
 
-/** Every tournament happening in `week`, in calendar order, with lock reasons. */
-export function eventsForWeek(state: GameState): TournamentInstanceRef[] {
-  const week = state.week
+/**
+ * Every tournament happening in a week, in calendar order, with lock reasons.
+ * Defaults to the current week; the season calendar passes a future or past
+ * week so it can show the whole schedule at once.
+ */
+export function eventsForWeek(state: GameState, atWeek?: number): TournamentInstanceRef[] {
+  const week = atWeek ?? state.week
   const region = getRegion(state.region)
   const out: TournamentInstanceRef[] = []
 
@@ -96,6 +100,37 @@ export function eventsForWeek(state: GameState): TournamentInstanceRef[] {
     }
   }
   return out
+}
+
+/**
+ * The FNCS cycle length, taken from the longest schedule in tournaments.json.
+ * The calendar uses it as the length of a "season", so if you retune the FNCS
+ * schedule the calendar follows automatically.
+ */
+export function seasonLength(): number {
+  let longest = 1
+  for (const ev of TOURN.events as any[]) {
+    const schedules =
+      ev.type === 'series' ? ev.stages.map((s: any) => s.schedule) : [ev.schedule]
+    for (const sc of schedules) {
+      if (sc && sc.everyWeeks > longest) longest = sc.everyWeeks
+    }
+  }
+  return longest
+}
+
+/** Which season number a week falls in, and where in that season it sits. */
+export function seasonOf(week: number): { season: number; weekInSeason: number } {
+  const len = seasonLength()
+  return {
+    season: Math.floor((week - 1) / len) + 1,
+    weekInSeason: ((week - 1) % len) + 1,
+  }
+}
+
+/** The first week of a given season number. */
+export function seasonStartWeek(season: number): number {
+  return (season - 1) * seasonLength() + 1
 }
 
 /** The stage id that qualifying from `stageId` unlocks, if any. */
