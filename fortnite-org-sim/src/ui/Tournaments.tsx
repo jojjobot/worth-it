@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { TOURN, getScoring } from '../engine/config'
 import { setEntry } from '../engine/game'
-import { trioStrength } from '../engine/sim'
+import { duoStrength } from '../engine/sim'
 import type { GameState, Player } from '../engine/types'
 import { EmptyState, money, Panel, ratingColor } from './components'
 import { eventsForWeek } from '../engine/tournament'
@@ -16,16 +16,16 @@ export default function Tournaments({
   flash: (msg: string) => void
 }) {
   const events = eventsForWeek(state)
-  const completeTrios = state.trios.filter(
-    (t) => t.playerIds.filter(Boolean).length === 3,
+  const completeDuos = state.duos.filter(
+    (t) => t.playerIds.filter(Boolean).length === 2,
   )
 
   return (
     <div className="space-y-4">
       <Panel title={`Week ${state.week} — tournaments`}>
         <p className="text-[12px] text-slate-400">
-          Pick a trio for each event, then hit <span className="text-cyan-300">Advance week</span>.
-          Each event is one full session of matches simulated phase by phase. A trio can only play
+          Pick a duo for each event, then hit <span className="text-cyan-300">Advance week</span>.
+          Each event is one full session of matches simulated phase by phase. A duo can only play
           one event per week.
         </p>
       </Panel>
@@ -35,7 +35,7 @@ export default function Tournaments({
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {events.map((ev) => {
-            const entryTrioId = state.entries[ev.key]
+            const entryDuoId = state.entries[ev.key]
             const usedElsewhere = new Set(
               Object.entries(state.entries)
                 .filter(([k]) => k !== ev.key)
@@ -45,7 +45,7 @@ export default function Tournaments({
               <div
                 key={ev.key}
                 className={`panel p-4 ${ev.locked ? 'opacity-60' : ''} ${
-                  entryTrioId ? 'border-cyan-700/60' : ''
+                  entryDuoId ? 'border-cyan-700/60' : ''
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -81,20 +81,20 @@ export default function Tournaments({
                   <p className="mt-3 text-xs text-rose-400">{ev.lockReason}</p>
                 ) : (
                   <div className="mt-3">
-                    <div className="label mb-1">Enter a trio</div>
+                    <div className="label mb-1">Enter a duo</div>
                     <div className="space-y-1.5">
-                      {completeTrios.length === 0 && (
+                      {completeDuos.length === 0 && (
                         <p className="text-xs text-slate-500">
-                          You need a trio with all three slots filled.
+                          You need a duo with all three slots filled.
                         </p>
                       )}
-                      {completeTrios.map((t) => {
+                      {completeDuos.map((t) => {
                         const players = t.playerIds
                           .map((id) => (id ? state.players[id] : null))
                           .filter((p): p is Player => !!p)
-                        const strength = trioStrength(players, t.gamesTogether)
+                        const strength = duoStrength(players, t.gamesTogether)
                         const blocked = usedElsewhere.has(t.id)
-                        const selected = entryTrioId === t.id
+                        const selected = entryDuoId === t.id
                         const edge = strength - ev.lobbyRating
                         return (
                           <button
@@ -133,7 +133,7 @@ export default function Tournaments({
                         )
                       })}
                     </div>
-                    {entryTrioId && (
+                    {entryDuoId && (
                       <button
                         className="btn mt-2 w-full"
                         onClick={() => {

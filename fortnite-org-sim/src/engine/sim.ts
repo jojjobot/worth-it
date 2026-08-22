@@ -7,7 +7,7 @@
 //
 //   1 DROP     contested or not. Aim + Build Speed decide it. Losers can die 90th.
 //   2 LOOT     Loot Pathing sets mats/shield. Game Sense decides the rotate.
-//   3 MID      Aggro trios seek fights (points + risk), zone players survive.
+//   3 MID      Aggro duos seek fights (points + risk), zone players survive.
 //   4 ENDGAME  Piece Control + Endgame + Clutch, circle by circle. Mats matter.
 //   5 RESULT   placement + elims -> points from the scoring table.
 //
@@ -26,7 +26,7 @@ import {
   type Player,
   type SessionResult,
   type Strategy,
-  type Trio,
+  type Duo,
 } from './types'
 
 // Burnout penalty and POI flavour text both live in the data files.
@@ -53,7 +53,7 @@ export interface SessionOptions {
   gamesTogether: number
 }
 
-// --- Trio chemistry --------------------------------------------------------
+// --- Duo chemistry --------------------------------------------------------
 
 export interface SynergyBreakdown {
   total: number
@@ -93,24 +93,24 @@ export function computeSynergy(players: Player[], gamesTogether: number): Synerg
     composition += c.hasIGL
     notes.push('An IGL is making the calls.')
   } else {
-    notes.push('No IGL - nobody is calling the rotates.')
+    notes.push('Neither of them is an IGL - nobody is calling the rotates.')
   }
   if (ids.includes('anchor')) composition += c.hasSupportAnchor
   if (ids.includes('all_rounder')) composition += c.hasZonePlayer
-  if (ids.length === 3 && ids[0] === ids[1] && ids[1] === ids[2]) {
-    composition += c.threeOfSameArchetype
-    notes.push('Three of the same archetype - the roles overlap badly.')
+  if (ids.length === 2 && ids[0] === ids[1]) {
+    composition += c.bothSameArchetype
+    notes.push('Two of the same archetype - the roles overlap badly.')
   }
   const aggroCount = ids.filter((a) => AGGRO_ARCHETYPES.has(a)).length
   if (aggroCount >= 2) {
     composition += c.twoOrMoreAggro
-    notes.push('Two or more aggro players - somebody has to hold the piece.')
+    notes.push('Both of them want to press W - nobody is holding the piece.')
   }
   if (aggroCount === 0) {
     composition += c.noAggro
     notes.push('Nobody wants to take a fight.')
   }
-  if (maxEgo > 80) notes.push('There is a big ego in this trio.')
+  if (maxEgo > 80) notes.push('There is a big ego in this duo.')
 
   const total = clamp(comms + ego + topDog + chemistry + composition, s.clamp.min, s.clamp.max)
   return { total, comms, ego: ego + topDog, chemistry, composition, notes }
@@ -476,11 +476,11 @@ export function simulateSession(
 }
 
 /**
- * Rough "how strong is this trio" number, used to seed the AI field and to
+ * Rough "how strong is this duo" number, used to seed the AI field and to
  * show the user a single readable strength value. Same weights as the phases,
  * averaged, so it tracks what actually wins matches.
  */
-export function trioStrength(players: Player[], gamesTogether: number): number {
+export function duoStrength(players: Player[], gamesTogether: number): number {
   if (players.length === 0) return 0
   const synergy = computeSynergy(players, gamesTogether).total
   const agg = BAL.simulation.teamAggregation as Record<string, number>

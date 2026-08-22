@@ -4,7 +4,15 @@ import { ARCHETYPES, BAL, REGIONS, getArchetype } from '../engine/config'
 import { scoutPlayer, signPlayer, signQuote } from '../engine/game'
 import { uncertaintyFor, viewEgo, viewOverall, viewPeakOverall } from '../engine/players'
 import type { GameState, Player } from '../engine/types'
-import { EmptyState, Highlights, money, Panel, PlayerHeader, RatingTree } from './components'
+import {
+  EmptyState,
+  Highlights,
+  money,
+  Panel,
+  PlayerHeader,
+  RatingTree,
+  RealPlayerCard,
+} from './components'
 
 export default function Scouting({
   state,
@@ -17,19 +25,23 @@ export default function Scouting({
 }) {
   const [regionFilter, setRegionFilter] = useState('ALL')
   const [archFilter, setArchFilter] = useState('ALL')
-  const [sort, setSort] = useState<'ovr' | 'salary' | 'age'>('ovr')
+  const [sort, setSort] = useState<'ovr' | 'salary' | 'age' | 'pr'>('ovr')
+  const [who, setWho] = useState<'ALL' | 'REAL' | 'FREE'>('ALL')
   const [expanded, setExpanded] = useState<string | null>(null)
 
   const market = useMemo(() => {
     let list = state.marketIds.map((id) => state.players[id]).filter(Boolean) as Player[]
     if (regionFilter !== 'ALL') list = list.filter((p) => p.region === regionFilter)
     if (archFilter !== 'ALL') list = list.filter((p) => p.archetype === archFilter)
+    if (who === 'REAL') list = list.filter((p) => p.isReal)
+    if (who === 'FREE') list = list.filter((p) => p.buyout === 0)
     return list.sort((a, b) => {
       if (sort === 'salary') return a.salary - b.salary
       if (sort === 'age') return a.age - b.age
+      if (sort === 'pr') return (b.pr ?? -1) - (a.pr ?? -1)
       return viewOverall(b, false).value - viewOverall(a, false).value
     })
-  }, [state.marketIds, state.players, regionFilter, archFilter, sort])
+  }, [state.marketIds, state.players, regionFilter, archFilter, sort, who])
 
   const canScout =
     state.scoutPoints >= BAL.scouting.costPerReport && state.cash >= BAL.scouting.cashCostPerReport
@@ -61,9 +73,18 @@ export default function Scouting({
             </select>
           </div>
           <div>
+            <div className="label">Show</div>
+            <select className="input mt-1" value={who} onChange={(e) => setWho(e.target.value as any)}>
+              <option value="ALL">Everyone</option>
+              <option value="REAL">The real scene (top 12)</option>
+              <option value="FREE">Free agents only (no buyout)</option>
+            </select>
+          </div>
+          <div>
             <div className="label">Sort by</div>
             <select className="input mt-1" value={sort} onChange={(e) => setSort(e.target.value as any)}>
               <option value="ovr">Estimated overall</option>
+              <option value="pr">Power Ranking</option>
               <option value="salary">Cheapest salary</option>
               <option value="age">Youngest</option>
             </select>
@@ -144,6 +165,8 @@ export default function Scouting({
                 >
                   {open ? 'Hide ratings' : 'Show ratings'}
                 </button>
+
+                <RealPlayerCard player={p} />
 
                 {open && (
                   <div className="mt-2 space-y-2 border-t border-slate-800 pt-2">

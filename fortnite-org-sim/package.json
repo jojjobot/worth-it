@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "calibrate": "tsx scripts/calibrate.ts"
+    "calibrate": "tsx scripts/calibrate.ts",
+    "verify": "tsx scripts/verify-real-players.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

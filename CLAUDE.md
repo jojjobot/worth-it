@@ -22,7 +22,7 @@ To play any game: open the `.html` file directly in a browser.
 | `tictactoe.html` | 2-player Tic Tac Toe with score tracking. Dark/neon theme (`#1a1a2e` bg, `#e94560` X, `#a8dadc` O). |
 | `shooter_game.html` | 2D side-scrolling Canvas shooter (800×450px). Player: cyan. 3 enemy types. Physics with gravity, 6 platforms, particle effects. Game states: start → playing → gameover. |
 | `hoops/index.html` | 3D basketball quick match (Three.js, NBA-2K-style). 3v3 full court; you control one MyPlayer. Timing-based shot meter, dunking, AI teammates/opponents, 3:00 + 24s shot clock. Block-primitive models. |
-| `fortnite-org-sim/` | **Exception to the single-file rule** — a React + Vite + TypeScript + Tailwind app (esports org management sim). Run with `START.bat` or `npm start`. See its own README.md / TUNING.md / MATCH-SIM.md. |
+| `fortnite-org-sim/` | **Exception to the single-file rule** — a React + Vite + TypeScript + Tailwind app (esports org management **DUOS** sim). Run with `START.bat` or `npm start`. See its own README.md / TUNING.md / MATCH-SIM.md. |
 
 ## fortnite-org-sim (APEX ORG)
 
@@ -31,15 +31,26 @@ The only project here with a build step, because the user asked for React + Vite
 `src/data/*.json`** (commented with `__`-prefixed keys) so a non-developer can
 tune the game without touching code. Never hard-code balance in `src/engine/`.
 
+- The game mode is **DUOS** (two players per team), not trios.
+- Players are rated on **7 categories / 29 sub-stats** defined in
+  `src/data/attributes.json`. Category scores are DISPLAY ONLY — the engine must
+  always read individual sub-stats. Every player carries two full rating sets:
+  `current` (shown, used by the sim) and `peak` (hidden ceiling).
+- **Big Stage Nerve** applies only at LAN / Grand Finals, cannot be trained, and
+  is earned per LAN appearance. It is the headline progression mechanic.
+- `src/data/real_players.json` holds 12 real reference players and their orgs.
+  Ratings there are ESTIMATES; real players never get an `ego`; under-18s have
+  no real name. Those rules are enforced in `src/engine/realPlayers.ts`.
 - `src/engine/` — rng (seeded mulberry32, state serialises into the save),
-  players (generation with 2-3 spiked / 2-3 tanked attributes), sim (5-phase
-  match engine), tournament (calendar + statistical rival field), training,
+  players (generation, current/peak, scouting fog, progression), realPlayers
+  (the real roster + rival orgs), sim (5-phase match engine), tournament
+  (calendar + statistical field + named real-org standings), training,
   game (state + advanceWeek), save (localStorage + JSON export/import).
 - `src/ui/` — one file per screen.
 - `npm run calibrate` runs thousands of simulated sessions and prints balance
   stats. Run it after touching the engine or `balance.json`.
 - `lobbyRating` in `tournaments.json` is on the TEAM POWER scale, not the
-  individual rating scale (a trio of 50-OVR players is ~68 team power).
+  individual rating scale (a DUO of 50-OVR players is ~61 team power).
 
 ## shooter_game.html Architecture
 

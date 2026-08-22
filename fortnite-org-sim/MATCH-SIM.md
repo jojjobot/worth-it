@@ -8,7 +8,7 @@ weight and chance it uses comes from `balance.json` → `simulation`.
 
 ## Before the match
 
-**Team stats.** For each attribute the three players are blended into one number:
+**Team stats.** For each attribute the two players in the duo are blended into one number:
 
 ```
 teamValue = average + aggregation × (best − average) + synergy
@@ -16,7 +16,7 @@ teamValue = average + aggregation × (best − average) + synergy
 
 `teamAggregation` in `balance.json` sets that blend per attribute:
 
-- `gameSense: 0.65` — one smart IGL can call for the whole trio.
+- `gameSense: 0.65` — one smart IGL can call for the whole duo.
 - `clutch: 0.6` — one clutch player is enough.
 - `lootPathing: 0.35` — everyone has to loot properly.
 - `comms: 0.15` — comms is nearly a pure average.
@@ -47,7 +47,7 @@ where `theirPower` is the tournament's lobby rating plus a normal roll.
 ## Phase 1 — DROP
 
 The game plan sets how likely your POI is contested (Contest 92%, Balanced 45%,
-Zone 10%), plus 9% per W-Key Aggro player in the trio.
+Zone 10%), plus 9% per W-Key Aggro player in the duo.
 
 **Contested:** `0.55 × Aim + 0.30 × Build Speed + 0.15 × Editing` against the lobby.
 
@@ -105,7 +105,7 @@ Each surviving circle:
 - burns ~95 mats, reduced by high Piece Control,
 - has a 42% chance of an elim.
 
-Two things kill greedy trios here:
+Two things kill greedy duos here:
 
 - **Running out of mats** costs a brutal 26 power. This is why the mats you
   carried out of the early game matter.
@@ -127,14 +127,14 @@ each elim = 2
 
 ## The rest of the field
 
-Simulating 3000 rival trios phase by phase for every tournament would be slow
+Simulating 3000 rival duos phase by phase for every tournament would be slow
 and pointless, so rivals are modelled statistically (`simulation.aiField`): each
 gets a strength drawn around the lobby rating, which converts to expected points
 per match, plus noise. Your real simulated score is then ranked against them.
 
 Those numbers are calibrated against the real phase simulation. If you change
 the match engine meaningfully, run `npm run calibrate` and adjust
-`aiField.pointsPerMatchBase` so a trio sitting *at* the lobby rating scores
+`aiField.pointsPerMatchBase` so a duo sitting *at* the lobby rating scores
 about that many points per match — otherwise ranks and prize money drift.
 
 ---

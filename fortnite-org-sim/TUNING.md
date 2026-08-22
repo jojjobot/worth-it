@@ -1,5 +1,8 @@
 # Tuning guide
 
+**The game mode is DUOS** — two players per team, up to four duos on a roster
+of eight.
+
 All game numbers live in `src/data/*.json`. Edit, save, and the running game
 picks it up immediately. Keys starting with `__` are comments and are ignored.
 
@@ -73,17 +76,73 @@ turning up to LANs, in `attributes.json` -> `bigStageNerve`:
 
 ---
 
+## The real scene (`real_players.json`)
+
+The game ships with **12 real players** and the **7 orgs** they play for. They
+sit on the transfer market from week one, and their orgs enter your tournaments.
+
+| Org | Region | Duo |
+|---|---|---|
+| Team Falcons | NAC | Peterbot + Pollo |
+| BIG | EU | vic0 + Malibuca |
+| Aurora Gaming | EU | shxrk + t3eny |
+| AG | EU | Sky + Scroll |
+| HavoK by Vitality | EU | SwizzY + Pixie |
+| Twisted Minds | NAC | boltz + a generated partner |
+| ROC | EU | Kami + a generated partner |
+
+The last two orgs get a **generated fictional partner** because their real
+duo partners are not in the reference set — the game does not invent ratings
+for real players it has no data for.
+
+> **The ratings in that file are estimates**, calibrated by hand against public
+> tournament results. Only the Power Ranking, org, region and age are factual.
+
+### Signing them
+
+They are all under contract, so it costs a buyout on top of the wage. In
+`real_players.json` -> `settings`:
+
+- `buyoutMultiplier` — buyout = weekly wage × this. Currently 26-44, so the
+  top players cost **$100k-155k** up front. Lower it to make a superteam
+  reachable early.
+- `minReputationToSign` — how famous your org must be before they will take the
+  call at all. Currently **42**. Set to 0 to let a week-one nobody sign the
+  world champion.
+- `salaryMultiplier` — on top of the normal wage curve.
+
+### How they compete
+
+Their duos are run through the **same match engine you are**, on the same
+ratings you can scout — not modelled statistically like the anonymous field.
+Finishing above BIG means you genuinely out-scored vic0 and Malibuca.
+
+- `minTierEntered` (2) — they do not bother with the tier-1 Open Practice Cup,
+  so the bottom of the ladder is yours.
+- `internationalFromTier` (5) — from this tier up, *every* org enters
+  regardless of region. The FNCS Grand Finals puts Falcons and BIG in the same
+  lobby as you.
+
+Sign one of their players and the org **backfills** with somebody else, losing
+all its duo chemistry — a real cost to them.
+
+Run `npm run verify` after editing that file. It checks that no real player has
+been given an ego, that no under-18 has a name attached, that the computed
+overalls still match the authored ones, and that every org fields a full duo.
+
+---
+
 ## "The game is too hard / too easy"
 
 **One dial fixes most of it:** `lobbyRating` on each event in
 `tournaments.json`. It is how strong the rest of the field is.
 
 It is measured on the **team power** scale, which is the number shown next to
-each of your trios on the Dashboard — *not* the individual player ratings. Three
-50-rated players make a trio worth roughly 68 team power, because specialists
-carry the trio and chemistry adds on top.
+each of your duos on the Dashboard — *not* the individual player ratings. Three
+50-rated players make a duo worth roughly 68 team power, because specialists
+carry the duo and chemistry adds on top.
 
-| Your trio strength vs the lobby | What it feels like |
+| Your duo strength vs the lobby | What it feels like |
 |---|---|
 | lobby is 25+ below you | You farm it. Winning most sessions. |
 | lobby is ~10 below you | Competitive. Cash sometimes, occasional deep runs. |
@@ -125,7 +184,7 @@ zone-pressure checks that no strategy plays around.
 
 - `0` → almost everyone who survives the mid game reaches an endgame.
 - `2` (default) → reaching top 15 is an achievement.
-- `4` → brutal, only very strong trios ever see a final circle.
+- `4` → brutal, only very strong duos ever see a final circle.
 
 ## "Elims should matter more"
 
@@ -171,7 +230,7 @@ Each event in `tournaments.json` has a `schedule`:
 
 That means it runs on weeks 1, 3, 5, 7… Set `everyWeeks: 1, offsetWeek: 0` for
 every week. The FNCS is a `series` — its three stages each have their own
-schedule, and `advanceCount` decides how many trios move on.
+schedule, and `advanceCount` decides how many duos move on.
 
 ## Adding a new tournament
 

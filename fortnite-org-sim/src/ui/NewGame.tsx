@@ -21,7 +21,7 @@ export default function NewGame({
       <div>
         <h1 className="font-mono text-3xl font-bold tracking-tight text-cyan-300">APEX ORG</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Competitive trios management. Scout players, build trios, train them, and drag a no-name
+          Competitive duos management. Scout players, build duos, train them, and drag a no-name
           org to the top of the scene.
         </p>
       </div>

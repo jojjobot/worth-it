@@ -1,10 +1,10 @@
 {
-  "__doc": "Tournament formats, the points table and the season calendar. Everything here is tunable. `lobbyRating` is how strong the rest of the field is and is the single biggest difficulty dial in the game. It is measured on the TEAM POWER scale shown next to each of your trios - a trio competes when the lobby is about 10 below its strength, and dominates about 25 below. Region modifiers in regions.json are added on top (EU is +7).",
+  "__doc": "Tournament formats, the points table and the season calendar. Everything here is tunable. `lobbyRating` is how strong the rest of the field is and is the single biggest difficulty dial in the game. It is measured on the TEAM POWER scale shown next to each of your duos - a duo competes when the lobby is about 10 below its strength, and dominates about 25 below. Region modifiers in regions.json are added on top (EU is +7).",
 
   "scoringTables": {
     "__doc": "Points awarded per match. `placement` bands are inclusive. `elimPoints` is per elimination.",
     "standard": {
-      "name": "Standard Trios Scoring",
+      "name": "Standard Duos Scoring",
       "elimPoints": 2,
       "placement": [
         { "from": 1, "to": 1, "points": 60 },
@@ -78,7 +78,7 @@
       "type": "session",
       "tier": 1,
       "__tier": "Tier scales reputation gain and how seriously the scene takes the result.",
-      "blurb": "Free entry, weak lobbies, tiny money. Where no-name orgs build match count and trio synergy.",
+      "blurb": "Free entry, weak lobbies, tiny money. Where no-name orgs build match count and duo synergy.",
       "matches": 8,
       "lobbyRating": 52,
       "fieldSize": 400,
@@ -110,7 +110,7 @@
       "name": "Elite Cash Cup",
       "type": "session",
       "tier": 3,
-      "blurb": "Invite-only money cup. The lobby is nothing but known trios.",
+      "blurb": "Invite-only money cup. The lobby is nothing but known duos.",
       "matches": 10,
       "lobbyRating": 82,
       "fieldSize": 800,
@@ -138,7 +138,7 @@
           "lobbyRating": 72,
           "fieldSize": 2000,
           "advanceCount": 300,
-          "__advanceCount": "How many trios move on to the next stage.",
+          "__advanceCount": "How many duos move on to the next stage.",
           "prizePool": 0,
           "prizeDistribution": "cashCup",
           "tier": 3,

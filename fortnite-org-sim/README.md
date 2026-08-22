@@ -1,6 +1,6 @@
-# APEX ORG — competitive trios esports manager
+# APEX ORG — competitive duos esports manager
 
-You own an esports organisation. Scout players, build trios, train them, enter
+You own an esports organisation. Scout players, build duos, train them, enter
 tournaments, and drag a no-name org from the open cups to the Grand Finals.
 
 Everything runs on your own computer. No account, no server, no internet needed
@@ -44,7 +44,7 @@ occasionally if a career matters to you.
    Each scout report narrows the range; at scouting level 4 you see exact values.
 2. **Sign** who you like. Free agents cost nothing up front, players at rival
    orgs cost a buyout.
-3. **Build a trio** on the *Roster & Trios* screen and pick a game plan
+3. **Build a duo** on the *Roster & Duos* screen and pick a game plan
    (Contest / Balanced / Zone).
 4. **Set training** for each player. Hard programs improve them fast but stack
    burnout.
@@ -65,14 +65,14 @@ You lose if you run a negative balance for six weeks straight.
 | **Aim** | Wins fights. Weighted heaviest in drop fights and mid-game fights. |
 | **Build Speed** | Mechanics under pressure. Drop fights, mid game, endgame. |
 | **Editing** | Fast plays and edit windows. Drop and mid-game fights. |
-| **Piece Control** | Taking and holding the other trio's builds. Dominates endgames, and saves mats. |
+| **Piece Control** | Taking and holding the other duo's builds. Dominates endgames, and saves mats. |
 | **Game Sense** | Zone reads. Decides your rotate and how you handle zone pressure. |
 | **Loot Pathing** | How many mats and how much shield you carry out of the early game. |
 | **Endgame** | Final circles and height retakes. |
 | **Clutch** | Can rescue a lost endgame check. |
 | **Consistency** | *Low = boom or bust.* Controls how big that player's random swing is each match. |
 | **Stamina** | Cancels fatigue in matches 5–10 of a session. |
-| **Comms** | Lifts the whole trio through synergy, and speeds up teammates' training. |
+| **Comms** | Lifts the whole duo through synergy, and speeds up teammates' training. |
 
 **Nobody is good at everything.** Every generated player gets 2–3 spiked
 attributes and 2–3 tanked ones, drawn from pools based on their archetype. A
@@ -80,7 +80,7 @@ cracked mechanical W-Key player with no game sense really does play differently
 from a smart, passive zone player with mid aim.
 
 Two ratings are **hidden**: **Potential** (their ceiling — only ever an estimate,
-never an exact number) and **Ego** (high ego wrecks trio chemistry). Scouting
+never an exact number) and **Ego** (high ego wrecks duo chemistry). Scouting
 reveals rough versions of both.
 
 ---
@@ -110,7 +110,7 @@ npm run calibrate
 ```
 
 It runs a few thousand simulated sessions and prints what actually happens —
-points per match, win rate, where trios die, and how each real event feels.
+points per match, win rate, where duos die, and how each real event feels.
 
 ---
 

@@ -1,7 +1,8 @@
 import type { Dispatch, SetStateAction } from 'react'
-import { computeSynergy, trioStrength } from '../engine/sim'
+import { computeSynergy, duoStrength } from '../engine/sim'
 import { eventsForWeek } from '../engine/tournament'
 import { expiringContracts } from '../engine/game'
+import { realOrgColor } from '../engine/realPlayers'
 import type { GameState, Player } from '../engine/types'
 import { ArchetypeChip, EmptyState, money, ordinal, Panel, ratingColor } from './components'
 
@@ -23,23 +24,23 @@ export default function Dashboard({
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      {/* ---- Trios ---- */}
-      <Panel title="Your trios" className="lg:col-span-2">
+      {/* ---- Duos ---- */}
+      <Panel title="Your duos" className="lg:col-span-2">
         <div className="space-y-3">
-          {state.trios.map((trio) => {
-            const players = trio.playerIds
+          {state.duos.map((duo) => {
+            const players = duo.playerIds
               .map((id) => (id ? state.players[id] : null))
               .filter((p): p is Player => !!p)
-            const complete = players.length === 3
-            const strength = complete ? trioStrength(players, trio.gamesTogether) : 0
-            const syn = computeSynergy(players, trio.gamesTogether)
+            const complete = players.length === 2
+            const strength = complete ? duoStrength(players, duo.gamesTogether) : 0
+            const syn = computeSynergy(players, duo.gamesTogether)
             return (
-              <div key={trio.id} className="rounded border border-slate-800 bg-slate-950/50 p-3">
+              <div key={duo.id} className="rounded border border-slate-800 bg-slate-950/50 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-100">{trio.name}</span>
+                    <span className="font-semibold text-slate-100">{duo.name}</span>
                     <span className="rounded border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] uppercase text-slate-400">
-                      {trio.strategy}
+                      {duo.strategy}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 font-mono text-xs">
@@ -66,13 +67,13 @@ export default function Dashboard({
                     </span>
                     <span>
                       <span className="label mr-1">Games</span>
-                      <span className="text-slate-300">{trio.gamesTogether}</span>
+                      <span className="text-slate-300">{duo.gamesTogether}</span>
                     </span>
                   </div>
                 </div>
 
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {trio.playerIds.map((id, i) => {
+                  {duo.playerIds.map((id, i) => {
                     const p = id ? state.players[id] : null
                     return p ? (
                       <span
@@ -101,7 +102,7 @@ export default function Dashboard({
           })}
         </div>
         <button className="btn mt-3" onClick={() => goto('roster')}>
-          Manage roster & trios
+          Manage roster & duos
         </button>
       </Panel>
 
@@ -113,7 +114,7 @@ export default function Dashboard({
           <ul className="space-y-2">
             {events.map((e) => {
               const entry = state.entries[e.key]
-              const trio = state.trios.find((t) => t.id === entry)
+              const duo = state.duos.find((t) => t.id === entry)
               return (
                 <li key={e.key} className="rounded border border-slate-800 bg-slate-950/50 p-2.5">
                   <div className="flex items-center justify-between gap-2">
@@ -126,8 +127,8 @@ export default function Dashboard({
                   <div className="mt-1 text-[11px]">
                     {e.locked ? (
                       <span className="text-rose-400">{e.lockReason}</span>
-                    ) : trio ? (
-                      <span className="text-emerald-300">Entered: {trio.name}</span>
+                    ) : duo ? (
+                      <span className="text-emerald-300">Entered: {duo.name}</span>
                     ) : (
                       <span className="text-slate-500">Not entered</span>
                     )}
@@ -143,6 +144,47 @@ export default function Dashboard({
       </Panel>
 
       {/* ---- Recent results ---- */}
+      {/* ---- The scene: the real orgs you are up against ---- */}
+      <Panel title="The scene" className="lg:col-span-3">
+        <p className="mb-3 text-[11px] text-slate-500">
+          The orgs you actually compete against. Their duos are simulated with the same match
+          engine you are, on the same ratings you can scout — so a result against them is real.
+          Orgs outside your region only meet you at international events.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {state.rivalDuos.map((d) => {
+            const roster = d.playerIds
+              .map((id) => state.players[id])
+              .filter((p): p is Player => !!p)
+            const strength = roster.length === 2 ? duoStrength(roster, d.gamesTogether) : 0
+            const color = realOrgColor(d.orgName) ?? '#94a3b8'
+            const home = d.region === state.region
+            return (
+              <div
+                key={d.id}
+                className={`rounded border p-2.5 ${home ? 'border-slate-700 bg-slate-950/60' : 'border-slate-800/60 bg-slate-950/30'}`}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="truncate font-semibold text-[13px]" style={{ color }}>
+                    {d.orgName}
+                  </span>
+                  <span className="shrink-0 font-mono text-[10px] text-slate-500">{d.region}</span>
+                </div>
+                <div className="mt-1 truncate text-[11px] text-slate-400">
+                  {roster.map((p) => p.tag).join(' + ') || '--'}
+                </div>
+                <div className="mt-1.5 flex items-center justify-between font-mono text-[10px]">
+                  <span className="text-slate-600">
+                    {home ? 'in your region' : 'international only'}
+                  </span>
+                  <span className={ratingColor(strength)}>{strength.toFixed(1)}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Panel>
+
       <Panel title="Recent results" className="lg:col-span-2">
         {recent.length === 0 ? (
           <EmptyState>No results yet. Enter a tournament and advance the week.</EmptyState>
@@ -152,7 +194,7 @@ export default function Dashboard({
               <tr className="label border-b border-slate-800 text-left">
                 <th className="pb-1">Wk</th>
                 <th className="pb-1">Event</th>
-                <th className="pb-1">Trio</th>
+                <th className="pb-1">Duo</th>
                 <th className="pb-1 text-right">Pts</th>
                 <th className="pb-1 text-right">Rank</th>
                 <th className="pb-1 text-right">Prize</th>
@@ -160,10 +202,10 @@ export default function Dashboard({
             </thead>
             <tbody>
               {recent.map((r) => (
-                <tr key={r.key + r.trioId} className="border-b border-slate-900 last:border-0">
+                <tr key={r.key + r.duoId} className="border-b border-slate-900 last:border-0">
                   <td className="py-1.5 font-mono text-xs text-slate-500">{r.week}</td>
                   <td className="py-1.5 text-slate-200">{r.name}</td>
-                  <td className="py-1.5 text-slate-400">{r.trioName}</td>
+                  <td className="py-1.5 text-slate-400">{r.duoName}</td>
                   <td className="py-1.5 text-right font-mono">{r.points}</td>
                   <td className="py-1.5 text-right font-mono text-slate-300">
                     {ordinal(r.rank)}

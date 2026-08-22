@@ -15,19 +15,21 @@ import {
   overall,
   progressPlayer,
 } from './players'
+import { backfillRivalDuo, buildRealRoster, realSignReputationGate } from './realPlayers'
 import { eventsForWeek, nextStageQualKey, runTournament } from './tournament'
-import { applyTraining, trainingCost, trioTrainingChemistry, type TrainingOutcome } from './training'
+import { applyTraining, trainingCost, duoTrainingChemistry, type TrainingOutcome } from './training'
 import type {
   GameState,
   Player,
   TournamentResult,
-  Trio,
+  Duo,
   WeeklyFinance,
 } from './types'
 
-// Bumped to 2 by the attribute-tree rewrite: saves from version 1 store the old
-// 11-attribute `attrs` object and cannot be migrated, so they are discarded.
-export const SAVE_VERSION = 2
+// 2 = the attribute-tree rewrite (old 11-attribute `attrs` object).
+// 3 = DUOS instead of trios, plus the real reference roster and rival orgs.
+// Older saves cannot be migrated and are discarded on load.
+export const SAVE_VERSION = 3
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T
@@ -58,7 +60,8 @@ export function createNewGame(orgName: string, region: string, seedLabel: string
     players: {},
     rosterIds: [],
     marketIds: [],
-    trios: [],
+    duos: [],
+    rivalDuos: [],
     scoutPoints: BAL.scouting.pointsPerWeek,
     lastMarketRefreshWeek: 1,
     entries: {},
@@ -70,8 +73,9 @@ export function createNewGame(orgName: string, region: string, seedLabel: string
 
   const taken = new Set<string>()
 
-  // Three starters, deliberately mediocre and deliberately different.
-  const startingArchetypes = ['igl', 'mech_carry', 'anchor']
+  // Starters: one duo plus a sub, deliberately mediocre and deliberately
+  // different, so your first roster decision is which two actually play.
+  const startingArchetypes = ['igl', 'mech_carry', 'anchor'].slice(0, org.startingPlayers ?? 3)
   for (const archetype of startingArchetypes) {
     const p = generatePlayer(rng, taken, {
       baseRating: rng.gauss(org.startingPlayerRating.mu, org.startingPlayerRating.sigma),
@@ -89,13 +93,24 @@ export function createNewGame(orgName: string, region: string, seedLabel: string
     state.rosterIds.push(p.id)
   }
 
-  state.trios.push({
+  state.duos.push({
     id: nextId('t'),
-    name: 'Main Trio',
-    playerIds: [...state.rosterIds],
+    name: 'Main Duo',
+    playerIds: state.rosterIds.slice(0, 2),
     strategy: 'balanced',
     gamesTogether: 0,
   })
+
+  // The real scene: 12 hand-authored reference players in their real orgs,
+  // plus the duos those orgs field against you every week. They sit on the
+  // transfer market from day one - you can try to sign any of them, but they
+  // are under contract and the buyout is brutal.
+  const real = buildRealRoster(rng, taken)
+  for (const p of real.players) {
+    state.players[p.id] = p
+    state.marketIds.push(p.id)
+  }
+  state.rivalDuos = real.rivalDuos
 
   refreshMarketInPlace(state, rng, taken)
   state.newsLog.push({
@@ -127,9 +142,13 @@ function generateMarketPlayer(rng: Rng, taken: Set<string>): Player {
 function refreshMarketInPlace(state: GameState, rng: Rng, taken: Set<string>): void {
   // Drop anyone the user has not scouted; keep scouted players so research is
   // not wasted, but let a few of them get signed elsewhere.
+  const inRivalDuo = new Set(state.rivalDuos.flatMap((d) => d.playerIds))
   const kept = state.marketIds.filter((id) => {
     const p = state.players[id]
     if (!p) return false
+    // The real players and the rival orgs' rosters are permanent fixtures of
+    // the scene. They never rotate off the market.
+    if (p.isReal || inRivalDuo.has(id)) return true
     if (p.scoutLevel === 0) return false
     return !rng.chance(0.35)
   })
@@ -138,7 +157,12 @@ function refreshMarketInPlace(state: GameState, rng: Rng, taken: Set<string>): v
   }
   state.marketIds = kept
 
-  while (state.marketIds.length < BAL.scouting.freeAgentPoolSize) {
+  const ordinary = () =>
+    state.marketIds.filter((id) => {
+      const p = state.players[id]
+      return p && !p.isReal && !inRivalDuo.has(id)
+    }).length
+  while (ordinary() < BAL.scouting.freeAgentPoolSize) {
     const p = generateMarketPlayer(rng, taken)
     state.players[p.id] = p
     state.marketIds.push(p.id)
@@ -175,6 +199,14 @@ export function signQuote(state: GameState, playerId: string): SignQuote {
     return { ok: false, reason: 'Already on your roster', upfront: 0, weekly: 0 }
   if (state.rosterIds.length >= BAL.org.rosterLimit)
     return { ok: false, reason: 'Roster is full', upfront: 0, weekly: p.salary }
+  const gate = realSignReputationGate()
+  if (p.isReal && state.reputation < gate)
+    return {
+      ok: false,
+      reason: `${p.tag} will not take the call until you are at ${gate} reputation`,
+      upfront: p.buyout,
+      weekly: p.salary,
+    }
   const upfront = p.buyout
   if (state.cash < upfront)
     return { ok: false, reason: 'Not enough cash for the buyout', upfront, weekly: p.salary }
@@ -197,6 +229,21 @@ export function signPlayer(state: GameState, playerId: string): GameState {
   p.scoutLevel = BAL.scouting.maxLevel // you see everything once they are yours
   s.rosterIds.push(playerId)
   s.marketIds = s.marketIds.filter((id) => id !== playerId)
+
+  // If you just took someone out of a real org's duo, that org has to replace
+  // them - and the new pairing starts with zero chemistry.
+  const rival = s.rivalDuos.find((d) => d.playerIds.includes(playerId))
+  if (rival) {
+    const rng = new Rng(s.rngState)
+    const replacement = backfillRivalDuo(rival, playerId, rng, takenTags(s))
+    s.players[replacement.id] = replacement
+    s.marketIds.push(replacement.id)
+    s.rngState = rng.s
+    s.newsLog.push({
+      week: s.week,
+      text: `${rival.orgName} move fast after losing ${p.tag} and promote ${replacement.tag}.`,
+    })
+  }
   s.newsLog.push({
     week: s.week,
     text: `${s.orgName} sign ${p.tag}${quote.upfront > 0 ? ` for a $${quote.upfront.toLocaleString()} buyout` : ' as a free agent'}.`,
@@ -209,8 +256,8 @@ export function releasePlayer(state: GameState, playerId: string): GameState {
   const p = s.players[playerId]
   if (!p) return state
   s.rosterIds = s.rosterIds.filter((id) => id !== playerId)
-  for (const trio of s.trios) {
-    trio.playerIds = trio.playerIds.map((id) => (id === playerId ? null : id))
+  for (const duo of s.duos) {
+    duo.playerIds = duo.playerIds.map((id) => (id === playerId ? null : id))
   }
   p.orgName = null
   p.contractWeeks = 0
@@ -220,62 +267,62 @@ export function releasePlayer(state: GameState, playerId: string): GameState {
   return s
 }
 
-export function setTrioSlot(
+export function setDuoSlot(
   state: GameState,
-  trioId: string,
+  duoId: string,
   slot: number,
   playerId: string | null,
 ): GameState {
   const s = clone(state)
-  const trio = s.trios.find((t) => t.id === trioId)
-  if (!trio) return state
-  // A player can only be in one trio at a time.
+  const duo = s.duos.find((t) => t.id === duoId)
+  if (!duo) return state
+  // A player can only be in one duo at a time.
   if (playerId) {
-    for (const t of s.trios) {
+    for (const t of s.duos) {
       t.playerIds = t.playerIds.map((id) => (id === playerId ? null : id))
     }
   }
-  trio.playerIds[slot] = playerId
+  duo.playerIds[slot] = playerId
   // Changing the line-up resets chemistry.
-  trio.gamesTogether = 0
+  duo.gamesTogether = 0
   return s
 }
 
-export function setTrioStrategy(state: GameState, trioId: string, strategy: Trio['strategy']): GameState {
+export function setDuoStrategy(state: GameState, duoId: string, strategy: Duo['strategy']): GameState {
   const s = clone(state)
-  const trio = s.trios.find((t) => t.id === trioId)
-  if (!trio) return state
-  trio.strategy = strategy
+  const duo = s.duos.find((t) => t.id === duoId)
+  if (!duo) return state
+  duo.strategy = strategy
   return s
 }
 
-export function renameTrio(state: GameState, trioId: string, name: string): GameState {
+export function renameDuo(state: GameState, duoId: string, name: string): GameState {
   const s = clone(state)
-  const trio = s.trios.find((t) => t.id === trioId)
-  if (!trio) return state
-  trio.name = name
+  const duo = s.duos.find((t) => t.id === duoId)
+  if (!duo) return state
+  duo.name = name
   return s
 }
 
-export function addTrio(state: GameState): GameState {
-  if (state.trios.length >= BAL.org.trioLimit) return state
+export function addDuo(state: GameState): GameState {
+  if (state.duos.length >= BAL.org.duoLimit) return state
   const s = clone(state)
-  s.trios.push({
+  s.duos.push({
     id: nextId('t'),
-    name: `Trio ${s.trios.length + 1}`,
-    playerIds: [null, null, null],
+    name: `Duo ${s.duos.length + 1}`,
+    playerIds: [null, null],
     strategy: 'balanced',
     gamesTogether: 0,
   })
   return s
 }
 
-export function removeTrio(state: GameState, trioId: string): GameState {
-  if (state.trios.length <= 1) return state
+export function removeDuo(state: GameState, duoId: string): GameState {
+  if (state.duos.length <= 1) return state
   const s = clone(state)
-  s.trios = s.trios.filter((t) => t.id !== trioId)
+  s.duos = s.duos.filter((t) => t.id !== duoId)
   for (const key of Object.keys(s.entries)) {
-    if (s.entries[key] === trioId) delete s.entries[key]
+    if (s.entries[key] === duoId) delete s.entries[key]
   }
   return s
 }
@@ -288,10 +335,10 @@ export function setTraining(state: GameState, playerId: string, programId: strin
   return s
 }
 
-export function setEntry(state: GameState, eventKey: string, trioId: string | null): GameState {
+export function setEntry(state: GameState, eventKey: string, duoId: string | null): GameState {
   const s = clone(state)
-  if (trioId === null) delete s.entries[eventKey]
-  else s.entries[eventKey] = trioId
+  if (duoId === null) delete s.entries[eventKey]
+  else s.entries[eventKey] = duoId
   return s
 }
 
@@ -325,30 +372,30 @@ export function advanceWeek(state: GameState): { state: GameState; report: WeekR
   // 1) Run every tournament the user entered this week.
   const events = eventsForWeek(s)
   for (const ref of events) {
-    const trioId = s.entries[ref.key]
-    if (!trioId) continue
-    const trio = s.trios.find((t) => t.id === trioId)
-    if (!trio) continue
-    const players = trio.playerIds
+    const duoId = s.entries[ref.key]
+    if (!duoId) continue
+    const duo = s.duos.find((t) => t.id === duoId)
+    if (!duo) continue
+    const players = duo.playerIds
       .map((id) => (id ? s.players[id] : null))
       .filter((p): p is Player => !!p)
-    if (players.length < 3) {
-      news.push(`${trio.name} could not play ${ref.name} - the trio was incomplete.`)
+    if (players.length < 2) {
+      news.push(`${duo.name} could not play ${ref.name} - the duo was incomplete.`)
       continue
     }
     if (ref.locked) continue
     if (ref.entryFee > 0) s.cash -= ref.entryFee
 
-    const result = runTournament(s, ref, trio, players, rng)
+    const result = runTournament(s, ref, duo, players, rng)
     results.push(result)
     s.results.push(result)
 
     prizeTotal += result.prize
     repTotal += result.reputation
-    trio.gamesTogether += ref.matches
+    duo.gamesTogether += ref.matches
     for (const p of players) {
       p.matchesPlayed += ref.matches
-      p.careerEarnings += Math.round(result.prize / 3)
+      p.careerEarnings += Math.round(result.prize / Math.max(1, players.length))
       if (result.rank === 1) p.careerTitles += 1
     }
 
@@ -360,11 +407,11 @@ export function advanceWeek(state: GameState): { state: GameState; report: WeekR
       const qualKey = nextStageQualKey(ref.eventId, ref.stageId)
       if (qualKey) {
         s.qualifications[qualKey] = s.week
-        news.push(`${trio.name} QUALIFIED out of the ${ref.name} in ${result.rank}${ordinalSuffix(result.rank)}.`)
+        news.push(`${duo.name} QUALIFIED out of the ${ref.name} in ${result.rank}${ordinalSuffix(result.rank)}.`)
       }
     }
     news.push(
-      `${ref.name}: ${trio.name} finished ${result.rank}${ordinalSuffix(result.rank)} of ${ref.fieldSize.toLocaleString()} with ${result.points} points` +
+      `${ref.name}: ${duo.name} finished ${result.rank}${ordinalSuffix(result.rank)} of ${ref.fieldSize.toLocaleString()} with ${result.points} points` +
         (result.prize > 0 ? ` and won $${result.prize.toLocaleString()}.` : '.'),
     )
   }
@@ -372,8 +419,8 @@ export function advanceWeek(state: GameState): { state: GameState; report: WeekR
   // 2) Training.
   const training: TrainingOutcome[] = []
   const rosterPlayers = s.rosterIds.map((id) => s.players[id]).filter(Boolean)
-  for (const trio of s.trios) {
-    const members = trio.playerIds
+  for (const duo of s.duos) {
+    const members = duo.playerIds
       .map((id) => (id ? s.players[id] : null))
       .filter((p): p is Player => !!p)
     if (members.length === 0) continue
@@ -381,13 +428,13 @@ export function advanceWeek(state: GameState): { state: GameState; report: WeekR
     for (const p of members) {
       training.push(applyTraining(p, coachComms, rng))
     }
-    const chem = trioTrainingChemistry(members)
-    trio.gamesTogether += chem.games
+    const chem = duoTrainingChemistry(members)
+    duo.gamesTogether += chem.games
   }
-  // Players not in any trio still train, just without a comms coach.
-  const inTrio = new Set(s.trios.flatMap((t) => t.playerIds.filter(Boolean) as string[]))
+  // Players not in any duo still train, just without a comms coach.
+  const inDuo = new Set(s.duos.flatMap((t) => t.playerIds.filter(Boolean) as string[]))
   for (const p of rosterPlayers) {
-    if (!inTrio.has(p.id)) training.push(applyTraining(p, 0, rng))
+    if (!inDuo.has(p.id)) training.push(applyTraining(p, 0, rng))
   }
 
   // 3) The books.

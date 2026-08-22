@@ -95,7 +95,7 @@
       "name": "IGL",
       "short": "IGL",
       "color": "#4dd2ff",
-      "blurb": "Calls the rotates, reads the zone, keeps the trio alive. Rarely the one topping the elim charts.",
+      "blurb": "Calls the rotates, reads the zone, keeps the duo alive. Rarely the one topping the elim charts.",
       "bias": {
         "tracking": -6, "flicks": -7, "accuracy": -4, "headshot": -5,
         "build_speed": -2, "build_efficiency": 6, "edit_speed": -2, "edit_accuracy": 4,
@@ -167,7 +167,7 @@
       "name": "Flex",
       "short": "FLEX",
       "color": "#94a3b8",
-      "blurb": "Slots into any trio. Fewer glaring holes, fewer god-tier highs.",
+      "blurb": "Slots into any duo. Fewer glaring holes, fewer god-tier highs.",
       "bias": {},
       "strengthPool": ["tracking", "flicks", "accuracy", "headshot", "build_speed", "build_efficiency", "edit_speed", "edit_accuracy", "edit_iq", "piece_control", "box_fighting", "hg_retakes", "reset_timing", "movement", "positioning", "rotation", "fight_selection", "resource_mgmt", "drop_accuracy", "fifty_fifties", "offspawn_fights", "clutch", "under_pressure", "tilt_resistance", "consistency", "communication", "decision_making", "adaptivity"],
       "weaknessPool": ["tracking", "flicks", "accuracy", "headshot", "build_speed", "build_efficiency", "edit_speed", "edit_accuracy", "edit_iq", "piece_control", "box_fighting", "hg_retakes", "reset_timing", "movement", "positioning", "rotation", "fight_selection", "resource_mgmt", "drop_accuracy", "fifty_fifties", "offspawn_fights", "clutch", "under_pressure", "tilt_resistance", "consistency", "communication", "decision_making", "adaptivity"]

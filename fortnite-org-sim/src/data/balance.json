@@ -48,7 +48,7 @@
     "potentialCeiling": 97,
 
     "ego": { "mu": 45, "sigma": 20, "min": 1, "max": 99 },
-    "__ego": "Hidden. High ego drags trio synergy down. Star players tend to have more of it (see egoStarBonus).",
+    "__ego": "Hidden. High ego drags duo synergy down. Star players tend to have more of it (see egoStarBonus).",
     "egoStarBonus": 0.35,
     "__egoStarBonus": "Ego points added per overall point above 70. Stars are divas.",
 
@@ -77,10 +77,10 @@
     "lobbySigma": 7,
     "__lobbySigma": "Spread of opponent strength inside a lobby. Higher = you meet more sweats AND more bots.",
 
-    "__SCALE_NOTE": "IMPORTANT: lobbyRating in tournaments.json is on the TEAM POWER scale, not the individual rating scale. Three players averaging 50 OVR make a trio worth roughly 68 team power, because specialists carry (teamAggregation) and chemistry adds on top. Rule of thumb: a trio COMPETES when lobbyRating is about 10 below its strength number, and DOMINATES about 25 below. The Dashboard shows each trio strength, so compare that with the lobby rating shown on the Tournaments screen.",
+    "__SCALE_NOTE": "IMPORTANT: lobbyRating in tournaments.json is on the TEAM POWER scale, not the individual rating scale. TWO players averaging 50 OVR make a duo worth roughly 61 team power, because the stronger player carries (teamAggregation) and chemistry adds on top. Rule of thumb: a duo COMPETES when lobbyRating is about 10 below its strength number, and DOMINATES about 25 below. The Dashboard shows each duo strength, so compare that with the lobby rating shown on the Tournaments screen.",
 
     "teamAggregation": {
-      "__doc": "How three players combine into one team number, per attribute. 0.0 = plain average (everyone must have it). 1.0 = only the best player matters (one specialist carries the trio).",
+      "__doc": "How the two players in a duo combine into one team number, per attribute. 0.0 = plain average (BOTH of them need it). 1.0 = only the better player matters (a specialist carries the duo). With only two players these matter more than they did in trios - there is nobody else to hide a weakness behind.",
       "aim": 0.45,
       "buildSpeed": 0.4,
       "editing": 0.4,
@@ -125,22 +125,23 @@
     },
 
     "synergy": {
-      "__doc": "Trio chemistry. Result is a flat plus/minus applied to every team attribute.",
+      "__doc": "Duo chemistry. Result is a flat plus/minus applied to every team attribute.",
       "commsWeight": 0.16,
       "__commsWeight": "Points of synergy per point of average Comms above 50.",
       "egoPenaltyWeight": 0.09,
       "__egoPenaltyWeight": "Synergy lost per point of average Ego above 50.",
       "egoTopDogPenalty": 0.05,
-      "__egoTopDogPenalty": "Extra penalty per point of the HIGHEST ego in the trio above 50. One diva ruins a lockerroom.",
+      "__egoTopDogPenalty": "Extra penalty per point of the HIGHEST ego in the duo above 50. One diva ruins a lockerroom.",
       "gamesTogetherFull": 120,
       "gamesTogetherBonus": 5.0,
-      "__gamesTogetherBonus": "Max bonus once the trio has played gamesTogetherFull matches together. Ramps on a square-root curve.",
+      "__gamesTogetherBonus": "Max bonus once the duo has played gamesTogetherFull matches together. Ramps on a square-root curve.",
       "composition": {
-        "__doc": "Bonus or penalty for the mix of archetypes in the trio.",
+        "__doc": "Bonus or penalty for the mix of archetypes in the duo.",
         "hasIGL": 3.0,
         "hasSupportAnchor": 1.5,
         "hasZonePlayer": 1.0,
-        "threeOfSameArchetype": -3.5,
+        "bothSameArchetype": -3.5,
+        "__bothSameArchetype": "In a duo an archetype clash bites harder than it did in a trio - there is no third player to cover the gap.",
         "twoOrMoreAggro": -1.5,
         "noAggro": -1.0
       },
@@ -150,9 +151,9 @@
     "drop": {
       "__doc": "PHASE 1. Contested drops are high risk, high reward.",
       "contestChanceByStrategy": { "contest": 0.92, "balanced": 0.45, "safe": 0.1 },
-      "__contestChanceByStrategy": "Chance the chosen POI is actually fought over. Strategy is set per trio in the UI.",
+      "__contestChanceByStrategy": "Chance the chosen POI is actually fought over. Strategy is set per duo in the UI.",
       "aggroContestBonus": 0.09,
-      "__aggroContestBonus": "Added to contest chance per W-Key Aggro player in the trio.",
+      "__aggroContestBonus": "Added to contest chance per aggressive player in the duo (mech_carry, fragger, prodigy).",
       "power": { "aim": 0.55, "buildSpeed": 0.3, "editing": 0.15 },
       "__power": "Attribute weights that decide a drop fight.",
       "winElims": { "min": 1, "max": 3 },
@@ -187,10 +188,10 @@
     },
 
     "midGame": {
-      "__doc": "PHASE 3. How many fights the trio takes before top 15, and how they go.",
+      "__doc": "PHASE 3. How many fights the duo takes before top 15, and how they go.",
       "baseFights": 1.1,
       "aggroFightsPerPlayer": 0.75,
-      "__aggroFightsPerPlayer": "Extra expected fights per W-Key Aggro in the trio.",
+      "__aggroFightsPerPlayer": "Extra expected fights per aggressive player in the duo (mech_carry, fragger, prodigy).",
       "strategyFightMod": { "contest": 1.35, "balanced": 1.0, "safe": 0.65 },
       "maxFights": 6,
       "power": { "aim": 0.4, "buildSpeed": 0.22, "pieceControl": 0.2, "editing": 0.18 },
@@ -205,7 +206,7 @@
       "healOffShield": 25,
 
       "forcedEncounters": 2,
-      "__forcedEncounters": "Unavoidable pressure checks between the mid game and the top 15 - shrinking zone, third parties, teams stacking your side. Nobody can play around these, which is what stops passive trios from reaching every endgame. THIS IS THE MAIN DIAL FOR HOW HARD IT IS TO MAKE TOP 15.",
+      "__forcedEncounters": "Unavoidable pressure checks between the mid game and the top 15 - shrinking zone, third parties, teams stacking your side. Nobody can play around these, which is what stops passive duos from reaching every endgame. THIS IS THE MAIN DIAL FOR HOW HARD IT IS TO MAKE TOP 15.",
       "forcedPower": { "gameSense": 0.4, "pieceControl": 0.25, "endgame": 0.2, "buildSpeed": 0.15 },
       "forcedDeathChance": 0.86,
       "forcedPlacement": { "min": 16, "max": 48 },
@@ -223,7 +224,7 @@
       "matsSavedByPieceControl": 0.45,
       "__matsSavedByPieceControl": "Mats per circle saved per point of team Piece Control above 50.",
       "outOfMatsPenalty": 26,
-      "__outOfMatsPenalty": "Brutal power loss when you hit 0 mats in a final circle. This is what kills greedy trios.",
+      "__outOfMatsPenalty": "Brutal power loss when you hit 0 mats in a final circle. This is what kills greedy duos.",
       "lowShieldPenalty": 7,
       "lowShieldThreshold": 50,
       "elimChancePerCircle": 0.42,
@@ -235,10 +236,10 @@
     "aiField": {
       "__doc": "The rest of the leaderboard, modelled statistically instead of fully simulated so tournaments resolve instantly.",
       "strengthSigma": 8,
-      "__strengthSigma": "Spread of rival trio strength around the tournament lobby rating.",
-      "pointsPerMatchBase": 11.0,
-      "__pointsPerMatchBase": "Expected points per match for a rival trio sitting exactly AT the lobby rating. Calibrated against the real phase simulation - run npm run calibrate after changing it.",
-      "slopePerRatingPoint": 0.85,
+      "__strengthSigma": "Spread of rival duo strength around the tournament lobby rating.",
+      "pointsPerMatchBase": 9.2,
+      "__pointsPerMatchBase": "Expected points per match for a rival duo sitting exactly AT the lobby rating. RE-CALIBRATED FOR DUOS against the real phase simulation - two players score less than three did. Run npm run calibrate after changing it.",
+      "slopePerRatingPoint": 0.95,
       "__slopePerRatingPoint": "Extra expected points per match per point of team strength above the lobby.",
       "matchSigma": 8.0,
       "minPointsPerMatch": 0
@@ -279,10 +280,14 @@
 
   "org": {
     "__doc": "Roster limits and the quality of players you start with / find on the market.",
-    "rosterLimit": 9,
-    "trioLimit": 3,
+    "rosterLimit": 8,
+    "__rosterLimit": "Maximum players under contract at once. Four duos worth, plus subs.",
+    "duoLimit": 4,
+    "__duoLimit": "Maximum duos you may field. The game mode is DUOS - two players per team.",
+    "startingPlayers": 3,
+    "__startingPlayers": "How many players you begin with. Three means one duo plus a sub, so you start with a real roster decision.",
     "startingPlayerRating": { "mu": 48, "sigma": 5 },
-    "__startingPlayerRating": "Average quality of the three players you begin with. Raise this for an easier start.",
+    "__startingPlayerRating": "Average quality of the players you begin with. Raise this for an easier start.",
     "startingContractWeeks": 26,
     "marketRating": {
       "__doc": "Quality of players appearing on the free agent / transfer market. Most are journeymen, a few are stars.",

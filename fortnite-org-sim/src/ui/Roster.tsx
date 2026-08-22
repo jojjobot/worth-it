@@ -2,15 +2,15 @@ import type { Dispatch, SetStateAction } from 'react'
 import { useState } from 'react'
 import { BAL, getArchetype } from '../engine/config'
 import {
-  addTrio,
+  addDuo,
   releasePlayer,
-  removeTrio,
-  renameTrio,
+  removeDuo,
+  renameDuo,
   renewContract,
-  setTrioSlot,
-  setTrioStrategy,
+  setDuoSlot,
+  setDuoStrategy,
 } from '../engine/game'
-import { computeSynergy, trioStrength } from '../engine/sim'
+import { computeSynergy, duoStrength } from '../engine/sim'
 import { viewEgo, viewPeakOverall } from '../engine/players'
 import type { GameState, Player, Strategy } from '../engine/types'
 import {
@@ -42,46 +42,46 @@ export default function Roster({
 }) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const roster = sortPlayers(state.rosterIds.map((id) => state.players[id]).filter(Boolean))
-  const assigned = new Set(state.trios.flatMap((t) => t.playerIds.filter(Boolean) as string[]))
+  const assigned = new Set(state.duos.flatMap((t) => t.playerIds.filter(Boolean) as string[]))
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* ---------------- Trios ---------------- */}
+      {/* ---------------- Duos ---------------- */}
       <div className="space-y-4">
         <Panel
-          title="Trios"
+          title="Duos"
           right={
             <button
               className="btn"
-              disabled={state.trios.length >= BAL.org.trioLimit}
-              onClick={() => setState((s) => (s ? addTrio(s) : s))}
+              disabled={state.duos.length >= BAL.org.duoLimit}
+              onClick={() => setState((s) => (s ? addDuo(s) : s))}
             >
-              + Add trio
+              + Add duo
             </button>
           }
         >
           <div className="space-y-4">
-            {state.trios.map((trio) => {
-              const players = trio.playerIds
+            {state.duos.map((duo) => {
+              const players = duo.playerIds
                 .map((id) => (id ? state.players[id] : null))
                 .filter((p): p is Player => !!p)
-              const syn = computeSynergy(players, trio.gamesTogether)
-              const strength = players.length === 3 ? trioStrength(players, trio.gamesTogether) : 0
+              const syn = computeSynergy(players, duo.gamesTogether)
+              const strength = players.length === 2 ? duoStrength(players, duo.gamesTogether) : 0
 
               return (
-                <div key={trio.id} className="rounded border border-slate-800 bg-slate-950/50 p-3">
+                <div key={duo.id} className="rounded border border-slate-800 bg-slate-950/50 p-3">
                   <div className="flex items-center justify-between gap-2">
                     <input
                       className="input flex-1 font-semibold"
-                      value={trio.name}
+                      value={duo.name}
                       onChange={(e) =>
-                        setState((s) => (s ? renameTrio(s, trio.id, e.target.value) : s))
+                        setState((s) => (s ? renameDuo(s, duo.id, e.target.value) : s))
                       }
                     />
-                    {state.trios.length > 1 && (
+                    {state.duos.length > 1 && (
                       <button
                         className="btn-danger"
-                        onClick={() => setState((s) => (s ? removeTrio(s, trio.id) : s))}
+                        onClick={() => setState((s) => (s ? removeDuo(s, duo.id) : s))}
                       >
                         Delete
                       </button>
@@ -89,8 +89,8 @@ export default function Roster({
                   </div>
 
                   <div className="mt-3 space-y-2">
-                    {[0, 1, 2].map((slot) => {
-                      const current = trio.playerIds[slot]
+                    {[0, 1].map((slot) => {
+                      const current = duo.playerIds[slot]
                       return (
                         <select
                           key={slot}
@@ -98,7 +98,7 @@ export default function Roster({
                           value={current ?? ''}
                           onChange={(e) =>
                             setState((s) =>
-                              s ? setTrioSlot(s, trio.id, slot, e.target.value || null) : s,
+                              s ? setDuoSlot(s, duo.id, slot, e.target.value || null) : s,
                             )
                           }
                         >
@@ -110,7 +110,7 @@ export default function Roster({
                               disabled={assigned.has(p.id) && p.id !== current}
                             >
                               {p.tag} · {getArchetype(p.archetype).short}
-                              {assigned.has(p.id) && p.id !== current ? ' (in another trio)' : ''}
+                              {assigned.has(p.id) && p.id !== current ? ' (in another duo)' : ''}
                             </option>
                           ))}
                         </select>
@@ -126,10 +126,10 @@ export default function Roster({
                           key={s.id}
                           title={s.desc}
                           onClick={() =>
-                            setState((prev) => (prev ? setTrioStrategy(prev, trio.id, s.id) : prev))
+                            setState((prev) => (prev ? setDuoStrategy(prev, duo.id, s.id) : prev))
                           }
                           className={`rounded border px-2 py-1.5 text-xs transition ${
-                            trio.strategy === s.id
+                            duo.strategy === s.id
                               ? 'border-cyan-500 bg-cyan-500/10 text-cyan-200'
                               : 'border-slate-700 text-slate-400 hover:border-slate-500'
                           }`}
@@ -139,15 +139,15 @@ export default function Roster({
                       ))}
                     </div>
                     <p className="mt-1.5 text-[11px] text-slate-500">
-                      {STRATEGIES.find((s) => s.id === trio.strategy)?.desc}
+                      {STRATEGIES.find((s) => s.id === duo.strategy)?.desc}
                     </p>
                   </div>
 
                   <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-800 pt-2 font-mono text-xs">
                     <div>
                       <div className="label">Strength</div>
-                      <span className={players.length === 3 ? ratingColor(strength) : 'text-slate-600'}>
-                        {players.length === 3 ? strength.toFixed(1) : '--'}
+                      <span className={players.length === 2 ? ratingColor(strength) : 'text-slate-600'}>
+                        {players.length === 2 ? strength.toFixed(1) : '--'}
                       </span>
                     </div>
                     <div>
@@ -167,11 +167,11 @@ export default function Roster({
                     </div>
                     <div>
                       <div className="label">Games together</div>
-                      <span className="text-slate-300">{trio.gamesTogether}</span>
+                      <span className="text-slate-300">{duo.gamesTogether}</span>
                     </div>
                   </div>
 
-                  {players.length === 3 && (
+                  {players.length === 2 && (
                     <details className="mt-2">
                       <summary className="cursor-pointer text-[11px] text-slate-500 hover:text-slate-300">
                         Chemistry breakdown

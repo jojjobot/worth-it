@@ -15,7 +15,7 @@ import WeekReportModal from './ui/WeekReportModal'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'roster', label: 'Roster & Trios' },
+  { id: 'roster', label: 'Roster & Duos' },
   { id: 'scouting', label: 'Scouting' },
   { id: 'training', label: 'Training' },
   { id: 'tournaments', label: 'Tournaments' },

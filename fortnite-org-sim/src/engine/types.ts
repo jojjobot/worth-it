@@ -198,12 +198,36 @@ export interface Player {
   note?: string
 }
 
-export interface Trio {
+export interface Duo {
   id: string
   name: string
-  playerIds: (string | null)[] // always length 3
+  playerIds: (string | null)[] // always length 2
   strategy: Strategy
   gamesTogether: number
+}
+
+/**
+ * A duo fielded by one of the real orgs (Team Falcons, BIG, Aurora, AG, HavoK,
+ * Twisted Minds, ROC). Unlike the statistical rest of the field, these are
+ * simulated with the real match engine using real player ratings, so you
+ * genuinely finish above or below them.
+ */
+export interface RivalDuo {
+  id: string
+  orgId: string
+  orgName: string
+  region: string
+  playerIds: [string, string]
+  gamesTogether: number
+  strategy: Strategy
+}
+
+/** One named org's finish in a tournament you also played, for the standings. */
+export interface RivalStanding {
+  orgName: string
+  playerTags: string[]
+  points: number
+  rank: number
 }
 
 // --- Match simulation ------------------------------------------------------
@@ -256,8 +280,8 @@ export interface TournamentResult {
   name: string
   tier: number
   region: string
-  trioId: string
-  trioName: string
+  duoId: string
+  duoName: string
   playerTags: string[]
   points: number
   rank: number
@@ -266,6 +290,8 @@ export interface TournamentResult {
   reputation: number
   advanced: boolean
   session: SessionResult
+  /** How the named real orgs in your region finished in the same event. */
+  rivals: RivalStanding[]
 }
 
 // --- Org / game state ------------------------------------------------------
@@ -299,12 +325,15 @@ export interface GameState {
   players: Record<string, Player>
   rosterIds: string[]
   marketIds: string[]
-  trios: Trio[]
+  duos: Duo[]
+
+  /** The real orgs fielding real duos against you. See realPlayers.ts. */
+  rivalDuos: RivalDuo[]
 
   scoutPoints: number
   lastMarketRefreshWeek: number
 
-  /** eventKey -> trioId the user entered */
+  /** eventKey -> duoId the user entered */
   entries: Record<string, string>
   /** stage qualifications the user has earned, e.g. "fncs:major" -> week earned */
   qualifications: Record<string, number>

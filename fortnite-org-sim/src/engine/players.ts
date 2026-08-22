@@ -120,6 +120,18 @@ export function startingBigStageNerve(rng: Rng, age: number, archetypeBias: numb
 }
 
 /**
+ * The ceiling on Big Stage Nerve. Anchored to AGE, not to how good the player
+ * already is: startByAge + peakBonusByAge. A veteran who has already earned
+ * past that anchor keeps what they have (they have been to every LAN there is)
+ * plus a token residual, so all the real headroom sits with young players.
+ */
+export function peakBigStageNerve(age: number, current: number): number {
+  const b = ATTRS.bigStageNerve
+  const anchor = interpolateTable(b.startByAge, age) + interpolateTable(b.peakBonusByAge, age)
+  return clamp(Math.round(Math.max(current + (b.peakResidual ?? 0), anchor)), current, ATTRS.peakModel.ceiling)
+}
+
+/**
  * Points of Big Stage Nerve earned from one LAN / Grand Final appearance.
  * `resultBand` is 'good' (top third of the field), 'mid', or 'bad'.
  * Each LAN teaches less than the one before it (gainDecayPerLan), so the first
@@ -278,13 +290,11 @@ export function buildPeak(rng: Rng, current: Ratings, age: number): Ratings {
     const raw = Math.max(0, rng.gauss(gap.mu, gap.sigma)) * scale
     peak[key] = clamp(Math.round(current[key] + raw), current[key], pk.ceiling)
   }
-  // Big Stage Nerve ignores the normal peak gap and uses its own age-scaled
-  // bonus. This is where most of a young player's hidden upside lives: a
-  // 17-year-old starting on 72 tops out around 94, a 22-year-old barely moves.
+  // Big Stage Nerve ignores the normal peak gap and uses its own age-anchored
+  // ceiling. This is where most of a young player's hidden upside lives.
   const b = ATTRS.bigStageNerve
-  const nerveBonus = interpolateTable(b.peakBonusByAge, age)
   peak.big_stage_nerve = clamp(
-    Math.round(current.big_stage_nerve + Math.max(2, rng.gauss(nerveBonus, b.peakBonusSigma))),
+    peakBigStageNerve(age, current.big_stage_nerve) + Math.round(rng.gauss(0, b.peakBonusSigma) / 2),
     current.big_stage_nerve,
     pk.ceiling,
   )

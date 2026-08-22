@@ -22,7 +22,7 @@
     "__randomness": "Random spread on each weekly gain. 0 = perfectly predictable training.",
 
     "commsCoachBonus": 0.15,
-    "__commsCoachBonus": "Bonus to gains per point of the trio highest Comms above 60. Good comms players lift the room.",
+    "__commsCoachBonus": "Bonus to gains per point of the duo highest Comms above 60. Good comms players lift the room.",
 
     "burnout": {
       "__doc": "Burnout runs 0-100. It is subtracted from match performance (scaled) and slows training.",
@@ -77,7 +77,7 @@
     {
       "id": "piece_control",
       "name": "Piece Control Lab",
-      "desc": "Taking and holding the other trio pieces. Slow to move, decides endgames.",
+      "desc": "Taking and holding the other duo pieces. Slow to move, decides endgames.",
       "targets": { "pieceControl": 1.0, "editing": 0.35, "buildSpeed": 0.25 },
       "burnout": 15,
       "costPerWeek": 100,
@@ -113,13 +113,13 @@
     {
       "id": "full_scrims",
       "name": "Full Scrim Block",
-      "desc": "Real trio scrims. Small gains everywhere, big gains in chemistry and match count.",
+      "desc": "Real duo scrims. Small gains everywhere, big gains in chemistry and match count.",
       "targets": { "aim": 0.2, "buildSpeed": 0.2, "editing": 0.2, "pieceControl": 0.25, "gameSense": 0.3, "lootPathing": 0.25, "endgame": 0.3, "clutch": 0.2, "comms": 0.4 },
       "burnout": 18,
       "costPerWeek": 200,
       "synergyGain": 2.0,
       "gamesTogether": 12,
-      "__gamesTogether": "Matches added to the trio chemistry counter, same as playing real tournaments together."
+      "__gamesTogether": "Matches added to the duo chemistry counter, same as playing real tournaments together."
     },
     {
       "id": "conditioning",
@@ -142,7 +142,7 @@
     {
       "id": "comms_workshop",
       "name": "Comms Workshop",
-      "desc": "Callouts, tone, who makes the final call. Lifts the whole trio through the Comms rating.",
+      "desc": "Callouts, tone, who makes the final call. Lifts the whole duo through the Comms rating.",
       "targets": { "comms": 1.1, "gameSense": 0.3 },
       "burnout": 5,
       "costPerWeek": 90,

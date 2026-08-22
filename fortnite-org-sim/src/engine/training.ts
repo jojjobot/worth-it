@@ -30,8 +30,8 @@ export interface TrainingOutcome {
 
 /**
  * Apply one week of training to one player.
- * `coachComms` is the highest Communication rating in their trio - good
- * communicators lift the whole room, so the trio leader speeds everyone up.
+ * `coachComms` is the highest Communication rating in their duo - good
+ * communicators lift the whole room, so the duo leader speeds everyone up.
  */
 export function applyTraining(player: Player, coachComms: number, rng: Rng): TrainingOutcome {
   const m = TRAIN.model
@@ -109,8 +109,8 @@ export function trainingCost(players: Player[]): number {
   return players.reduce((sum, p) => sum + getProgram(p.trainingProgram).costPerWeek, 0)
 }
 
-/** Synergy/chemistry that programs add to a trio each week. */
-export function trioTrainingChemistry(players: Player[]): { synergyGain: number; games: number } {
+/** Synergy/chemistry that programs add to a duo each week. */
+export function duoTrainingChemistry(players: Player[]): { synergyGain: number; games: number } {
   let synergyGain = 0
   let games = 0
   for (const p of players) {
@@ -118,6 +118,6 @@ export function trioTrainingChemistry(players: Player[]): { synergyGain: number;
     synergyGain += program.synergyGain
     games += program.gamesTogether ?? 0
   }
-  // Chemistry only builds when the trio trains together, so take the average.
+  // Chemistry only builds when the duo trains together, so take the average.
   return { synergyGain, games: Math.round(games / Math.max(1, players.length)) }
 }

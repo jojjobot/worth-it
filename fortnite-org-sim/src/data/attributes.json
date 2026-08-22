@@ -5,7 +5,7 @@
   "displayCalibration": {
     "__doc": "Final tweak applied to the single OVR number only: ovr = weightedCategoryAverage * scale + offset. It exists so the OVR shown under a real player lands close to the value written in real_players.json. Set scale 1 / offset 0 to see the raw maths.",
     "scale": 1.0,
-    "offset": 0.6
+    "offset": 0.3
   },
 
   "categoryWeights": {
@@ -107,7 +107,7 @@
       "color": "#7f8cff",
       "blurb": "What they add to the players sitting next to them.",
       "subs": [
-        { "id": "communication", "name": "Communication", "short": "COM", "weight": 1.0, "desc": "Callout quality. Lifts the whole trio." },
+        { "id": "communication", "name": "Communication", "short": "COM", "weight": 1.0, "desc": "Callout quality. Lifts the whole duo." },
         { "id": "decision_making", "name": "Decision Making", "short": "DEC", "weight": 1.2, "desc": "Drives the team rotations and calls. The IGL stat." },
         { "id": "adaptivity", "name": "Adaptivity", "short": "ADP", "weight": 0.8, "desc": "How fast they gel with a new partner. Controls the synergy ramp." }
       ]
@@ -158,14 +158,16 @@
     "__startSigma": "Random spread on that starting value.",
 
     "peakBonusByAge": {
-      "__doc": "How much Big Stage Nerve a player can EVENTUALLY add on top of their starting value, by the age they were generated at. This is the single biggest source of hidden upside on a young player: a 17-year-old starting on 72 tops out around 94, while a 22-year-old is already most of the way to whatever they will ever be. Replaces the normal peak gap for this one sub-stat.",
-      "13": 26,
-      "16": 22,
-      "18": 16,
-      "20": 10,
-      "22": 6,
-      "25": 3
+      "__doc": "Added to `startByAge` to give the AGE-ANCHORED CEILING for Big Stage Nerve. A player can never be given a nerve ceiling below what they have already earned, so a 20-year-old veteran who is already on 96 simply stays there - they have been to every LAN there is. All the headroom sits with the kids: a 15-year-old tops out around 91, a 17-year-old around 93, while their starting values are 64 and 72. That gap is the single biggest source of hidden upside on a young signing.",
+      "13": 35,
+      "16": 27,
+      "18": 20,
+      "20": 13,
+      "22": 9,
+      "25": 5
     },
+    "peakResidual": 1,
+    "__peakResidual": "Tiny extra ceiling for a player who has already earned past their age-anchored ceiling, so they are never completely frozen.",
     "peakBonusSigma": 4,
     "__peakBonusSigma": "Random spread on that bonus.",
 

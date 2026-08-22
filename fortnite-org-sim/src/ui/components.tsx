@@ -8,6 +8,7 @@ import {
   viewPeakSub,
   viewSub,
 } from '../engine/players'
+import { realOrgColor } from '../engine/realPlayers'
 import type { CategoryKey, Player, SubKey } from '../engine/types'
 
 export function money(n: number): string {
@@ -370,6 +371,14 @@ export function PlayerHeader({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate font-semibold text-slate-100">{player.tag}</span>
+          {player.isReal && (
+            <span
+              className="rounded border border-cyan-700/60 bg-cyan-500/10 px-1 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider text-cyan-300"
+              title="One of the 12 real reference players. Ratings are estimates calibrated to public results."
+            >
+              REAL
+            </span>
+          )}
           <ArchetypeChip id={player.archetype} />
           <span className="font-mono text-[10px] text-slate-500">
             {region.id} · {player.age}y
@@ -384,11 +393,67 @@ export function PlayerHeader({
           )}
         </div>
         <div className="mt-0.5 text-[11px] text-slate-500">
-          {player.orgName ? player.orgName : 'Free agent'} · {money(player.salary)}/wk
+          {player.orgName ? (
+            <span style={{ color: realOrgColor(player.orgName) ?? undefined }}>
+              {player.orgName}
+            </span>
+          ) : (
+            'Free agent'
+          )}{' '}
+          · {money(player.salary)}/wk
           {player.buyout > 0 && ` · buyout ${money(player.buyout)}`}
         </div>
       </div>
       {right}
+    </div>
+  )
+}
+
+/**
+ * The extra context strip shown for one of the 12 real reference players:
+ * their org, their Power Ranking, who they duo with, and the author note that
+ * explains why they are rated the way they are.
+ *
+ * The ratings themselves are ESTIMATES calibrated against public results, not
+ * measured data - that caveat is surfaced here rather than buried in the JSON.
+ */
+export function RealPlayerCard({ player }: { player: Player }) {
+  if (!player.isReal) return null
+  const color = realOrgColor(player.orgName ?? '') ?? '#94a3b8'
+  return (
+    <div className="mt-2 rounded border border-slate-800 bg-slate-950/60 p-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+        <span
+          className="rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color, borderColor: `${color}55`, background: `${color}12` }}
+        >
+          {player.orgName}
+        </span>
+        {player.prRank !== undefined && (
+          <span className="text-slate-400" title="Epic Power Rankings, August 2026 snapshot">
+            World <span className="font-mono text-cyan-300">#{player.prRank}</span>
+            <span className="text-slate-600"> · {player.pr?.toLocaleString()} PR</span>
+          </span>
+        )}
+        {player.duo && (
+          <span className="text-slate-500">
+            duos with <span className="text-slate-300">{player.duo}</span>
+          </span>
+        )}
+        {player.aliases && player.aliases.length > 0 && (
+          <span className="text-slate-500">
+            also known as <span className="text-slate-300">{player.aliases.join(', ')}</span>
+          </span>
+        )}
+        {player.realName && <span className="text-slate-500">{player.realName}</span>}
+      </div>
+      {player.note && (
+        <p className="mt-1.5 text-[11px] italic leading-relaxed text-slate-400">{player.note}</p>
+      )}
+      <p className="mt-1.5 text-[10px] leading-relaxed text-slate-600">
+        Ratings are estimates calibrated to public tournament results, not measured data. Only the
+        Power Ranking, org, region and age are factual.
+      </p>
     </div>
   )
 }

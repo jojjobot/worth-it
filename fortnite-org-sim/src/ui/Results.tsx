@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { realOrgColor } from '../engine/realPlayers'
 import type { GameState, MatchResult, TournamentResult } from '../engine/types'
 import { EmptyState, money, ordinal, Panel } from './components'
 
@@ -37,7 +38,7 @@ export default function Results({ state }: { state: GameState }) {
 
       {results.map((r) => (
         <TournamentBlock
-          key={r.key + r.trioId}
+          key={r.key + r.duoId}
           result={r}
           open={openKey === r.key}
           onToggle={() => setOpenKey(openKey === r.key ? null : r.key)}
@@ -84,7 +85,7 @@ export function TournamentBlock({
             )}
           </div>
           <div className="mt-0.5 text-[11px] text-slate-500">
-            {result.trioName} — {result.playerTags.join(', ')}
+            {result.duoName} — {result.playerTags.join(', ')}
           </div>
         </div>
         <div className="flex items-center gap-5 font-mono text-sm">
@@ -119,6 +120,8 @@ export function TournamentBlock({
               tone={result.reputation >= 0 ? 'text-emerald-300' : 'text-rose-400'}
             />
           </div>
+          <RivalStandings result={result} />
+
           <ol className="space-y-1.5">
             {result.session.matches.map((m) => (
               <MatchRow key={m.matchNumber} match={m} />
@@ -127,6 +130,65 @@ export function TournamentBlock({
         </div>
       )}
     </section>
+  )
+}
+
+/**
+ * Where the real orgs finished in the same event. These duos are simulated
+ * with the SAME match engine on their real ratings, not modelled statistically
+ * like the rest of the field - so finishing above BIG genuinely means you
+ * out-scored vic0 and Malibuca that night.
+ */
+function RivalStandings({ result }: { result: TournamentResult }) {
+  const rivals = result.rivals ?? []
+  if (rivals.length === 0) return null
+
+  const rows = [
+    ...rivals.map((r) => ({
+      name: r.orgName,
+      tags: r.playerTags,
+      points: r.points,
+      rank: r.rank,
+      you: false,
+    })),
+    {
+      name: result.duoName,
+      tags: result.playerTags,
+      points: result.points,
+      rank: result.rank,
+      you: true,
+    },
+  ].sort((a, b) => a.rank - b.rank)
+
+  return (
+    <details className="mb-3 rounded border border-slate-800 bg-slate-950/40" open>
+      <summary className="cursor-pointer px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500 hover:text-slate-300">
+        How the scene finished
+      </summary>
+      <ul className="space-y-px px-3 pb-2">
+        {rows.map((row) => {
+          const color = row.you ? '#22d3ee' : (realOrgColor(row.name) ?? '#94a3b8')
+          return (
+            <li
+              key={row.name + row.rank}
+              className={`flex items-baseline gap-2 rounded px-1.5 py-1 font-mono text-[11px] ${
+                row.you ? 'bg-cyan-500/10' : ''
+              }`}
+            >
+              <span className="w-10 shrink-0 text-right text-slate-400">
+                {ordinal(row.rank)}
+              </span>
+              <span className="w-40 shrink-0 truncate font-semibold" style={{ color }}>
+                {row.name}
+                {row.you && <span className="ml-1 text-[9px] text-cyan-500">YOU</span>}
+              </span>
+              <span className="flex-1 truncate text-slate-500">{row.tags.join(' + ')}</span>
+              <span className="shrink-0 text-slate-200">{row.points} pts</span>
+            </li>
+          )
+        })}
+      </ul>
+    </details>
   )
 }
 

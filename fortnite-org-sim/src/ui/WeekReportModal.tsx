@@ -41,7 +41,7 @@ export default function WeekReportModal({
           <div className="mb-4 space-y-3">
             {report.results.map((r) => (
               <TournamentBlock
-                key={r.key + r.trioId}
+                key={r.key + r.duoId}
                 result={r}
                 open={openKey === r.key}
                 onToggle={() => setOpenKey(openKey === r.key ? null : r.key)}

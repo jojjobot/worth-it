@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // Tournament calendar, the rival field, and turning a session into a result.
 //
-// The user's trio is simulated match by match in sim.ts. The other 200-3000
-// trios in the field are modelled statistically (aiField in balance.json) so a
+// The user's duo is simulated match by match in sim.ts. The other 200-3000
+// duos in the field are modelled statistically (aiField in balance.json) so a
 // tournament resolves instantly instead of running 3000 full simulations.
 // ---------------------------------------------------------------------------
 
@@ -14,14 +14,16 @@ import {
   tierReputationMultiplier,
 } from './config'
 import { Rng } from './rng'
+import { REAL } from './realPlayers'
 import { simulateSession, type SessionOptions } from './sim'
 import type {
   GameState,
   Player,
+  RivalStanding,
   SessionResult,
   TournamentInstanceRef,
   TournamentResult,
-  Trio,
+  Duo,
 } from './types'
 
 interface Schedule {
@@ -107,8 +109,8 @@ export function nextStageQualKey(eventId: string, stageId: string): string | nul
 
 // --- The rival field -------------------------------------------------------
 
-/** Total points scored by one modelled rival trio across the session. */
-function simulateFieldTrio(rng: Rng, lobbyRating: number, matches: number): number {
+/** Total points scored by one modelled rival duo across the session. */
+function simulateFieldDuo(rng: Rng, lobbyRating: number, matches: number): number {
   const f = BAL.simulation.aiField
   const strength = rng.gauss(lobbyRating, f.strengthSigma)
   const expected = f.pointsPerMatchBase + (strength - lobbyRating) * f.slopePerRatingPoint
@@ -119,7 +121,40 @@ function simulateFieldTrio(rng: Rng, lobbyRating: number, matches: number): numb
   return Math.round(total)
 }
 
-/** Rank the user's score inside a field of `fieldSize` trios (1 = first). */
+/**
+ * Roll the whole anonymous field ONCE, sorted best first.
+ *
+ * Everybody with a name - you and every real org - is then ranked against this
+ * same array. Rolling a fresh field per competitor would let a duo with fewer
+ * points finish above one with more, which is exactly the kind of nonsense that
+ * shows up in a standings table.
+ */
+export function sampleAnonymousField(
+  rng: Rng,
+  lobbyRating: number,
+  matches: number,
+  count: number,
+): number[] {
+  const out: number[] = []
+  for (let i = 0; i < Math.max(0, count); i++) {
+    out.push(simulateFieldDuo(rng, lobbyRating, matches))
+  }
+  return out.sort((a, b) => b - a)
+}
+
+/** How many entries of a sorted-descending field beat `points`. Binary search. */
+export function countBetter(sortedDesc: number[], points: number): number {
+  let lo = 0
+  let hi = sortedDesc.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (sortedDesc[mid] > points) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+/** Rank the user's score inside a field of `fieldSize` duos (1 = first). */
 export function rankInField(
   rng: Rng,
   myPoints: number,
@@ -127,11 +162,8 @@ export function rankInField(
   matches: number,
   fieldSize: number,
 ): number {
-  let better = 0
-  for (let i = 0; i < fieldSize - 1; i++) {
-    if (simulateFieldTrio(rng, lobbyRating, matches) > myPoints) better++
-  }
-  return better + 1
+  const field = sampleAnonymousField(rng, lobbyRating, matches, fieldSize - 1)
+  return countBetter(field, myPoints) + 1
 }
 
 // --- Prize + reputation ----------------------------------------------------
@@ -169,7 +201,7 @@ export function reputationForResult(
 export function runTournament(
   state: GameState,
   ref: TournamentInstanceRef,
-  trio: Trio,
+  duo: Duo,
   players: Player[],
   rng: Rng,
 ): TournamentResult {
@@ -177,11 +209,71 @@ export function runTournament(
     matches: ref.matches,
     lobbyRating: ref.lobbyRating,
     scoringId: ref.scoring,
-    strategy: trio.strategy,
-    gamesTogether: trio.gamesTogether,
+    strategy: duo.strategy,
+    gamesTogether: duo.gamesTogether,
   }
   const session: SessionResult = simulateSession(players, opts, rng)
-  const rank = rankInField(rng, session.totalPoints, ref.lobbyRating, ref.matches, ref.fieldSize)
+
+  // The real orgs in your region enter the same event, and they are simulated
+  // with the SAME match engine on their real ratings - not modelled
+  // statistically like the rest of the field. Finishing above BIG or Falcons
+  // means you actually out-scored them.
+  const rs = REAL.settings
+  const isInternational = ref.tier >= (rs.internationalFromTier ?? 99)
+  const realOrgsEnter = ref.tier >= (rs.minTierEntered ?? 0)
+  const namedEntries = (realOrgsEnter ? state.rivalDuos : [])
+    .filter((d) => isInternational || d.region === state.region)
+    .map((d) => {
+      const roster = d.playerIds
+        .map((id) => state.players[id])
+        .filter((p): p is Player => !!p)
+      if (roster.length === 0) return null
+      const theirs = simulateSession(
+        roster,
+        {
+          matches: ref.matches,
+          lobbyRating: ref.lobbyRating,
+          scoringId: ref.scoring,
+          strategy: d.strategy,
+          gamesTogether: d.gamesTogether,
+        },
+        rng,
+      )
+      return {
+        orgName: d.orgName,
+        playerTags: roster.map((p) => p.tag),
+        points: theirs.totalPoints,
+      }
+    })
+    .filter((r): r is { orgName: string; playerTags: string[]; points: number } => !!r)
+
+  // One shared anonymous field for the whole event, so every placement in the
+  // standings is consistent with every other one.
+  const anonymous = sampleAnonymousField(
+    rng,
+    ref.lobbyRating,
+    ref.matches,
+    ref.fieldSize - 1 - namedEntries.length,
+  )
+  const named = [
+    ...namedEntries.map((r) => ({ ...r, isYou: false })),
+    {
+      orgName: state.orgName,
+      playerTags: players.map((p) => p.tag),
+      points: session.totalPoints,
+      isYou: true,
+    },
+  ]
+  const rankOf = (points: number, self: number): number => {
+    const namedAbove = named.filter((o, i) => i !== self && o.points > points).length
+    return countBetter(anonymous, points) + namedAbove + 1
+  }
+
+  const rank = rankOf(session.totalPoints, named.length - 1)
+  const rivals: RivalStanding[] = namedEntries
+    .map((r, i) => ({ ...r, rank: rankOf(r.points, i) }))
+    .sort((a, b) => a.rank - b.rank)
+
   const prize = prizeForRank(ref.prizeDistribution, rank, ref.prizePool)
   const reputation = reputationForResult(rank, ref.fieldSize, ref.tier, state.region)
   const advanced = ref.advanceCount > 0 && rank <= ref.advanceCount
@@ -192,8 +284,8 @@ export function runTournament(
     name: ref.name,
     tier: ref.tier,
     region: state.region,
-    trioId: trio.id,
-    trioName: trio.name,
+    duoId: duo.id,
+    duoName: duo.name,
     playerTags: players.map((p) => p.tag),
     points: session.totalPoints,
     rank,
@@ -202,5 +294,6 @@ export function runTournament(
     reputation,
     advanced,
     session,
+    rivals,
   }
 }

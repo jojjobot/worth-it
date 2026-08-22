@@ -1,7 +1,7 @@
 /**
  * Balance check-up.  Run it with:   npm run calibrate
  *
- * It builds three deliberately different trios, runs a few hundred sessions of
+ * It builds three deliberately different duos, runs a few hundred sessions of
  * each against a range of lobbies, and prints what actually happens. Use it
  * after editing /src/data/*.json to see whether your changes did what you
  * expected without having to play twenty in-game weeks.
@@ -9,13 +9,13 @@
 
 import { Rng } from '../src/engine/rng'
 import { generatePlayer, overall } from '../src/engine/players'
-import { simulateSession, trioStrength } from '../src/engine/sim'
+import { simulateSession, duoStrength } from '../src/engine/sim'
 import type { Player, Strategy } from '../src/engine/types'
 
 const SESSIONS = 200
 const MATCHES = 10
 
-function makeTrio(rng: Rng, archetypes: string[], rating: number): Player[] {
+function makeDuo(rng: Rng, archetypes: string[], rating: number): Player[] {
   const taken = new Set<string>()
   return archetypes.map((archetype) =>
     generatePlayer(rng, taken, { baseRating: rating, archetype, region: 'EU', freeAgent: true }),
@@ -50,7 +50,7 @@ function run(label: string, players: Player[], strategy: Strategy, lobbyRating: 
   const totalMatches = SESSIONS * MATCHES
   const sorted = placements.slice().sort((a, b) => a - b)
   const median = sorted[Math.floor(sorted.length / 2)]
-  const strength = trioStrength(players, 60).toFixed(1)
+  const strength = duoStrength(players, 60).toFixed(1)
   const ovrs = players.map((p) => overall(p.current)).join('/')
 
   console.log(
@@ -74,23 +74,23 @@ function run(label: string, players: Player[], strategy: Strategy, lobbyRating: 
 
 const rng = new Rng(777)
 
-const trios: { label: string; players: Player[] }[] = [
-  { label: 'Amateur (45 ovr, mixed)', players: makeTrio(rng, ['igl', 'mech_carry', 'anchor'], 45) },
-  { label: 'Solid pro (60 ovr, mixed)', players: makeTrio(rng, ['igl', 'mech_carry', 'anchor'], 60) },
-  { label: 'Elite (75 ovr, mixed)', players: makeTrio(rng, ['igl', 'mech_carry', 'all_rounder'], 75) },
-  { label: 'All aggro (60 ovr)', players: makeTrio(rng, ['mech_carry', 'fragger', 'prodigy'], 60) },
-  { label: 'All zone (60 ovr)', players: makeTrio(rng, ['all_rounder', 'anchor', 'igl'], 60) },
+const duos: { label: string; players: Player[] }[] = [
+  { label: 'Amateur (45 ovr, mixed)', players: makeDuo(rng, ['igl', 'mech_carry'], 45) },
+  { label: 'Solid pro (60 ovr, mixed)', players: makeDuo(rng, ['igl', 'mech_carry'], 60) },
+  { label: 'Elite (75 ovr, mixed)', players: makeDuo(rng, ['igl', 'mech_carry'], 75) },
+  { label: 'Two fraggers (60 ovr)', players: makeDuo(rng, ['mech_carry', 'fragger'], 60) },
+  { label: 'IGL + anchor (60 ovr)', players: makeDuo(rng, ['igl', 'anchor'], 60) },
 ]
 
 console.log('\n=== STRATEGY COMPARISON (lobby 60) ===')
 for (const strategy of ['contest', 'balanced', 'safe'] as Strategy[]) {
-  for (const t of trios) run(`${t.label} [${strategy}]`, t.players, strategy, 60)
+  for (const t of duos) run(`${t.label} [${strategy}]`, t.players, strategy, 60)
   console.log('')
 }
 
 console.log('=== DIFFICULTY CURVE (balanced) ===')
 for (const lobby of [46, 60, 71, 76, 86]) {
-  for (const t of trios.slice(0, 3)) run(t.label, t.players, 'balanced', lobby)
+  for (const t of duos.slice(0, 3)) run(t.label, t.players, 'balanced', lobby)
   console.log('')
 }
 
@@ -100,7 +100,7 @@ console.log('=== FATIGUE: points by match number (solid pro, lobby 60) ===')
   const byMatch = new Array(MATCHES).fill(0)
   for (let s = 0; s < SESSIONS; s++) {
     const res = simulateSession(
-      trios[1].players,
+      duos[1].players,
       { matches: MATCHES, lobbyRating: 60, scoringId: 'standard', strategy: 'balanced', gamesTogether: 60 },
       r,
     )
@@ -155,7 +155,7 @@ for (const ev of (tournamentsJson as any).events) {
 console.log(`=== REAL EVENTS IN ${REGION} (${RUNS} runs each, balanced strategy) ===`)
 for (const ev of evs) {
   console.log(`\n-- ${ev.name}  lobby ${ev.lobbyRating}  field ${ev.fieldSize}`)
-  for (const t of trios) {
+  for (const t of duos) {
     const r = new Rng(4242)
     const ranks: number[] = []
     let prize = 0
@@ -181,7 +181,7 @@ for (const ev of evs) {
     ranks.sort((a, b) => a - b)
     const median = ranks[Math.floor(ranks.length / 2)]
     console.log(
-      `   ${t.label.padEnd(28)} str ${trioStrength(t.players, 60).toFixed(1).padStart(5)}` +
+      `   ${t.label.padEnd(28)} str ${duoStrength(t.players, 60).toFixed(1).padStart(5)}` +
         `  median rank ${String(median).padStart(5)}/${ev.fieldSize}` +
         `  best ${String(ranks[0]).padStart(4)}` +
         `  cashed ${((cashed / RUNS) * 100).toFixed(0).padStart(3)}%` +
