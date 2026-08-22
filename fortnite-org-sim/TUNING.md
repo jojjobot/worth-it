@@ -1,8 +1,8 @@
 # Tuning guide
 
-**Getting around:** the home screen is the **season calendar** — every cup in
-the cycle, which ones you are entered in, and how the weeks you have played
-went. Everything else lives behind the **MENU button in the bottom-left
+**Getting around:** the home screen is the **season calendar** — a square per
+day, Mon-Sun, one row per week of the cycle, with each cup sitting on the day
+it is actually played. Click a day to enter a duo or read back a result. Everything else lives behind the **MENU button in the bottom-left
 corner**: Results, The Scene, Roster & Duos, Training, Scouting, Finances and
 Front Office.
 
@@ -16,6 +16,34 @@ If you break a file, the browser shows a JSON error — usually a missing comma 
 a stray trailing comma. Undo and try again.
 
 After a change, run `npm run calibrate` to see what it actually did.
+
+---
+
+## The calendar (`tournaments.json` -> `calendar`)
+
+The simulation advances one **week** at a time; the day grid is how that
+schedule is drawn.
+
+- `startDate` — the date printed on day 1 of week 1. Pick a Monday so the
+  columns line up.
+- `dayNames` — the column headers, in order. An event's `dayOfWeek` is an index
+  into this array, so `0` is Monday.
+
+Each event (and each FNCS stage) has a **`dayOfWeek`** deciding which square it
+lands on. Out of the box:
+
+| Cup | Day |
+|---|---|
+| Open Practice Cup | Tuesday |
+| Weekly Cash Cup | Thursday |
+| Elite Cash Cup | Saturday |
+| FNCS Qualifier | Saturday |
+| FNCS Major | Sunday |
+| FNCS Grand Finals | Sunday |
+
+Move a cup to a different day by changing its `dayOfWeek`. Two cups on the same
+day is fine — they stack in the square — but a duo can still only play one
+event per week.
 
 ---
 

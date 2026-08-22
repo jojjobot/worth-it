@@ -56,6 +56,7 @@ export function eventsForWeek(state: GameState, atWeek?: number): TournamentInst
         key: `w${week}:${ev.id}`,
         name: ev.name,
         tier: ev.tier,
+        dayOfWeek: ev.dayOfWeek ?? 5,
         matches: ev.matches,
         lobbyRating: ev.lobbyRating + region.lobbyModifier,
         fieldSize: ev.fieldSize,
@@ -82,6 +83,7 @@ export function eventsForWeek(state: GameState, atWeek?: number): TournamentInst
           key: `w${week}:${ev.id}:${stage.id}`,
           name: stage.name,
           tier: stage.tier,
+          dayOfWeek: stage.dayOfWeek ?? 6,
           matches: stage.matches,
           lobbyRating: stage.lobbyRating + region.lobbyModifier,
           fieldSize: stage.fieldSize,
@@ -100,6 +102,39 @@ export function eventsForWeek(state: GameState, atWeek?: number): TournamentInst
     }
   }
   return out
+}
+
+// --- The day calendar ------------------------------------------------------
+// The simulation advances one WEEK at a time. These helpers project that onto
+// real days so the calendar screen can draw a square per day. Everything is
+// driven by tournaments.json -> calendar.
+
+export const DAYS_PER_WEEK = 7
+
+export function dayNames(): string[] {
+  return (TOURN.calendar?.dayNames as string[]) ?? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+}
+
+/** Career day number (1-based) for a given week and day-of-week index. */
+export function dayNumber(week: number, dayOfWeek: number): number {
+  return (week - 1) * DAYS_PER_WEEK + dayOfWeek + 1
+}
+
+/** The calendar date printed on a square. */
+export function dateForDay(week: number, dayOfWeek: number): Date {
+  const start = new Date(`${TOURN.calendar?.startDate ?? '2026-01-05'}T00:00:00`)
+  const d = new Date(start)
+  d.setDate(start.getDate() + dayNumber(week, dayOfWeek) - 1)
+  return d
+}
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+export function monthName(date: Date): string {
+  return MONTHS[date.getMonth()]
 }
 
 /**

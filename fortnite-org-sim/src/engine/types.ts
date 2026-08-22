@@ -263,6 +263,8 @@ export interface TournamentInstanceRef {
   key: string // unique per week+event
   name: string
   tier: number
+  /** 0 = Monday. Which day of its week this cup is played on. */
+  dayOfWeek: number
   matches: number
   lobbyRating: number
   fieldSize: number

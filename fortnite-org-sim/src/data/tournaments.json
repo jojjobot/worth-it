@@ -1,6 +1,16 @@
 {
   "__doc": "Tournament formats, the points table and the season calendar. Everything here is tunable. `lobbyRating` is how strong the rest of the field is and is the single biggest difficulty dial in the game. It is measured on the TEAM POWER scale shown next to each of your duos - a duo competes when the lobby is about 10 below its strength, and dominates about 25 below. Region modifiers in regions.json are added on top (EU is +7).",
 
+  "calendar": {
+    "__doc": "Turns the week-based engine into a real day-by-day calendar. The simulation still advances one WEEK at a time - this block only decides which day of that week each cup is played on, and what date to print on the squares.",
+    "startDate": "2026-01-05",
+    "__startDate": "Day 1 of week 1. Pick a Monday so the grid lines up with the day names below.",
+    "dayNames": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "__dayNames": "Column headers, in order. dayOfWeek on each event is an index into this array: 0 = Mon.",
+    "restDayNote": "Practice",
+    "__restDayNote": "Label shown on a day with no cup while anyone on the roster is running a training program."
+  },
+
   "scoringTables": {
     "__doc": "Points awarded per match. `placement` bands are inclusive. `elimPoints` is per elimination.",
     "standard": {
@@ -87,6 +97,8 @@
       "scoring": "standard",
       "entryFee": 0,
       "minReputation": 0,
+      "dayOfWeek": 1,
+      "__dayOfWeek": "Tuesday. A midweek warm-up nobody serious cares about.",
       "schedule": { "everyWeeks": 1, "offsetWeek": 0 }
     },
     {
@@ -103,6 +115,8 @@
       "scoring": "standard",
       "entryFee": 0,
       "minReputation": 0,
+      "dayOfWeek": 3,
+      "__dayOfWeek": "Thursday. The staple cash cup of the week.",
       "schedule": { "everyWeeks": 1, "offsetWeek": 0 }
     },
     {
@@ -119,6 +133,8 @@
       "scoring": "standard",
       "entryFee": 0,
       "minReputation": 22,
+      "dayOfWeek": 5,
+      "__dayOfWeek": "Saturday. Invite-only money, played on a prime slot.",
       "schedule": { "everyWeeks": 2, "offsetWeek": 1 }
     },
     {
@@ -142,6 +158,8 @@
           "prizePool": 0,
           "prizeDistribution": "cashCup",
           "tier": 3,
+          "dayOfWeek": 5,
+          "__dayOfWeek": "Saturday.",
           "schedule": { "everyWeeks": 8, "offsetWeek": 2 }
         },
         {
@@ -154,6 +172,8 @@
           "prizePool": 1000000,
           "prizeDistribution": "major",
           "tier": 4,
+          "dayOfWeek": 6,
+          "__dayOfWeek": "Sunday. Bigger stage, later slot.",
           "schedule": { "everyWeeks": 8, "offsetWeek": 4 }
         },
         {
@@ -166,6 +186,8 @@
           "prizePool": 2500000,
           "prizeDistribution": "finals",
           "tier": 5,
+          "dayOfWeek": 6,
+          "__dayOfWeek": "Sunday. The Grand Final.",
           "schedule": { "everyWeeks": 8, "offsetWeek": 6 }
         }
       ]
