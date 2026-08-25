@@ -14,6 +14,7 @@ import {
   nextId,
   overall,
   progressPlayer,
+  recordLanAppearance,
 } from './players'
 import { backfillRivalDuo, buildRealRoster, realSignReputationGate } from './realPlayers'
 import { eventsForWeek, nextStageQualKey, runTournament } from './tournament'
@@ -397,6 +398,31 @@ export function advanceWeek(state: GameState): { state: GameState; report: WeekR
       p.matchesPlayed += ref.matches
       p.careerEarnings += Math.round(result.prize / Math.max(1, players.length))
       if (result.rank === 1) p.careerTitles += 1
+    }
+
+    // A bad event follows them into the next one - that is what Tilt
+    // Resistance is for. Finishing in the bottom half counts as a disaster.
+    const tiltedByResult = result.rank > Math.max(1, ref.fieldSize / 2)
+    for (const p of players) p.lastResultWasBad = tiltedByResult
+
+    // LANs and Grand Finals are the ONLY place Big Stage Nerve is earned, and
+    // everyone who turned up earns some - the real orgs in the standings too,
+    // otherwise your roster hardens while the scene stands still.
+    if (ref.isLan) {
+      const bandFor = (rank: number): 'good' | 'mid' | 'bad' =>
+        rank <= ref.fieldSize / 3 ? 'good' : rank >= (ref.fieldSize * 2) / 3 ? 'bad' : 'mid'
+      const myBand = bandFor(result.rank)
+      for (const p of players) {
+        const line = recordLanAppearance(p, myBand)
+        if (line) news.push(line)
+      }
+      for (const standing of result.rivals) {
+        const band = bandFor(standing.rank)
+        for (const id of standing.playerIds) {
+          const rival = s.players[id]
+          if (rival) recordLanAppearance(rival, band)
+        }
+      }
     }
 
     // A qualification is spent by playing the stage it unlocked - you have to

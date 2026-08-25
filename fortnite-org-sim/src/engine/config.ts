@@ -105,8 +105,8 @@ export function overallOf(ratings: Ratings): number {
 }
 
 // --- Legacy bridge ---------------------------------------------------------
-// TEMPORARY: see attributes.json -> legacyBridge. Lets the old match engine and
-// the old training programs keep working until they are rewritten.
+// TEMPORARY: see attributes.json -> legacyBridge. The match engine is off it -
+// only the training programs in training.json still speak the old vocabulary.
 
 export const LEGACY_BRIDGE: Record<AttrKey, SubKey[]> = Object.fromEntries(
   Object.entries(ATTRS.legacyBridge as Record<string, unknown>).filter(

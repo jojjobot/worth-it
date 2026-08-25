@@ -215,7 +215,7 @@ function MatchRow({ match }: { match: MatchResult }) {
       ? 'border-cyan-700/60 bg-cyan-950/20'
       : match.placement <= 10
         ? 'border-emerald-900/60 bg-emerald-950/10'
-        : match.placement > 40
+        : match.placement > 30
           ? 'border-rose-950/60 bg-rose-950/10'
           : 'border-slate-800 bg-slate-950/40'
 
@@ -234,9 +234,28 @@ function MatchRow({ match }: { match: MatchResult }) {
         </span>
       </button>
       {open && (
-        <pre className="whitespace-pre-wrap border-t border-slate-800/70 px-3 py-2 font-mono text-[11px] leading-relaxed text-slate-500">
-          {match.detail.join('\n')}
-        </pre>
+        <div className="border-t border-slate-800/70">
+          {match.players && match.players.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 pt-2 font-mono text-[11px]">
+              {match.players.map((line) => (
+                <span key={line.playerId} className="text-slate-400">
+                  {line.tag}{' '}
+                  <span className="text-slate-200">{line.elims}e</span>
+                  {!line.survived && <span className="ml-1 text-rose-400">DOWN</span>}
+                </span>
+              ))}
+              {match.partnerDowns > 0 && (
+                <span className="text-slate-600">
+                  {match.partnerDowns} knock{match.partnerDowns === 1 ? '' : 's'}
+                  {match.reboots > 0 && ` · ${match.reboots} rebuilt`}
+                </span>
+              )}
+            </div>
+          )}
+          <pre className="whitespace-pre-wrap px-3 py-2 font-mono text-[11px] leading-relaxed text-slate-500">
+            {match.detail.join('\n')}
+          </pre>
+        </div>
       )}
     </li>
   )

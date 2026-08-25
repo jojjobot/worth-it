@@ -11,9 +11,10 @@ import {
   TOURN,
   getPrizeDistribution,
   getRegion,
+  pointsFor,
   tierReputationMultiplier,
 } from './config'
-import { Rng } from './rng'
+import { Rng, clamp } from './rng'
 import { REAL } from './realPlayers'
 import { simulateSession, type SessionOptions } from './sim'
 import type {
@@ -66,6 +67,7 @@ export function eventsForWeek(state: GameState, atWeek?: number): TournamentInst
         entryFee: ev.entryFee,
         minReputation: ev.minReputation,
         advanceCount: 0,
+        isLan: ev.lan === true,
         locked,
         lockReason: locked ? `Needs ${ev.minReputation} reputation` : '',
       })
@@ -93,6 +95,7 @@ export function eventsForWeek(state: GameState, atWeek?: number): TournamentInst
           entryFee: ev.entryFee,
           minReputation: ev.minReputation,
           advanceCount: stage.advanceCount ?? 0,
+          isLan: (stage.lan ?? ev.lan) === true,
           locked,
           lockReason: locked
             ? `You did not qualify from the ${ev.stages[index - 1].name}`
@@ -178,17 +181,57 @@ export function nextStageQualKey(eventId: string, stageId: string): string | nul
 }
 
 // --- The rival field -------------------------------------------------------
+//
+// Running the full five-phase engine for 3,000 duos would take seconds per
+// tournament, so the anonymous field is modelled instead. But it is modelled
+// the way a match actually resolves: each of their games produces a PLACEMENT
+// out of 50 and an ELIM COUNT, which then go through the SAME scoring table
+// you do. Change the points table and the whole leaderboard moves with you -
+// under the old flat "expected points" model it would not have budged.
+
+/** Logistic quantile. logit(u) for u in (0,1). */
+function logit(u: number): number {
+  const x = Math.min(1 - 1e-9, Math.max(1e-9, u))
+  return Math.log(x / (1 - x))
+}
+
+/**
+ * One modelled duo's game. `edge` is how far their strength sits above the
+ * lobby rating, in logit units.
+ *
+ * With edge 0 the placement roll is EXACTLY uniform across the lobby, which is
+ * what a lobby of identical teams should produce - one winner in fifty. Strength
+ * shifts that roll, it never guarantees anything.
+ */
+function fieldMatchPoints(rng: Rng, edge: number, teams: number, scoringId: string): number {
+  const f = BAL.simulation.aiField
+  // quality 1 = won the game, 0 = died first.
+  const quality = 1 / (1 + Math.exp(-(logit(rng.next()) + edge)))
+  const placement = clamp(Math.ceil((1 - quality) * teams), 1, teams)
+  const elims = Math.max(
+    0,
+    Math.round(rng.gauss(f.elimBase + quality * f.elimPerQuality, f.elimSigma)),
+  )
+  return pointsFor(scoringId, placement, elims)
+}
 
 /** Total points scored by one modelled rival duo across the session. */
-function simulateFieldDuo(rng: Rng, lobbyRating: number, matches: number): number {
+function simulateFieldDuo(
+  rng: Rng,
+  lobbyRating: number,
+  matches: number,
+  teams: number,
+  scoringId: string,
+): number {
   const f = BAL.simulation.aiField
-  const strength = rng.gauss(lobbyRating, f.strengthSigma)
-  const expected = f.pointsPerMatchBase + (strength - lobbyRating) * f.slopePerRatingPoint
+  // Open lobbies are not a symmetric bell curve - a handful of monsters and a
+  // long tail of teams who should not be in the lobby at all.
+  const skew = (f.strengthSkew ?? 0) * Math.abs(rng.gauss(0, 1))
+  const strength = rng.gauss(lobbyRating, f.strengthSigma) + skew
+  const edge = (strength - lobbyRating) * f.slopePerRatingPoint
   let total = 0
-  for (let i = 0; i < matches; i++) {
-    total += Math.max(f.minPointsPerMatch, rng.gauss(expected, f.matchSigma))
-  }
-  return Math.round(total)
+  for (let i = 0; i < matches; i++) total += fieldMatchPoints(rng, edge, teams, scoringId)
+  return total
 }
 
 /**
@@ -204,10 +247,12 @@ export function sampleAnonymousField(
   lobbyRating: number,
   matches: number,
   count: number,
+  scoringId = 'standard',
 ): number[] {
+  const teams: number = BAL.simulation.lobby.teams
   const out: number[] = []
   for (let i = 0; i < Math.max(0, count); i++) {
-    out.push(simulateFieldDuo(rng, lobbyRating, matches))
+    out.push(simulateFieldDuo(rng, lobbyRating, matches, teams, scoringId))
   }
   return out.sort((a, b) => b - a)
 }
@@ -231,8 +276,9 @@ export function rankInField(
   lobbyRating: number,
   matches: number,
   fieldSize: number,
+  scoringId = 'standard',
 ): number {
-  const field = sampleAnonymousField(rng, lobbyRating, matches, fieldSize - 1)
+  const field = sampleAnonymousField(rng, lobbyRating, matches, fieldSize - 1, scoringId)
   return countBetter(field, myPoints) + 1
 }
 
@@ -281,6 +327,7 @@ export function runTournament(
     scoringId: ref.scoring,
     strategy: duo.strategy,
     gamesTogether: duo.gamesTogether,
+    isLan: ref.isLan,
   }
   const session: SessionResult = simulateSession(players, opts, rng)
 
@@ -306,6 +353,7 @@ export function runTournament(
           scoringId: ref.scoring,
           strategy: d.strategy,
           gamesTogether: d.gamesTogether,
+          isLan: ref.isLan,
         },
         rng,
       )
@@ -328,6 +376,7 @@ export function runTournament(
     ref.lobbyRating,
     ref.matches,
     ref.fieldSize - 1 - namedEntries.length,
+    ref.scoring,
   )
   const named = [
     ...namedEntries.map((r) => ({ ...r, isYou: false })),

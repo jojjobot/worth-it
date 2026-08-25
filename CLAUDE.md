@@ -45,8 +45,18 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
 - `src/engine/` — rng (seeded mulberry32, state serialises into the save),
   players (generation, current/peak, scouting fog, progression), realPlayers
   (the real roster + rival orgs), sim (5-phase match engine), tournament
-  (calendar + statistical field + named real-org standings), training,
+  (calendar + modelled field + named real-org standings), training,
   game (state + advanceWeek), save (localStorage + JSON export/import).
+- **The match engine is sub-stat native.** sim.ts reads the 29 sub-stats
+  directly; `legacyAttrs`/`legacyBridge` survive ONLY for training.json's
+  program list (build step 6) and must die with it.
+- A lobby is **50 duos** (`balance.json` → simulation.lobby). Placements come
+  from a tracked survivor curve, not random bands, and the scoring table in
+  tournaments.json is written for 50 teams.
+- Fighting is a MULTIPLIER on raw power, not an additive stat. Big Stage Nerve
+  applies only at events flagged `"lan": true`. Clutch is read only in a real
+  1v2. Each player is simulated separately (own mats/shield/form), so one can
+  be knocked and rebooted while the other plays the 1v2.
 - `src/ui/` — one file per screen. The shell is a **season calendar home page**
   plus a bottom-left **hub menu** (`Hub.tsx`) for every other screen; there is
   no tab bar. `Season.tsx` is the home page and also handles tournament entry.
@@ -58,7 +68,8 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
 - `npm run calibrate` runs thousands of simulated sessions and prints balance
   stats. Run it after touching the engine or `balance.json`.
 - `lobbyRating` in `tournaments.json` is on the TEAM POWER scale, not the
-  individual rating scale (a DUO of 50-OVR players is ~61 team power).
+  individual rating scale. Team power ≈ 1.45 × player OVR − 8, so a DUO of
+  50-OVR players is ~65 and a duo of real players (~90 OVR) is ~126.
 
 ## shooter_game.html Architecture
 

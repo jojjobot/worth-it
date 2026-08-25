@@ -1,21 +1,6 @@
 {
   "__doc": "MASTER TUNING FILE. Every number the simulation uses lives here. Edit values, save, and the app hot-reloads. Keys starting with __ are comments and are ignored by the game.",
 
-  "overallWeights": {
-    "__doc": "How the single OVR number shown on a player card is calculated. Weights are normalised, so only their ratio matters. This number is cosmetic - the simulation always uses the individual attributes.",
-    "aim": 1.3,
-    "buildSpeed": 1.1,
-    "editing": 0.9,
-    "pieceControl": 1.2,
-    "gameSense": 1.3,
-    "lootPathing": 0.8,
-    "endgame": 1.2,
-    "clutch": 0.9,
-    "consistency": 0.8,
-    "stamina": 0.6,
-    "comms": 0.9
-  },
-
   "playerGeneration": {
     "__doc": "Controls how new players are created (free agents, youth prospects, rivals).",
     "ageRange": { "min": 13, "max": 27 },
@@ -69,9 +54,9 @@
   },
 
   "simulation": {
-    "__doc": "The match engine. See MATCH-SIM.md for how the five phases fit together.",
+    "__doc": "THE MATCH ENGINE. It reads the 29 SUB-STATS directly - the old 11-attribute bridge is gone. See MATCH-SIM.md for the shape of a match. Every check below is described by a weight set of SUB-STAT ID -> weight, split into `raw` (the ability being tested, weights should sum to 1) and `fighting` (which Fighting sub-stats decide how much of that raw ability actually converts).",
 
-    "duelScale": 11,
+    "duelScale": 15,
     "__duelScale": "Logistic softness of every contested check. WinChance = 1/(1+e^-(myPower-theirPower)/duelScale). LOWER = skill matters more and upsets are rarer. HIGHER = more chaos.",
 
     "lobbySigma": 7,
@@ -79,19 +64,36 @@
 
     "__SCALE_NOTE": "IMPORTANT: lobbyRating in tournaments.json is on the TEAM POWER scale, not the individual rating scale. TWO players averaging 50 OVR make a duo worth roughly 61 team power, because the stronger player carries (teamAggregation) and chemistry adds on top. Rule of thumb: a duo COMPETES when lobbyRating is about 10 below its strength number, and DOMINATES about 25 below. The Dashboard shows each duo strength, so compare that with the lobby rating shown on the Tournaments screen.",
 
+    "lobby": {
+      "__doc": "The shape of one competitive lobby.",
+      "teams": 50,
+      "__teams": "A comp duos lobby is 100 players = 50 duos, so every placement in the game is a placement out of 50 and the scoring table in tournaments.json is written for that. Move this and the scoring table has to move with it.",
+      "survivors": {
+        "__doc": "How many teams are still alive at the END of each stage of a match. When you die, your placement is drawn from the band the lobby was actually in at that moment - placements are never free-floating random numbers, which is why dying off the drop is always a bottom-ten finish and dying in the last mid-game zone is always a top-25 one.",
+        "afterDrop": 38,
+        "afterRotate": 30,
+        "afterZones": [24, 19, 15],
+        "__afterZones": "One entry per mid-game zone. Add a fourth number and the match grows another zone - the engine reads the length of this array."
+      }
+    },
+
     "teamAggregation": {
-      "__doc": "How the two players in a duo combine into one team number, per attribute. 0.0 = plain average (BOTH of them need it). 1.0 = only the better player matters (a specialist carries the duo). With only two players these matter more than they did in trios - there is nobody else to hide a weakness behind.",
+      "__doc": "How the two players in a duo combine into ONE team number, per CATEGORY. 0.0 = plain average (BOTH of them need it). 1.0 = only the better player matters (a specialist carries the duo). When one player is DOWN, the survivor's own numbers are used unchanged - which is exactly why a lopsided duo is fragile.",
       "aim": 0.45,
-      "buildSpeed": 0.4,
-      "editing": 0.4,
-      "pieceControl": 0.5,
-      "gameSense": 0.65,
-      "lootPathing": 0.35,
-      "endgame": 0.5,
-      "clutch": 0.6,
-      "consistency": 0.0,
-      "stamina": 0.0,
-      "comms": 0.15
+      "mechanics": 0.4,
+      "fighting": 0.5,
+      "game_sense": 0.65,
+      "offspawn": 0.4,
+      "mental": 0.5,
+      "teamwork": 0.15
+    },
+
+    "fightingMultiplier": {
+      "__doc": "THE FIGHTING CATEGORY IS A MULTIPLIER, NOT ANOTHER ADDITIVE STAT. Any check that carries a `fighting` weight set converts its raw power around the neutral 50 line: above 50 the surplus is multiplied, below 50 the deficit is divided. Fighting decides how much of a duo's aim and mechanics they actually get to use in a real fight.",
+      "perPoint": 0.007,
+      "__perPoint": "mult = 1 + (fightScore - 50) * perPoint. Fighting 90 gives 1.28x, Fighting 20 gives 0.79x.",
+      "minMult": 0.6,
+      "maxMult": 1.6
     },
 
     "fatigue": {
@@ -99,24 +101,28 @@
       "freeMatches": 4,
       "perMatch": 3.4,
       "__perMatch": "Raw fatigue points added per match after the free ones.",
-      "staminaScale": 0.9,
-      "__staminaScale": "How much Stamina cancels fatigue. At stamina 99 a player keeps only (1 - 0.9) of the penalty.",
-      "sensitivity": {
-        "__doc": "Which attributes suffer when tired. 1.0 = full fatigue hit, 0 = immune.",
+      "resistance": {
+        "__doc": "There is no Stamina sub-stat in the tree, so endurance is read off the head instead. Weights are normalised into a 1-99 endurance number.",
+        "tilt_resistance": 0.5,
+        "under_pressure": 0.3,
+        "consistency": 0.2
+      },
+      "resistanceScale": 0.9,
+      "__resistanceScale": "At endurance 99 a player keeps only (1 - 0.9) of the fatigue penalty.",
+      "sensitivityByCategory": {
+        "__doc": "Which parts of a player fall off when they are tired. 1.0 = full fatigue hit, 0 = immune. Hands go first; reads barely move.",
         "aim": 1.0,
-        "buildSpeed": 1.1,
-        "editing": 1.2,
-        "pieceControl": 0.9,
-        "gameSense": 0.6,
-        "lootPathing": 0.4,
-        "endgame": 0.8,
-        "clutch": 0.9,
-        "comms": 0.5
+        "mechanics": 1.15,
+        "fighting": 0.9,
+        "game_sense": 0.5,
+        "offspawn": 0.4,
+        "mental": 0.7,
+        "teamwork": 0.4
       }
     },
 
     "consistencyModel": {
-      "__doc": "Per-match form roll. Low Consistency = boom or bust.",
+      "__doc": "Per-match form roll, rolled separately for EACH player. Low Consistency = boom or bust.",
       "baseSigma": 15,
       "consistencyScale": 0.85,
       "__consistencyScale": "sigma = baseSigma * (1 - consistency/99 * consistencyScale). At consistency 99 the roll is nearly flat.",
@@ -124,10 +130,43 @@
       "__perCheckJitter": "Extra small noise on each individual duel so the same match never plays out identically."
     },
 
+    "mental": {
+      "__doc": "WHEN each mental sub-stat is allowed to matter. Every one is two-way: below the anchor is a penalty, above it is a bonus. This is what stops Mental being a flat stat you can ignore.",
+      "pressure": {
+        "anchor": 50,
+        "perPoint": 0.16,
+        "__perPoint": "Power per point of team Under Pressure away from the anchor, applied ONLY in a pressure moment.",
+        "lastMatchesOfSession": 3,
+        "__lastMatchesOfSession": "The closing games of a session are a pressure moment - that is where a run is won or thrown away.",
+        "endgameFromPlacement": 6,
+        "__endgameFromPlacement": "Every circle from this placement down is a pressure moment."
+      },
+      "clutch": {
+        "anchor": 50,
+        "perPoint": 0.22,
+        "__perPoint": "Power per point of Clutch away from the anchor. ONLY applied while that player is the last one alive - a real 1v2. It never touches a normal two-up fight.",
+        "saveChance": 0.2,
+        "__saveChance": "Max chance a lost endgame check is survived anyway, scaled by how far Clutch sits above the anchor."
+      },
+      "tilt": {
+        "badPlacement": 26,
+        "__badPlacement": "Finishing worse than this counts as a disaster game and tilts the duo for the NEXT match.",
+        "basePenalty": 6.0,
+        "__basePenalty": "Power lost in the following match at Tilt Resistance 1. At Tilt Resistance 99 almost none of it lands."
+      },
+      "bigStageNerve": {
+        "anchor": 80,
+        "perPoint": 0.25,
+        "__perPoint": "Power per point of team Big Stage Nerve away from the anchor. APPLIED ONLY AT EVENTS FLAGGED lan:true IN tournaments.json - at every other event Big Stage Nerve is ignored completely. This is why a 15-year-old prodigy can farm cash cups and still fold at the Grand Final."
+      }
+    },
+
     "synergy": {
-      "__doc": "Duo chemistry. Result is a flat plus/minus applied to every team attribute.",
+      "__doc": "Duo chemistry. The result is a flat plus/minus applied to every performance sub-stat all session long.",
       "commsWeight": 0.16,
-      "__commsWeight": "Points of synergy per point of average Comms above 50.",
+      "__commsWeight": "Points of synergy per point of the duo's average Communication above 50.",
+      "iglWeight": 0.1,
+      "__iglWeight": "Points of synergy per point of the BEST Decision Making in the duo above 50. Somebody has to make the calls.",
       "egoPenaltyWeight": 0.09,
       "__egoPenaltyWeight": "Synergy lost per point of average Ego above 50.",
       "egoTopDogPenalty": 0.05,
@@ -135,6 +174,8 @@
       "gamesTogetherFull": 120,
       "gamesTogetherBonus": 5.0,
       "__gamesTogetherBonus": "Max bonus once the duo has played gamesTogetherFull matches together. Ramps on a square-root curve.",
+      "adaptivityRampScale": 0.45,
+      "__adaptivityRampScale": "How much Adaptivity shortens that ramp. At average Adaptivity 99 the duo gels after (1 - 0.45) of gamesTogetherFull; at 1 it takes (1 + 0.45) of it.",
       "composition": {
         "__doc": "Bonus or penalty for the mix of archetypes in the duo.",
         "hasIGL": 3.0,
@@ -148,101 +189,197 @@
       "clamp": { "min": -12, "max": 12 }
     },
 
+    "downedPartner": {
+      "__doc": "DUOS ARE TWO PEOPLE. Losing a fight usually knocks ONE of them, not both, and the survivor plays on alone until they can rebuild. This block is what makes a duo more than one blended stat line.",
+      "powerPenalty": 11,
+      "__powerPenalty": "Power lost on every check while a player is down. A 1v2 is a losing position and should feel like one.",
+      "wipeChanceOnLoss": 0.42,
+      "__wipeChanceOnLoss": "Chance that losing a fight kills BOTH players outright instead of knocking one of them. Reset Timing and Movement pull it down - good players get out.",
+      "wipeReducedBy": { "reset_timing": 0.6, "movement": 0.4 },
+      "wipeSkillScale": 0.5,
+      "__wipeSkillScale": "wipeChance is scaled by (1 - (wipeReducedBy power - 50)/50 * wipeSkillScale).",
+      "soloWipeChance": 0.72,
+      "__soloWipeChance": "Chance the last player alive simply dies when they lose a check, instead of escaping. Much higher than the duo number - there is nobody to trade for you.",
+      "reboot": {
+        "__doc": "Getting the partner back. Only possible before the final circles, and only if the survivor is still alive at the end of the stage.",
+        "baseChance": 0.34,
+        "power": { "movement": 0.35, "positioning": 0.3, "resource_mgmt": 0.2, "rotation": 0.15 },
+        "skillScale": 0.7,
+        "__skillScale": "Chance is baseChance scaled by (1 + (power - 50)/50 * skillScale).",
+        "matsCost": 60,
+        "notBelowPlacement": 8,
+        "__notBelowPlacement": "No reboots once the lobby is down to this many teams - the vans are gone and there is nowhere safe to res."
+      }
+    },
+
     "drop": {
-      "__doc": "PHASE 1. Contested drops are high risk, high reward.",
+      "__doc": "PHASE 1. Where they land and whether they have to fight for it. This is the Offspawn category's moment.",
       "contestChanceByStrategy": { "contest": 0.92, "balanced": 0.45, "safe": 0.1 },
       "__contestChanceByStrategy": "Chance the chosen POI is actually fought over. Strategy is set per duo in the UI.",
       "aggroContestBonus": 0.09,
       "__aggroContestBonus": "Added to contest chance per aggressive player in the duo (mech_carry, fragger, prodigy).",
-      "power": { "aim": 0.55, "buildSpeed": 0.3, "editing": 0.15 },
-      "__power": "Attribute weights that decide a drop fight.",
+      "power": {
+        "__doc": "A drop fight is decided with whatever you picked up in the first fifteen seconds, which is why the Offspawn sub-stats dominate it and Piece Control barely features.",
+        "raw": {
+          "fifty_fifties": 0.24,
+          "offspawn_fights": 0.22,
+          "drop_accuracy": 0.12,
+          "tracking": 0.12,
+          "accuracy": 0.1,
+          "flicks": 0.08,
+          "build_speed": 0.08,
+          "edit_speed": 0.04
+        },
+        "fighting": { "box_fighting": 0.4, "movement": 0.3, "reset_timing": 0.3 }
+      },
       "winElims": { "min": 1, "max": 3 },
-      "winMats": 250,
-      "winShieldBonus": 30,
-      "loseDeathChance": 0.72,
-      "__loseDeathChance": "Chance losing the drop fight simply ends your game. Otherwise you survive on scraps.",
-      "losePlacement": { "min": 68, "max": 96 },
-      "loseMatsPenalty": 220,
+      "winMats": 200,
+      "__winMats": "Mats PER PLAYER. Everything in the engine is per player now - a lone survivor only carries their own.",
+      "winShieldBonus": 50,
+      "winLootBonus": 14,
+      "__winLootBonus": "Added to the loot number in phase 2 when a contested drop is WON - you cleared the POI, so you have the whole POI. This is the payoff that makes contesting worth the risk of a bottom-ten finish.",
+      "loseMatsPenalty": 90,
       "loseShieldPenalty": 45,
-      "uncontestedMatsBonus": 120
+      "uncontestedMatsBonus": 60
     },
 
     "loot": {
-      "__doc": "PHASE 2. Loot Pathing turns into mats and shield. Game Sense decides the rotate.",
-      "matsBase": 380,
-      "matsPerLootPathing": 5.6,
-      "__matsPerLootPathing": "Mats gained per point of team Loot Pathing.",
-      "matsCap": 1300,
+      "__doc": "PHASE 2. Drop Accuracy and Resource Mgmt turn into mats and shield. Positioning and Rotation decide the first rotate.",
+      "matsBase": 180,
+      "matsPerLootStat": 4.4,
+      "__matsPerLootStat": "Mats per point of the team's loot number below. Per player.",
+      "lootPower": { "drop_accuracy": 0.45, "resource_mgmt": 0.35, "fifty_fifties": 0.2 },
+      "matsCap": 800,
+      "__matsCap": "Per player. Fortnite caps each material at 500; a comp player carries somewhere around 500-700 usable mats into a late game.",
       "shieldBase": 30,
-      "shieldPerLootPathing": 0.72,
+      "shieldPerLootStat": 0.7,
       "shieldCap": 100,
-      "rotatePower": { "gameSense": 0.7, "lootPathing": 0.3 },
+      "rotatePower": {
+        "__doc": "No `fighting` set: a rotate is a map decision, not a fight. Fighting cannot save you from a bad route.",
+        "raw": { "rotation": 0.4, "positioning": 0.28, "decision_making": 0.2, "resource_mgmt": 0.12 }
+      },
       "rotateDifficultyBonus": 4,
       "__rotateDifficultyBonus": "Added to lobby rating for the rotate check. Bad rotates punish everyone.",
-      "failDeathChance": 0.38,
-      "failPlacement": { "min": 38, "max": 72 },
-      "failMatsPenalty": 200,
+      "failMatsPenalty": 90,
       "failShieldPenalty": 40,
+      "failDeathChance": 0.38,
+      "__failDeathChance": "Chance a blown rotate turns into a fight you did not choose, resolved with the mid-game weights and the downedPartner rules.",
       "thirdPartyElimChance": 0.3,
       "__thirdPartyElimChance": "If you survive a bad rotate you sometimes trade. Chance of picking up an elim anyway."
     },
 
     "midGame": {
-      "__doc": "PHASE 3. How many fights the duo takes before top 15, and how they go.",
-      "baseFights": 1.1,
-      "aggroFightsPerPlayer": 0.75,
-      "__aggroFightsPerPlayer": "Extra expected fights per aggressive player in the duo (mech_carry, fragger, prodigy).",
-      "strategyFightMod": { "contest": 1.35, "balanced": 1.0, "safe": 0.65 },
-      "maxFights": 6,
-      "power": { "aim": 0.4, "buildSpeed": 0.22, "pieceControl": 0.2, "editing": 0.18 },
-      "winElims": { "min": 1, "max": 3 },
-      "winMats": 160,
-      "loseDeathChance": 0.8,
-      "losePlacement": { "min": 14, "max": 46 },
-      "matsPerFight": 130,
-      "lowMatsPenalty": 9,
-      "__lowMatsPenalty": "Power lost in a fight when under lowMatsThreshold mats.",
-      "lowMatsThreshold": 200,
+      "__doc": "PHASE 3. One pass per zone (see lobby.survivors.afterZones): the fights you CHOOSE, then the pressure you cannot avoid, then a chance to rebuild.",
+      "optionalFightChance": { "contest": 0.62, "balanced": 0.4, "safe": 0.2 },
+      "__optionalFightChance": "Base chance per zone that the duo goes looking for a fight.",
+      "aggroFightBonus": 0.11,
+      "__aggroFightBonus": "Added per aggressive player in the duo (mech_carry, fragger, prodigy).",
+      "fightSelectionScale": 0.14,
+      "__fightSelectionScale": "Opponent power REMOVED per point of team Fight Selection above 50, but only in a fight the duo CHOSE. Good fight selection is not winning more fights, it is picking easier ones - so it never helps in a forced fight.",
+      "fightSelectionSkipScale": 0.004,
+      "__fightSelectionSkipScale": "Chance per point of Fight Selection above 50 that a bad-looking fight is declined outright.",
+      "maxOptionalFightsPerZone": 2,
+      "power": {
+        "raw": {
+          "tracking": 0.18,
+          "accuracy": 0.13,
+          "headshot": 0.07,
+          "flicks": 0.07,
+          "build_speed": 0.18,
+          "edit_speed": 0.13,
+          "edit_accuracy": 0.09,
+          "build_efficiency": 0.05,
+          "movement": 0.1
+        },
+        "fighting": {
+          "box_fighting": 0.3,
+          "piece_control": 0.25,
+          "edit_iq": 0.2,
+          "reset_timing": 0.15,
+          "movement": 0.1
+        }
+      },
+      "winElims": { "min": 1, "max": 2 },
+      "winMats": 70,
       "healOffShield": 25,
+      "matsPerFight": 90,
+      "lowMatsThreshold": 120,
+      "lowMatsPenalty": 9,
+      "__lowMatsPenalty": "Power lost in a fight while under lowMatsThreshold mats.",
 
-      "forcedEncounters": 2,
-      "__forcedEncounters": "Unavoidable pressure checks between the mid game and the top 15 - shrinking zone, third parties, teams stacking your side. Nobody can play around these, which is what stops passive duos from reaching every endgame. THIS IS THE MAIN DIAL FOR HOW HARD IT IS TO MAKE TOP 15.",
-      "forcedPower": { "gameSense": 0.4, "pieceControl": 0.25, "endgame": 0.2, "buildSpeed": 0.15 },
-      "forcedDeathChance": 0.86,
-      "forcedPlacement": { "min": 16, "max": 48 },
-      "forcedElimChance": 0.35,
-      "forcedMatsCost": 110
+      "zonePower": {
+        "__doc": "Unavoidable pressure on the way in: shrinking zone, teams stacking your side, third parties. Nobody can rotate around these, which is what stops a passive duo reaching every endgame. THIS IS THE MAIN DIAL FOR HOW HARD IT IS TO MAKE TOP 15.",
+        "raw": {
+          "positioning": 0.3,
+          "rotation": 0.18,
+          "decision_making": 0.14,
+          "resource_mgmt": 0.1,
+          "build_speed": 0.16,
+          "build_efficiency": 0.06,
+          "tracking": 0.06
+        },
+        "fighting": { "piece_control": 0.4, "hg_retakes": 0.35, "movement": 0.25 }
+      },
+      "zoneDeathChance": 0.62,
+      "__zoneDeathChance": "Chance a lost zone-pressure check turns into a real fight rather than chip damage. That fight then runs through the downedPartner rules, so it usually costs a player before it costs the game.",
+      "zoneElimChance": 0.3,
+      "zoneMatsCost": 60,
+      "zoneShieldCost": 35,
+      "zoneDifficultyRamp": 2.2,
+      "__zoneDifficultyRamp": "Lobby rating added per zone survived. Every zone the lobby is a little better than the last one, because the bad teams are already dead."
     },
 
     "endGame": {
-      "__doc": "PHASE 4. Runs from 15th place down to the win, one check per circle.",
-      "startPlacement": 15,
-      "power": { "pieceControl": 0.36, "endgame": 0.34, "clutch": 0.18, "buildSpeed": 0.12 },
-      "difficultyRamp": 1.9,
+      "__doc": "PHASE 4. From the top 15 down to the win, one check per circle.",
+      "power": {
+        "raw": {
+          "build_speed": 0.22,
+          "build_efficiency": 0.12,
+          "edit_speed": 0.13,
+          "edit_accuracy": 0.09,
+          "tracking": 0.14,
+          "accuracy": 0.1,
+          "headshot": 0.06,
+          "positioning": 0.09,
+          "resource_mgmt": 0.05
+        },
+        "fighting": {
+          "piece_control": 0.34,
+          "hg_retakes": 0.24,
+          "box_fighting": 0.2,
+          "edit_iq": 0.12,
+          "reset_timing": 0.1
+        }
+      },
+      "circles": [11, 8, 6, 4, 3, 2, 1],
+      "__circles": "How many teams are still alive after each closing circle, starting from the 15 that reached the endgame. SEVERAL teams die per circle early on and then it thins out, which is what a real endgame looks like - it is not fifteen consecutive 1v1s. One entry per check; the last entry must be 1.",
+      "difficultyRamp": 4.5,
       "__difficultyRamp": "Lobby rating added per circle survived. The last few circles are all sweats.",
-      "matsPerCircle": 95,
-      "matsSavedByPieceControl": 0.45,
-      "__matsSavedByPieceControl": "Mats per circle saved per point of team Piece Control above 50.",
+      "matsPerCircle": 70,
+      "__matsPerCircle": "Per player, per circle.",
+      "matsSavedByBuildEfficiency": 0.35,
+      "__matsSavedByBuildEfficiency": "Mats per circle saved per point of team Build Efficiency above 50. This is the sub-stat that decides whether a duo is still building in zone 9.",
       "outOfMatsPenalty": 26,
-      "__outOfMatsPenalty": "Brutal power loss when you hit 0 mats in a final circle. This is what kills greedy duos.",
+      "__outOfMatsPenalty": "Brutal power loss when a player hits 0 mats in a final circle. This is what kills greedy duos.",
       "lowShieldPenalty": 7,
       "lowShieldThreshold": 50,
-      "elimChancePerCircle": 0.42,
+      "elimChancePerCircle": 0.34,
       "elimsPerCircle": { "min": 1, "max": 2 },
-      "clutchSaveChance": 0.22,
-      "__clutchSaveChance": "Max chance a failed endgame check is rescued anyway, scaled by team Clutch above 50."
+      "__elimChancePerCircle": "Chance of picking up kills in a circle you survive. Across a full endgame run this is most of a winning duo's elim count."
     },
 
     "aiField": {
-      "__doc": "The rest of the leaderboard, modelled statistically instead of fully simulated so tournaments resolve instantly.",
-      "strengthSigma": 8,
-      "__strengthSigma": "Spread of rival duo strength around the tournament lobby rating.",
-      "pointsPerMatchBase": 9.2,
-      "__pointsPerMatchBase": "Expected points per match for a rival duo sitting exactly AT the lobby rating. RE-CALIBRATED FOR DUOS against the real phase simulation - two players score less than three did. Run npm run calibrate after changing it.",
-      "slopePerRatingPoint": 0.95,
-      "__slopePerRatingPoint": "Extra expected points per match per point of team strength above the lobby.",
-      "matchSigma": 8.0,
-      "minPointsPerMatch": 0
+      "__doc": "The other 200-3000 duos on the leaderboard. Running a full five-phase match for every one of them would take seconds per tournament, so instead each of their matches is drawn as a PLACEMENT and an ELIM COUNT and then scored through the SAME points table you are - which means changing the scoring table moves their totals exactly like it moves yours.",
+      "strengthSigma": 12,
+      "__strengthSigma": "Spread of rival duo strength around the tournament lobby rating, on the TEAM POWER scale (roughly 1.4 points per point of player OVR).",
+      "strengthSkew": -3.0,
+      "__strengthSkew": "Open lobbies are not symmetric - a few monsters and a very long tail of teams who should not be there. Negative values lengthen the weak tail. 0 = a plain bell curve.",
+      "slopePerRatingPoint": 0.115,
+      "__slopePerRatingPoint": "How much one point of team strength above the lobby shifts a duo's placement roll, in logit units. At 0 every duo places uniformly at random, which is exactly what a lobby of identical teams should look like. THIS IS THE DIAL FOR HOW MUCH SKILL BEATS LUCK ON A LEADERBOARD.",
+      "elimBase": 0.9,
+      "elimPerQuality": 2.2,
+      "__elimPerQuality": "Extra expected elims for a duo that wins the game, on top of elimBase. Across a 50-team lobby the field should average about 2 elims a game, because 98 of the 100 players die.",
+      "elimSigma": 1.1
     }
   },
 

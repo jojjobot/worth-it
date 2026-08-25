@@ -88,10 +88,10 @@ export const CATEGORY_OF: Record<SubKey, CategoryKey> = Object.fromEntries(
 export type Ratings = Record<SubKey, number>
 
 // --- Legacy attribute names ------------------------------------------------
-// TEMPORARY. The old 11-attribute vocabulary, kept alive only so the old match
-// engine and the old training programs keep running while they are rewritten
-// (build steps 3 and 6). Derived from sub-stats via attributes.json ->
-// legacyBridge. Delete this block, and the bridge, once both are done.
+// TEMPORARY. The old 11-attribute vocabulary. THE MATCH ENGINE NO LONGER USES
+// IT - sim.ts reads the 29 sub-stats directly. The only thing left standing on
+// this bridge is the training program list in training.json (build step 6).
+// Delete this block, and attributes.json -> legacyBridge, once that is rewired.
 
 export type AttrKey =
   | 'aim'
@@ -234,6 +234,15 @@ export interface RivalStanding {
 
 // --- Match simulation ------------------------------------------------------
 
+/** What one PLAYER did in one match. The duo is two people, not one stat line. */
+export interface PlayerMatchLine {
+  playerId: string
+  tag: string
+  elims: number
+  /** Still standing when the game ended for the duo. */
+  survived: boolean
+}
+
 export interface MatchResult {
   matchNumber: number
   placement: number
@@ -243,6 +252,12 @@ export interface MatchResult {
   contested: boolean
   diedPhase: 'drop' | 'rotate' | 'midgame' | 'endgame' | 'won'
   matsAtEndgame: number
+  /** How many times a player was knocked while the other kept the game alive. */
+  partnerDowns: number
+  /** How many of those were rebuilt. */
+  reboots: number
+  /** Per-player breakdown. Optional so results saved before this existed load. */
+  players?: PlayerMatchLine[]
   summary: string // the one-line readable log
   detail: string[] // per-phase breakdown
 }
@@ -274,6 +289,10 @@ export interface TournamentInstanceRef {
   entryFee: number
   minReputation: number
   advanceCount: number
+  /** LAN / Grand Final. Big Stage Nerve is read ONLY at these, and only these
+   *  add a LAN appearance to a player's record. Set with `lan: true` in
+   *  tournaments.json. */
+  isLan: boolean
   locked: boolean // true if the player cannot enter (missing qualification / rep)
   lockReason: string
 }

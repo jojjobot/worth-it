@@ -178,16 +178,21 @@ overalls still match the authored ones, and that every org fields a full duo.
 `tournaments.json`. It is how strong the rest of the field is.
 
 It is measured on the **team power** scale, which is the number shown next to
-each of your duos on The Scene screen — *not* the individual player ratings. Two
-50-rated players make a duo worth roughly 68 team power, because specialists
-carry the duo and chemistry adds on top.
+each of your duos on The Scene screen — *not* the individual player ratings.
+Roughly, **team power ≈ 1.45 × player OVR − 8**: two 50-OVR players make a duo
+worth about 65, two 65-OVR players about 85, two 90-OVR players about 126.
 
 | Your duo strength vs the lobby | What it feels like |
 |---|---|
-| lobby is 25+ below you | You farm it. Winning most sessions. |
-| lobby is ~10 below you | Competitive. Cash sometimes, occasional deep runs. |
-| lobby matches you | Mid-table grind. |
+| lobby is 30 below you | You farm it. Winning a session out of five. |
+| lobby is 20 below you | Strong. Regular top tens, cash most weeks. |
+| lobby is 10 below you | Competitive. Occasional deep runs. |
+| lobby matches you | Mid-table grind - median finish around 21st of 50. |
 | lobby is 10+ above you | You are getting cooked. |
+
+The default ladder is built on that scale: the Open Practice Cup sits at a
+starting roster, the Weekly Cash Cup at a ~65 OVR duo, the Elite Cash Cup at
+~78, the FNCS Major at ~83 and the Grand Finals at the real players (~90).
 
 Lower every `lobbyRating` by 5 for an easier career; raise them for a harder one.
 Region modifiers in `regions.json` stack on top (EU is +7, the hardest region).
@@ -219,12 +224,34 @@ part of the bill.
 
 ## "Nobody ever makes top 15" / "Everyone makes top 15"
 
-`simulation.midGame.forcedEncounters` is the main gate. These are unavoidable
-zone-pressure checks that no strategy plays around.
+The mid-game zone pass is the gate. Each entry in
+`simulation.lobby.survivors.afterZones` is one zone, and each zone carries one
+unavoidable pressure check that no strategy plays around.
 
-- `0` → almost everyone who survives the mid game reaches an endgame.
-- `2` (default) → reaching top 15 is an achievement.
-- `4` → brutal, only very strong duos ever see a final circle.
+- `simulation.midGame.zoneDeathChance` (0.62) — how often failing that check
+  becomes a real fight instead of chip damage. **This is the main dial.**
+- `afterZones` — add a fourth number and the match grows another zone, so there
+  is one more thing to survive before an endgame.
+- `simulation.midGame.zoneDifficultyRamp` — how much stronger the lobby gets per
+  zone survived.
+
+## "Duos die together too often / never split up"
+
+`simulation.downedPartner` decides what a lost fight actually costs.
+
+- `wipeChanceOnLoss` (0.42) — how often a lost fight kills both instead of
+  knocking one. Lower it and more games turn into 1v2s.
+- `powerPenalty` (11) — how much being a man down hurts.
+- `soloWipeChance` (0.72) — how likely the last player alive simply dies.
+- `reboot.baseChance` (0.34) and `reboot.notBelowPlacement` (8) — how often and
+  how late a duo can rebuild.
+
+## "Big Stage Nerve never seems to matter"
+
+It is read at LAN events only. Flag an event or stage with `"lan": true` in
+`tournaments.json` and it starts counting there — both for the power check
+(`simulation.mental.bigStageNerve`) and for earning LAN appearances. By default
+only the FNCS Major and Grand Finals are LANs.
 
 ## "Elims should matter more"
 
