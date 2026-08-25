@@ -1,0 +1,882 @@
+<title>The Drop Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{
+  --bg:#f4f2f8; --panel:#ffffff; --panel2:#ebe8f3; --raise:#ffffff;
+  --ink:#171426; --ink2:#575070; --ink3:#847d9c;
+  --line:#dedaec; --line2:#c8c2dc;
+  --accent:#9c6d06; --accent-bg:rgba(156,109,6,.10); --accent-line:rgba(156,109,6,.35);
+  --s:#DFA20F; --a:#DE6C1B; --b:#8842D4; --c:#1B80D0; --d:#2C954A;
+  --tier-ink:#0f0d17;
+  --shadow:0 1px 2px rgba(23,20,38,.05), 0 10px 30px rgba(23,20,38,.07);
+  --grid-line:rgba(23,20,38,.055);
+  --r:3px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e0d15; --panel:#161522; --panel2:#1e1b2c; --raise:#231f34;
+    --ink:#f1eff8; --ink2:#a49dbe; --ink3:#7a7394;
+    --line:#272437; --line2:#37334b;
+    --accent:#ffc44d; --accent-bg:rgba(255,196,77,.10); --accent-line:rgba(255,196,77,.30);
+    --s:#FFC22E; --a:#FF8A3D; --b:#B368F5; --c:#3FA9F5; --d:#5FD16A;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 34px rgba(0,0,0,.45);
+    --grid-line:rgba(255,255,255,.045);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e0d15; --panel:#161522; --panel2:#1e1b2c; --raise:#231f34;
+  --ink:#f1eff8; --ink2:#a49dbe; --ink3:#7a7394;
+  --line:#272437; --line2:#37334b;
+  --accent:#ffc44d; --accent-bg:rgba(255,196,77,.10); --accent-line:rgba(255,196,77,.30);
+  --s:#FFC22E; --a:#FF8A3D; --b:#B368F5; --c:#3FA9F5; --d:#5FD16A;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 34px rgba(0,0,0,.45);
+  --grid-line:rgba(255,255,255,.045);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:Barlow,"Segoe UI",system-ui,sans-serif; font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0; text-wrap:balance}
+p{margin:0}
+a{color:var(--accent)}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+.wrap{max-width:1220px; margin:0 auto; padding:0 24px}
+
+/* ---------- masthead ---------- */
+.mast{position:relative; overflow:hidden; border-bottom:1px solid var(--line)}
+.mast::before{
+  content:""; position:absolute; inset:0;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:84px 84px; background-position:center;
+  -webkit-mask-image:radial-gradient(ellipse 78% 88% at 50% 30%,#000 25%,transparent 100%);
+  mask-image:radial-gradient(ellipse 78% 88% at 50% 30%,#000 25%,transparent 100%);
+}
+.mast::after{
+  content:""; position:absolute; left:50%; top:-44%; width:min(980px,124%); aspect-ratio:1;
+  transform:translateX(-50%); border-radius:50%; pointer-events:none;
+  border:1px solid var(--accent-line);
+  background:radial-gradient(circle,var(--accent-bg) 0%,transparent 62%);
+}
+.mast-inner{position:relative; padding:64px 0 34px}
+.eyebrow{
+  font-family:"Barlow Condensed",Barlow,sans-serif; text-transform:uppercase;
+  letter-spacing:.22em; font-size:13px; font-weight:600; color:var(--ink3);
+}
+h1{
+  font-family:Anton,"Barlow Condensed",Impact,sans-serif; text-transform:uppercase;
+  font-size:clamp(52px,10.5vw,132px); line-height:.86; letter-spacing:.005em;
+  margin:14px 0 0;
+}
+h1 em{font-style:normal; color:var(--accent)}
+.lede{max-width:62ch; margin-top:20px; color:var(--ink2); font-size:17.5px}
+.tally{display:flex; flex-wrap:wrap; gap:8px; list-style:none; padding:0; margin:28px 0 0}
+.tally li{
+  display:flex; align-items:baseline; gap:8px;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
+  padding:7px 12px 6px;
+}
+.tally b{font-family:Anton,sans-serif; font-size:19px; line-height:1; letter-spacing:.02em}
+.tally span{
+  font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.14em;
+  font-size:12px; font-weight:600; color:var(--ink2); font-variant-numeric:tabular-nums;
+}
+
+/* ---------- controls ---------- */
+.controls{
+  position:sticky; top:0; z-index:40; background:var(--bg);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 10px 20px -18px rgba(0,0,0,.5);
+}
+.controls-inner{display:flex; flex-direction:column; gap:12px; padding:14px 0 13px}
+.row1{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.search{
+  flex:1 1 260px; min-width:200px; display:flex; align-items:center; gap:9px;
+  background:var(--panel); border:1px solid var(--line2); border-radius:var(--r); padding:0 12px;
+}
+.search svg{flex:none; width:15px; height:15px; stroke:var(--ink3); fill:none; stroke-width:2}
+.search input{
+  flex:1; border:none; background:none; color:var(--ink); font:inherit; font-size:15px;
+  padding:10px 0; min-width:0;
+}
+.search input::placeholder{color:var(--ink3)}
+.search input:focus{outline:none}
+.viewtoggle{display:flex; border:1px solid var(--line2); border-radius:var(--r); overflow:hidden; background:var(--panel)}
+.viewtoggle button{
+  padding:9px 16px; font-family:"Barlow Condensed",sans-serif; text-transform:uppercase;
+  letter-spacing:.14em; font-size:13px; font-weight:600; color:var(--ink2);
+}
+.viewtoggle button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+.filters{display:flex; gap:18px; flex-wrap:wrap; align-items:center}
+.fgroup{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.flabel{
+  font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.16em;
+  font-size:11px; font-weight:700; color:var(--ink3); margin-right:2px;
+}
+.chip{
+  border:1px solid var(--line2); background:var(--panel); border-radius:var(--r);
+  padding:5px 10px 4px; font-family:"Barlow Condensed",sans-serif; text-transform:uppercase;
+  letter-spacing:.1em; font-size:12.5px; font-weight:600; color:var(--ink2);
+  font-variant-numeric:tabular-nums; transition:background .12s,color .12s,border-color .12s;
+}
+.chip:hover{border-color:var(--ink3); color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--bg)}
+.chip.t{--tc:var(--ink)}
+.chip.t[aria-pressed="true"]{background:var(--tc); border-color:var(--tc); color:var(--tier-ink)}
+.chip.t[data-t="S"]{--tc:var(--s)} .chip.t[data-t="A"]{--tc:var(--a)}
+.chip.t[data-t="B"]{--tc:var(--b)} .chip.t[data-t="C"]{--tc:var(--c)}
+.chip.t[data-t="D"]{--tc:var(--d)}
+.readout{
+  margin-left:auto; font-family:"Barlow Condensed",sans-serif; text-transform:uppercase;
+  letter-spacing:.14em; font-size:12px; font-weight:600; color:var(--ink3);
+  font-variant-numeric:tabular-nums; display:flex; gap:12px; align-items:center;
+}
+.clearbtn{color:var(--accent); text-decoration:underline; text-underline-offset:3px}
+
+/* ---------- board view ---------- */
+.board{padding:34px 0 60px; display:flex; flex-direction:column; gap:14px}
+.tierrow{
+  display:grid; grid-template-columns:132px 1fr;
+  border:1px solid var(--line); border-radius:var(--r); background:var(--panel); overflow:hidden;
+}
+.tierplate{
+  --tc:var(--ink);
+  background:var(--tc); color:var(--tier-ink); padding:20px 16px;
+  display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; text-align:center;
+}
+.tierrow[data-t="S"] .tierplate{--tc:var(--s)} .tierrow[data-t="A"] .tierplate{--tc:var(--a)}
+.tierrow[data-t="B"] .tierplate{--tc:var(--b)} .tierrow[data-t="C"] .tierplate{--tc:var(--c)}
+.tierrow[data-t="D"] .tierplate{--tc:var(--d)}
+.tierplate .lt{font-family:Anton,sans-serif; font-size:56px; line-height:.82}
+.tierplate .nm{
+  font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.13em;
+  font-size:11.5px; font-weight:700; opacity:.8; max-width:104px; line-height:1.25;
+}
+.tierplate .ct{
+  font-family:"Barlow Condensed",sans-serif; font-size:12px; font-weight:700;
+  letter-spacing:.1em; opacity:.65; font-variant-numeric:tabular-nums; margin-top:4px;
+}
+.tierpool{display:flex; flex-wrap:wrap; gap:6px; padding:14px; align-content:flex-start}
+.poi{
+  display:inline-flex; align-items:center; gap:8px;
+  border:1px solid var(--line2); background:var(--panel2); border-radius:var(--r);
+  padding:6px 11px 5px; text-align:left; transition:transform .12s, border-color .12s, background .12s;
+}
+.poi:hover{transform:translateY(-2px); border-color:var(--tcol); background:var(--raise)}
+.poi .pn{font-weight:600; font-size:14.5px; letter-spacing:-.005em; white-space:nowrap}
+.poi .pe{
+  font-family:"Barlow Condensed",sans-serif; font-size:11.5px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink3);
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.poi .dot{width:7px; height:7px; border-radius:50%; background:var(--tcol); flex:none}
+.poi[data-t="S"]{--tcol:var(--s)} .poi[data-t="A"]{--tcol:var(--a)}
+.poi[data-t="B"]{--tcol:var(--b)} .poi[data-t="C"]{--tcol:var(--c)}
+.poi[data-t="D"]{--tcol:var(--d)}
+.empty{padding:18px; color:var(--ink3); font-size:14.5px; font-style:italic}
+
+/* ---------- dossier view ---------- */
+.dossier{padding:34px 0 60px}
+.chapblock{margin-bottom:44px}
+.chaphead{
+  display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;
+  padding-bottom:10px; border-bottom:2px solid var(--ink); margin-bottom:22px;
+}
+.chaphead h2{
+  font-family:Anton,sans-serif; text-transform:uppercase; font-size:clamp(26px,4vw,40px);
+  line-height:1; letter-spacing:.01em;
+}
+.chaphead .cdates{
+  font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.16em;
+  font-size:12.5px; font-weight:600; color:var(--ink3); font-variant-numeric:tabular-nums;
+}
+.season{
+  border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:var(--r);
+  background:var(--panel); padding:18px 20px 20px; margin-bottom:14px;
+}
+.shead{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:2px}
+.stag{
+  font-family:"Barlow Condensed",sans-serif; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; font-size:12px; color:var(--tier-ink); background:var(--accent);
+  padding:3px 8px 2px; border-radius:2px; font-variant-numeric:tabular-nums;
+}
+.shead h3{font-size:21px; font-weight:700; letter-spacing:-.01em}
+.sdate{
+  font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.13em;
+  font-size:11.5px; font-weight:600; color:var(--ink3); font-variant-numeric:tabular-nums;
+}
+.sverdict{color:var(--ink2); font-size:15.5px; max-width:78ch; margin-top:6px}
+.cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(272px,1fr)); gap:10px; margin-top:16px}
+.card{
+  --tcol:var(--ink);
+  position:relative; text-align:left; border:1px solid var(--line); border-radius:var(--r);
+  background:var(--panel2); padding:13px 14px 12px 16px; overflow:hidden;
+  transition:transform .13s, border-color .13s, background .13s;
+}
+.card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--tcol)}
+.card:hover{transform:translateY(-2px); border-color:var(--tcol); background:var(--raise)}
+.card[data-t="S"]{--tcol:var(--s)} .card[data-t="A"]{--tcol:var(--a)}
+.card[data-t="B"]{--tcol:var(--b)} .card[data-t="C"]{--tcol:var(--c)}
+.card[data-t="D"]{--tcol:var(--d)}
+.cardtop{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+.card h4{font-size:16.5px; font-weight:700; letter-spacing:-.012em; line-height:1.2}
+.badge{
+  flex:none; font-family:Anton,sans-serif; font-size:15px; line-height:1;
+  background:var(--tcol); color:var(--tier-ink); padding:5px 8px 4px; border-radius:2px;
+}
+.stats{
+  display:flex; flex-wrap:wrap; gap:3px 14px; margin-top:9px;
+  font-family:"Barlow Condensed",sans-serif; font-size:12.5px; font-weight:600;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--ink3);
+  font-variant-numeric:tabular-nums;
+}
+.stats b{color:var(--ink2); font-weight:700}
+.why{margin-top:9px; font-size:14.5px; color:var(--ink2); line-height:1.5}
+.tags{display:flex; flex-wrap:wrap; gap:4px; margin-top:10px}
+.tag{
+  font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.1em;
+  font-size:10.5px; font-weight:700; padding:2px 6px 1px; border-radius:2px;
+  border:1px solid var(--line2); color:var(--ink3);
+}
+.tag.hot{color:var(--a); border-color:var(--a)}
+.tag.myth{color:var(--s); border-color:var(--s)}
+.tag.med{color:var(--b); border-color:var(--b)}
+
+/* ---------- drawer ---------- */
+.scrim{
+  position:fixed; inset:0; z-index:60; background:rgba(8,6,16,.55);
+  opacity:0; pointer-events:none; transition:opacity .18s;
+}
+.scrim.on{opacity:1; pointer-events:auto}
+.sheet{
+  position:fixed; top:0; right:0; bottom:0; z-index:61; width:min(430px,100%);
+  background:var(--panel); border-left:1px solid var(--line2);
+  transform:translateX(101%); transition:transform .22s cubic-bezier(.3,.7,.3,1);
+  display:flex; flex-direction:column; box-shadow:var(--shadow);
+}
+.sheet.on{transform:none}
+.sheethead{--tcol:var(--ink); padding:22px 22px 16px; border-bottom:1px solid var(--line); position:relative}
+.sheethead::before{content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--tcol)}
+.sheethead[data-t="S"]{--tcol:var(--s)} .sheethead[data-t="A"]{--tcol:var(--a)}
+.sheethead[data-t="B"]{--tcol:var(--b)} .sheethead[data-t="C"]{--tcol:var(--c)}
+.sheethead[data-t="D"]{--tcol:var(--d)}
+.sheethead h3{font-family:Anton,sans-serif; text-transform:uppercase; font-size:30px; line-height:1; margin-top:9px}
+.sheetrank{display:flex; align-items:center; gap:9px}
+.sheetrank .badge{font-size:18px; padding:6px 10px 5px}
+.sheetrank em{
+  font-style:normal; font-family:"Barlow Condensed",sans-serif; text-transform:uppercase;
+  letter-spacing:.15em; font-size:12px; font-weight:700; color:var(--ink3);
+}
+.closebtn{position:absolute; top:14px; right:14px; padding:6px; line-height:0; color:var(--ink3)}
+.closebtn:hover{color:var(--ink)}
+.closebtn svg{width:18px; height:18px; stroke:currentColor; stroke-width:2; fill:none}
+.sheetbody{padding:18px 22px 40px; overflow-y:auto; display:flex; flex-direction:column; gap:18px}
+.dl{display:grid; grid-template-columns:114px 1fr; gap:9px 12px; margin:0}
+.dl dt{
+  font-family:"Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.14em;
+  font-size:11.5px; font-weight:700; color:var(--ink3); padding-top:3px;
+}
+.dl dd{margin:0; font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums}
+.block h5{
+  margin:0 0 6px; font-family:"Barlow Condensed",sans-serif; text-transform:uppercase;
+  letter-spacing:.16em; font-size:11.5px; font-weight:700; color:var(--ink3);
+}
+.block p{font-size:15px; color:var(--ink2); line-height:1.58}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line); padding:28px 0 56px; color:var(--ink3); font-size:14px}
+.fgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:24px}
+footer h6{
+  margin:0 0 5px; font-family:"Barlow Condensed",sans-serif; text-transform:uppercase;
+  letter-spacing:.16em; font-size:11.5px; font-weight:700; color:var(--ink2);
+}
+footer p{max-width:60ch; line-height:1.6}
+
+@media (max-width:720px){
+  .mast-inner{padding:44px 0 26px}
+  .tierrow{grid-template-columns:88px 1fr}
+  .tierplate{padding:14px 8px}
+  .tierplate .lt{font-size:40px}
+  .tierplate .nm{display:none}
+  .dl{grid-template-columns:96px 1fr}
+  .readout{margin-left:0; width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.001ms !important}
+}
+</style>
+
+<div class="mast">
+  <div class="wrap mast-inner">
+    <p class="eyebrow">Fortnite Battle Royale &middot; Chapter 1 &rarr; Chapter 7 &middot; 2017&ndash;2026</p>
+    <h1>The Drop<br><em>Index</em></h1>
+    <p class="lede">Every named location Epic has put on the Battle&nbsp;Royale map, graded on the loot-rarity ladder &mdash; gold down to green. Each one is judged on the four things that actually decide a drop spot: how much loot it held, where it sat in the circle, how you got out of it, and whether it handed you something nobody else had.</p>
+    <ul class="tally" id="tally"></ul>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="wrap controls-inner">
+    <div class="row1">
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        <input id="q" type="search" placeholder="Search a drop spot, a mythic, a mechanic..." aria-label="Search drop spots">
+      </label>
+      <div class="viewtoggle" role="group" aria-label="View">
+        <button id="vBoard" aria-pressed="true">Board</button>
+        <button id="vDoss" aria-pressed="false">Dossier</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="fgroup" id="tierFilters"><span class="flabel">Tier</span></div>
+      <div class="fgroup" id="chapFilters"><span class="flabel">Chapter</span></div>
+      <div class="fgroup" id="featFilters"><span class="flabel">Feature</span></div>
+      <div class="readout"><span id="count"></span><button class="clearbtn" id="clear" hidden>Clear all</button></div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="board" id="board"></section>
+  <section class="dossier" id="dossier" hidden></section>
+</main>
+
+<footer>
+  <div class="wrap fgrid">
+    <div>
+      <h6>How the grades work</h6>
+      <p><b>S</b> defined its season &mdash; loot, position, rotation and a unique reward all at once. <b>A</b> was a great drop with one weak leg. <b>B</b> was a solid, fair landing spot. <b>C</b> was survivable but you were behind. <b>D</b> punished you for landing there.</p>
+    </div>
+    <div>
+      <h6>On the chest numbers</h6>
+      <p>Chest counts are the community-counted spawn <em>pools</em>, not guarantees &mdash; every chest is a spawn chance, and Epic re-tuned them constantly inside a season. Treat them as size, not as promises. Where a count was never reliably documented the field reads a dash.</p>
+    </div>
+    <div>
+      <h6>Where the D tier went</h6>
+      <p>Only four locations grade out at D, and every one of them is from the original island. After Chapter 1, Epic stopped shipping dead corners: vehicles, redeploy and bar-bought loadouts mean a weak drop no longer loses you the game. The floor rose, so the modern map is mostly B.</p>
+    </div>
+    <div>
+      <h6>Coverage and gaps</h6>
+      <p>Named locations only, plus the handful of landmarks that mattered enough to fight over. Chapter 6 Season 3 onward is thinner on chest and grid detail than the older chapters, so those entries lean on layout and mechanics instead of numbers.</p>
+    </div>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetName" tabindex="-1">
+  <div class="sheethead" id="sheetHead">
+    <button class="closebtn" id="closeSheet" aria-label="Close details">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+    <div class="sheetrank"><span class="badge" id="sheetTier">S</span><em id="sheetEra"></em></div>
+    <h3 id="sheetName"></h3>
+  </div>
+  <div class="sheetbody" id="sheetBody"></div>
+</aside>
+<script>
+/* ============ ERAS ============ */
+const ERAS = [
+["c1s1","C1 S1","The Original Island","Oct 2017 - Dec 2017","The map that started it all: twenty sleepy POIs, no vehicles, no mobility, and pump-shotgun fights in wooden houses. It was good because every location felt like a real place and bad because half the map was dead corners you had to walk out of on foot."],
+["c1s2","C1 S2","Fort Knights","Dec 2017 - Feb 2018","Tilted Towers landed in January and permanently changed what a Fortnite POI was allowed to be. Shifty Shafts arrived the same patch. Suddenly the map had a gravity well, and the whole rest of the island got measured against it."],
+["c1s3","C1 S3","Meteor Watch","Feb 2018 - Apr 2018","A quiet map season - Lucky Landing filled in the empty south and the rocket sat in Snobby Shores building tension. The island was at its most balanced here: every quadrant had a real drop, and no single mechanic warped the loot pool."],
+["c1s4","C1 S4","Brace for Impact","Apr 2018 - Jul 2018","The meteor finally hit, Dusty Depot became Dusty Divot, and Hop Rocks gave the game its first true movement item tied to a location. Risky Reels filled the dead north-east. The best season for map storytelling, the worst for anyone who liked Dusty."],
+["c1s5","C1 S5","Worlds Collide","Jul 2018 - Sep 2018","Rifts everywhere. Moisty Mire became Paradise Palms, Anarchy Acres became Lazy Links, Tomato Town got a temple. Rift-to-Gos meant a bad drop was no longer a death sentence, which quietly raised the floor on every C-tier POI on the map."],
+["c1s6","C1 S6","Darkness Rises","Sep 2018 - Dec 2018","The cube dragged Loot Lake into the air and left corrupted zones with low gravity behind. Haunted Castle and the floating island were great ideas parked in bad map positions - fun to visit, awful to rotate out of."],
+["c1s7","C1 S7","You Better Watch Out","Dec 2018 - Feb 2019","The snow biome buried Greasy Grove and Flush Factory and gave the map its first real vehicle POI in Frosty Flights. Planes made the whole island smaller. The season is remembered fondly for the biome and hated for the X-4 Stormwing."],
+["c1s8","C1 S8","X Marks the Spot","Feb 2019 - May 2019","Pirates in the west, a volcano in the east. The volcano vents were the single best free rotation tool the game had ever shipped, and Lazy Lagoon proved a themed POI could out-loot a city. The Block was a novelty that never quite worked competitively."],
+["c1s9","C1 S9","First Contact","May 2019 - Aug 2019","Tilted and Retail got rebuilt as Neo Tilted and Mega Mall, and Slipstreams ringed the island with free movement. On paper the most mobile map ever; in practice the Slipstream made third-partying trivial and every fight turned into four teams."],
+["c1s10","C1 SX","Out of Time","Aug 2019 - Oct 2019","Rift Zones let Epic paste old POIs back onto the map one at a time, so the island became a greatest-hits album. Tilted Town banning building was the most interesting rule experiment Fortnite has ever run inside a live POI."],
+
+["c2s1","C2 S1","New World","Oct 2019 - Feb 2020","A brand new island with fishing, boats and the best-balanced POI spread in the game's history: thirteen named locations, all roughly the same size, none dominant. It ran eight months and never got boring, which is the whole argument for it."],
+["c2s2","C2 S2","Top Secret","Feb 2020 - Jun 2020","Five spy bases, five bosses, five mythics, five vaults, henchmen and keycards. This is the season that invented the boss-POI formula every chapter has used since, and it is still the cleanest version of it - the reward was worth the fight, and the fight was avoidable."],
+["c2s3","C2 S3","Splashdown","Jun 2020 - Aug 2020","The flood shrank the playable island and drowned the south, which sounds bad and mostly was - swimming is slow and sharks are worse. The Authority replacing the Agency kept the centre hot, and Coral Castle patched the dead north-west late."],
+["c2s4","C2 S4","Nexus War","Aug 2020 - Dec 2020","Marvel POIs with Marvel mythics, and the most loot-dense map of the chapter. Doom's Domain and Stark Industries both handed out unique gear worth contesting. Balance was a mess, but as a set of drop spots this season is close to the peak."],
+["c2s5","C2 S5","Zero Point","Dec 2020 - Mar 2021","The desert cut a hole in the middle of the map and Salty Towers welded Tilted onto Salty Springs. Bounties and gold bars turned NPCs into a loot source, which meant the small B-tier POIs finally had a reason to exist."],
+["c2s6","C2 S6","Primal","Mar 2021 - Jun 2021","Crafting, bows, and a spire in the dead centre of the map with a boss on top of it. The Spire was a superb piece of POI design - highest ground, best loot, hardest fight - dropped into a season where half the weapon pool was made of sticks."],
+["c2s7","C2 S7","Invasion","Jun 2021 - Sep 2021","Saucers, abductors and the Mothership. Corny Complex became the loot capital of the map, and being abducted mid-game was the most chaotic rotation tool ever added. Alien tech was overtuned and the ground POIs suffered for it."],
+["c2s8","C2 S8","Cubed","Sep 2021 - Dec 2021","Sideways zones dropped monster-filled bubbles onto random POIs each match, so the same drop was safe one game and lethal the next. A genuinely bold idea; the loot inside was strong enough to justify it, which is why it worked at all."],
+
+["c3s1","C3 S1","Flipped","Dec 2021 - Mar 2022","The island flipped over and gave us Tilted Towers back plus the Daily Bugle. Sliding, tents and camps meant loadouts persisted between fights. A stacked launch map - eleven strong POIs and almost no filler."],
+["c3s2","C3 S2","Resistance","Mar 2022 - Jun 2022","Nine days with building switched off, then overshields for everyone. The Armored Battle Bus was a moving POI you could fight over, which nothing before or since has really matched. Map changes were light because the mechanics were doing the work."],
+["c3s3","C3 S3","Vibin'","Jun 2022 - Sep 2022","Reality Falls and Rave Cave were both party POIs with real loot behind the theme, and Reality Saplings let you grow your own weapon over a match. The most relaxed season the game has had, and the map reflected it - low pressure, high loot."],
+["c3s4","C3 S4","Paradise","Sep 2022 - Dec 2022","Chrome ate the map. Chromed structures could be phased through, which broke the basic assumption that a wall stops a player. Herald's Sanctum was excellent; the chrome spreading everywhere else made the whole island feel unstable, on purpose."],
+
+["c4s1","C4 S1","New Beginning","Dec 2022 - Mar 2023","Another new island, and the first with Reality Augments - free perks rerolled mid-match. The Citadel was the biggest POI Epic had ever built and dirt bikes made the mountains readable. A strong launch map with a slightly cold, empty north."],
+["c4s2","C4 S2","MEGA","Mar 2023 - Jun 2023","MEGA City is, by loot per square metre and by sheer verticality, the best single POI in Fortnite history. Grind rails let you leave a rooftop fight at speed, which is what Neo Tilted's slipstreams were always trying to be."],
+["c4s3","C4 S3","WILDS","Jun 2023 - Aug 2023","A jungle biome in the south with Rumble Ruins as its centrepiece and the Grapple Glove as the movement item. Wildlife and thick canopy made fights closer-ranged and messier - good for the drops, hard on anyone rotating late."],
+["c4s4","C4 S4","Last Resort","Aug 2023 - Nov 2023","Three heist vaults with laser grids, keycards and a getaway. Sanguine Suites and Eclipsed Estate were built as puzzle boxes rather than loot piles, and it is the most interesting thing Epic has done with a vault since Season 2 of Chapter 2."],
+["c4og","OG","Fortnite OG","Nov 2023 - Dec 2023","The Chapter 1 island returned and cycled through its old seasons weekly. It proved something uncomfortable: the original POIs still play better than most of what replaced them, because they were built for a game with no mobility and they force real map decisions."],
+
+["c5s1","C5 S1","Underground","Dec 2023 - Mar 2024","Medallions arrive. Beat a boss, take their medallion, get permanent shield regen and a permanent map marker on your own head. It is the best risk-reward mechanic ever bolted onto a POI, and it immediately made four locations must-contest."],
+["c5s2","C5 S2","Myths and Mortals","Mar 2024 - May 2024","Greek gods, four boss POIs, four medallions, and Zeus dropping the Thunderbolt on Mount Olympus. The strongest boss-POI season the game has run - each location looked completely different and each mythic actually changed how you fought."],
+["c5s3","C5 S3","Wrecked","May 2024 - Aug 2024","Nitro, cars that could ram through builds, and a wasteland in the south-west. Brutal Beachhead was a fortress you had to siege. Vehicle combat made rotating a fight in itself, which is the best thing this season did for the map."],
+["c5s4","C5 S4","Absolute Doom","Aug 2024 - Nov 2024","Doctor Doom's Latveria took over the middle of the island with Doomstadt and Castle Doom, and Marvel mythics returned in bulk. Big, dense, dramatic POIs - and so much mythic gear in circulation that ordinary loot stopped mattering."],
+["c5rmx","REMIX","Chapter 2 Remix","Nov 2024 - Dec 2024","The Chapter 2 map came back with four artists each reskinning a corner of it week by week. A victory lap rather than a season, but it confirmed that Chapter 2's POI spacing is still the template everything else is measured against."],
+
+["c6s1","C6 S1","Demon Rush","Dec 2024 - Feb 2025","A Japanese-inspired island with the best silhouette work Epic has done - Shogun's Solitude on its mountain reads from anywhere on the map. Oni masks and the Typhoon Blade gave the melee game a real place in the loot pool."],
+["c6s2","C6 S2","Lawless","Feb 2025 - May 2025","Crime bosses, vaults you unlock with keys bought using bars, and heists at three POIs. Crime City in the centre was the season's engine. Turning bars into vault access made the small POIs worth farming, which is the trick every economy season needs."],
+["c6s3","C6 S3","Galactic Battle","May 2025 - Aug 2025","Four Star Wars POIs bolted onto the corners of the existing map. Vader Samurai's Solitude handing out a mythic lightsaber for beating Vader is the most direct risk-reward loop in the game, and the corners finally had a reason to be visited."],
+["c6s4","C6 S4","Shock N Awesome","Aug 2025 - Nov 2025","A bug infestation with the O.X.R. fighting it. The Hive was a genuine horde POI - loot gated behind a swarm rather than a boss - and the O.X.R. Armory let you buy a loadout with bars instead of praying at chests."],
+
+["c7s1","C7 S1","Pacific Break","Nov 2025 - Feb 2026","A new island modelled on the US West Coast: forest, desert and beach, thirteen named locations. Battle Boulevard is the biggest city Epic has built since MEGA City, and Sandy Strip gave the desert a real anchor for the first time in years."],
+["c7s2","C7 S2","Winter","Feb 2026 - May 2026","Snow rolled over the north and the Ice King returned to Frigid Fortress. Dark Dominion put the Zero Point back into play as a contested POI. A tighter, colder map than the launch version, with better centre-of-island pressure."],
+["c7s3","C7 S3","Shattered Coast","May 2026 - Aug 2026","The first mid-chapter island swap in Fortnite history. Tropical, primal and desert biomes, the Zero Point exposed in the open, and a fresh set of POIs. Doing this halfway through a chapter was a real risk and the map came out livelier for it."],
+["c7s4","C7 S4","Override","Aug 2026 - current","Retro gaming takes the island: Tetris blocks in the terrain, Green Hill Zone in the south, and Geno's HQ built as the inside of a gaming PC. Three POIs cut, three added, ten carried over - a refresh rather than a rebuild."]
+];
+
+/* ============ POIs ============
+   [name, tier, era, span, position, chests, tags, verdict]                    */
+const P = [
+/* ---- CHAPTER 1 ---- */
+["Tilted Towers","S","c1s2","C1 S2 - S9","Dead centre, C5/D5","35-40","hot,rotation","The template for every hot drop since. Roughly 40 chest spawns stacked into seven tower blocks in the exact middle of the island, so the circle almost always favoured it and you never had to rotate far. Landing there was a coin flip; surviving it meant you were fully kitted before minute three."],
+["Retail Row","A","c1s1","C1 S1 - SX","East-centre, F5","16-20","","A dozen shops in a tight grid with a car park to fight over and a hill behind it for the rotate out. Consistently good loot without being a bloodbath - the most reliably fair drop on the original island."],
+["Pleasant Park","A","c1s1","C1 S1 - SX","North-west, C3","14-18","","Eight houses around a football pitch, all with basements and roof access, plus a tunnel underneath. Symmetrical enough that fights were readable and close enough to Loot Lake to rotate cleanly. The best pure gunfight POI of Chapter 1."],
+["Salty Springs","B","c1s1","C1 S1 - SX","Dead centre, E6","10-14","hot","Tiny, central and always contested. Fewer than a dozen chests split over six houses meant two teams landing was already too many, but the position was so good that the storm rarely made you move."],
+["Dusty Depot","B","c1s1","C1 S1 - S3","Centre, E5","8-12","","Three identical warehouses with nothing in between. Quick to loot, terrible cover once you stepped outside, and completely dependent on whether your warehouse rolled chests. Historically important, mechanically thin."],
+["Dusty Divot","B","c1s4","C1 S4 - S9","Centre, E5","18-22","mobility","The meteor crater turned a weak POI into a good one: a research base ringed the hole, chest count nearly doubled, and Hop Rocks gave you low-gravity jumps for free. The crater walls made it a bowl you could get trapped in."],
+["Loot Lake","C","c1s1","C1 S1 - S5","Centre-north, D4","6-10","rotation","Enormous, almost empty, and named after loot it did not have. The house on the island was the only real draw. Its value was always as a rotation lane, not a drop - swimming was slow and left you exposed the whole way."],
+["Leaky Lake","C","c1s6","C1 S6 - S8","Centre-north, D4","10-14","","The cube left a corrupted, partly drained lake with ruins in the middle and low-gravity zones on the shore. More to loot than Loot Lake ever had, but still a POI you passed through rather than landed on."],
+["Greasy Grove","B","c1s1","C1 S1 - S6, SX","South-west, C7","12-15","","Durrr Burger, a taco place and a handful of houses in a compact block. Genuinely good loot density for its size and close enough to Tilted that you could third-party the survivors. Buried by snow in Season 7."],
+["Flush Factory","C","c1s1","C1 S1 - S7","South-west corner, C8","13-16","","Decent chest count wasted on the worst corner of the map. You would land, loot a full factory floor, and then face the longest rotation in the game with no vehicle and no mobility items."],
+["Fatal Fields","B","c1s1","C1 S1 - SX","South, E7","15-18","","A farm with a big barn, silos and outbuildings spread wide. Solid loot, honest fights, and the south circle pulled toward it often enough to matter. Losing the barn fight usually meant losing the POI."],
+["Lonely Lodge","C","c1s1","C1 S1 - SX","East, G5","13-16","","Cabins scattered through trees plus a watchtower with a great sightline. The loot was fine, the position was not - far east, hemmed in by forest, and the tower made you a target the moment you climbed it."],
+["Wailing Woods","D","c1s1","C1 S1 - S6","North-east, G3","6-9","","A hedge maze in a forest with barely any chests. No buildings worth looting, no reason for the circle to favour it, and hedges that blocked your view without stopping bullets. The clearest D on the original island."],
+["Tomato Town","C","c1s1","C1 S1 - S4","North-east centre, F4","6-9","rotation","A pizza place, a petrol station and a tunnel. Almost no loot, but the tunnel under the hill was one of the few covered rotation lanes on the map, which is the only reason to remember it."],
+["Tomato Temple","B","c1s5","C1 S5 - S8","North-east centre, F4","14-17","","The temple that landed on Tomato Town roughly doubled the loot and added real verticality with ruins and platforms. A proper upgrade - the same good rotation position with a POI actually worth landing at."],
+["Anarchy Acres","C","c1s1","C1 S1 - S4","North-west, D3","11-14","","A big farm with a maze field and a barn. Loot was spread so thin across open ground that you spent the first two minutes walking, and the open field left you visible from every hill around it."],
+["Lazy Links","C","c1s5","C1 S5 - S7","North-west, D3","10-13","mobility","A golf course with golf carts. The carts were the best thing about it and the reason it clears D - free rotation in a season with little else. The clubhouse aside, the loot was scattered across fairways with zero cover."],
+["Haunted Hills","C","c1s1","C1 S1 - SX","North-west corner, C2","11-14","","A graveyard and church stacked up a hillside with genuinely decent chest density. Killed entirely by position - the far north-west corner meant a long walk to every circle that was not drawn on top of you."],
+["Junk Junction","D","c1s1","C1 S1 - SX","North-west corner, B2","8-11","","Car stacks in a scrapyard in the deadest corner of the map. Low chest count, no buildings to fight in, and the longest rotation on the island. Almost nothing recommends landing here."],
+["Snobby Shores","C","c1s1","C1 S1 - S7","West edge, A5","11-14","bunker","Seven identical houses on the west coast plus, from Season 4, the villain bunker in the hillside behind it. The bunker was the draw; the houses were slow to clear and the west edge meant you were always rotating east."],
+["Moisty Mire","D","c1s1","C1 S1 - S4","South-east, G7","7-10","","A swamp with a film set dropped in it. Slow ground, terrible sightlines, chests spread over a huge area and a corner position. Consistently the least-landed POI on the original map, and correctly so."],
+["Paradise Palms","B","c1s5","C1 S5 - S9","South-east desert, H7","20-24","","The desert town that replaced Moisty Mire was a real fix: a hotel, a racetrack, a motel and a proper street grid with over twenty chest spawns. Still stuck in the south-east, but now worth the walk."],
+["Shifty Shafts","B","c1s2","C1 S2 - S9, C3","West, C6","13-17","","Mineshafts with wooden walkways over them - genuinely unique three-dimensional fighting space, and the tunnels gave you cover from above in a game where everyone builds up. Small, but punched well above its size."],
+["Lucky Landing","B","c1s3","C1 S3 - S9","South edge, E9","13-16","","A tight pagoda town with a tree in the middle. Compact enough to loot fast and built vertically so fights had layers. The far south position is what keeps it out of A."],
+["Risky Reels","C","c1s4","C1 S4 - S9","North-east, F2","10-13","","A drive-in cinema with a screen, a few caravans and a lot of parked cars. Loot was thin for the space it took up and there was nothing to hold - the screen was cover from exactly one direction."],
+["Frosty Flights","A","c1s7","C1 S7","North-west, B3","16-20","mobility","Three hangars, good chest density, and X-4 Stormwings parked outside. The planes made the far north-west corner irrelevant - you could land, loot and be at the centre of the map in twenty seconds. That is what an A-tier POI does."],
+["Polar Peak","B","c1s7","C1 S7 - S9","South centre, D7","14-18","","A castle in the ice with a throne room and, later, a monster frozen underneath. Great to look at and reasonable to loot, but ice slowed your movement and the surrounding open snow left you exposed on the way out."],
+["Happy Hamlet","C","c1s7","C1 S7 - S9","South-west, B7","12-15","","A snow village built where Flush Factory used to be. Perfectly adequate loot in a perfectly bad position - it inherited the same south-west corner problem it replaced."],
+["Viking Village","C","c1s5","C1 S5 - S8","West cliffs, B5","8-11","mobility","A landmark rather than a named POI: a longhouse on a clifftop with a permanent launch pad. Barely any chests, but the launch pad was free height and free distance, which is why anyone went."],
+["Lazy Lagoon","B","c1s8","C1 S8","North-west, D3","20-24","","A pirate ship beached in a lagoon, surrounded by a village, with cannons you could fire yourself and ride. Over twenty chests and the most fun loot layout of the season - held back only by the same north-west walk."],
+["Sunny Steps","B","c1s8","C1 S8 - S9","North-east, G3","15-19","mobility","A temple on the volcano's flank with vents beside it. Reasonable loot, but the real value was that the vents made the entire east side of the map a two-jump rotation."],
+["Pressure Plant","A","c1s8","C1 S8 - S9","North-east, G4","22-26","mobility","Built into the volcano crater: high chest count, a huge industrial interior, and vents ringing it that launched you clean across the island. Loot and free rotation in the same POI is the A-tier formula."],
+["The Block","C","c1s8","C1 S8 - S9","North-west, C3","8-16","","A rotating slot for community-built structures. Unpredictable by design, which is fine for a novelty and terrible for a drop spot - you could not know before you landed whether there were twenty chests or four."],
+["Neo Tilted","A","c1s9","C1 S9","Dead centre, C5/D5","30-35","hot,rotation","Tilted rebuilt in neon with a Slipstream ring around it. Same central position, same enormous chest count, plus free high-speed rotation in every direction. Only misses S because the Slipstream also delivered three other teams to your fight."],
+["Mega Mall","A","c1s9","C1 S9","East-centre, F5","24-28","","Retail Row rebuilt as a shopping centre - one huge interior, dense chests, and a Slipstream running past. Big enough that two teams could land and not meet immediately, which made it the sane alternative to Neo Tilted."],
+["Tilted Town","B","c1s10","C1 SX","Dead centre, C5/D5","20-25","nobuild","A Rift Zone that disabled building and harvesting inside its border. Fights became pure gunplay with real cover, which was fascinating - and completely unlike the rest of the match, which is exactly why it never came back."],
+["Moisty Palms","C","c1s10","C1 SX","South-east, G7","12-15","","Paradise Palms flooded back into swamp, with a Rift Zone that turned you into a prop when you stood still. Funny once. The loot and the position were both mediocre underneath the gimmick."],
+["Gotham City","B","c1s10","C1 SX","East-centre, F5","20-24","event","The Batman crossover reskinned Tilted-era architecture with grapnel guns and explosive batarangs on the floor. Strong loot, strong theme, and a genuinely useful mobility item you could only get there."],
+["Starry Suburbs","C","c1s10","C1 SX","North-east, F2","11-14","","A Rift Zone over Risky Reels with low gravity. Low gravity in a building game mostly meant you floated slowly into someone's crosshair. Loot never justified it."],
+["Panther's Prowl","C","c1s10","C1 SX","South-east, G7","6-9","","A Black Panther statue in the swamp. A landmark with a handful of chests around it - worth a detour, never worth a drop."],
+["Expedition Outposts","C","c1s7","C1 S7 - S9","Seven sites, map-wide","3-5 each","mobility","Small towers scattered around the island, each with a couple of chests and a zipline or launch. Individually forgettable; collectively they were the first attempt at putting mobility on the map instead of in the loot pool."],
+["The Prison","D","c1s1","C1 S1 - S4","South-west, C8","5-8","","A landmark near Flush Factory with a few chests in the cell blocks. Concrete corridors with no verticality, in the corner of the map, next to another corner POI. No reason to go."],
+
+/* ---- CHAPTER 2 ---- */
+["Slurpy Swamp","S","c2s1","C2 S1 - S7","South-west, C6","20-24","shield","The only POI in Fortnite history that solved shields permanently. Slurp barrels, slurp pools and leaking pipes meant you left at full 100/100 every time, on top of twenty-plus chests in a factory built for close fights. Free shield is worth more than any mythic."],
+["Dirty Docks","A","c2s1","C2 S1 - S8","East, H4","26-30","","Shipping containers, warehouses and cranes - close to thirty chest spawns and the highest raw loot volume on the launch map. Containers gave stacked cover in a way no other POI did. Far east, which costs it the S."],
+["Steamy Stacks","A","c2s1","C2 S1 - S8","North-east, H2","18-22","mobility","Two nuclear cooling towers that fired you out of the top with full glider redeploy. The single best rotation tool of Chapter 2, attached to a POI with respectable loot. Land, gear up, launch, land anywhere on the map."],
+["Misty Meadows","A","c2s1","C2 S1 - S8","South, E9","24-28","","A tight alpine town with houses packed close enough that every fight was a room fight. High chest count for its footprint and a mountain behind it for the rotate. One of the most-landed POIs of the chapter for good reason."],
+["Lazy Lake","A","c2s1","C2 S1 - S8","East-centre, G6","22-26","","A proper little town - shops, a pier, a swimming pool, tight streets. Dense loot, good sightlines, and near enough to the middle that the circle rarely abandoned it. Chapter 2's most underrated drop."],
+["Sweaty Sands","A","c2s1","C2 S1 - S6","North-west coast, B3","22-26","","A beach resort with a big hotel to fight through and a boardwalk. Excellent loot density and boats on the shore for a fast rotation. The name promised chaos and it delivered."],
+["Retail Row","B","c2s1","C2 S1 - S8","East, G5","18-22","","The Chapter 1 favourite rebuilt with more shops. Good loot, honest layout, but on this map it sat in a busy east corridor with better POIs on both sides."],
+["Pleasant Park","A","c2s1","C2 S1 - S8","North-west, C3","16-20","","Rebuilt almost exactly as it was, and it still worked - houses with basements and roofs, a pitch in the middle, everything within twenty seconds of everything else. Proof that good POI geometry ages well."],
+["Holly Hedges","B","c2s1","C2 S1 - S7","West, B5","20-24","","A suburb with a garden centre and a hedge maze. Solid chest numbers and plenty of buildings, but sightlines through the hedges were awkward and the west edge meant a long east rotation most games."],
+["Weeping Woods","B","c2s1","C2 S1 - S8","Centre-south-west, D6","22-26","","Cabins and a ranger station spread through dense forest. The chest count is high but it is spread over the biggest footprint of any POI on the map, so you looted slowly while the trees hid whoever was hunting you."],
+["Frenzy Farm","B","c2s1","C2 S1 - S3","North-east centre, F3","18-22","","A big barn, silos and farmhouses. Perfectly serviceable in every direction and outstanding in none - the definition of a B drop. Replaced by Stark Industries, which was a straight upgrade."],
+["Craggy Cliffs","B","c2s1","C2 S1 - S8","North, D2","18-22","","A seaside village at the base of cliffs with a lighthouse. Decent loot, boats on the water, but the cliffs behind it meant you were rotating uphill or swimming, and neither is fast."],
+["The Rig","B","c2s1","C2 S1 - S3","South-west ocean, A7","16-20","","An oil platform out at sea. Vertical, unusual, and completely isolated - you needed a boat to leave, and the chest count never quite justified the commitment."],
+["Camp Cod","C","c2s1","C2 S1 - S8","South-east coast","6-9","","A campsite landmark with a lookout tower and a handful of chests. Fine as a quick top-up on the way through, never a drop."],
+["Hydro 16","C","c2s1","C2 S1 - S8","South-centre dam","7-10","","The dam landmark below Misty Meadows. A couple of chests inside the machinery and a great view of everyone crossing the water below you. Worth the detour, not the landing."],
+["The Agency","S","c2s2","C2 S2","Dead centre, E5","20-24","boss,mythic,vault,hot","The best boss POI ever built. Midas in the middle of the map, henchmen patrolling, a keycard vault below, the Mythic Drum Gun on the floor when he died, and a helipad on the roof. Perfect position, perfect reward, perfect risk."],
+["The Grotto","A","c2s2","C2 S2","South-east, H6","18-22","boss,mythic,vault","A cave base carved into the cliffs with Brutus and his Mythic Minigun. Great interior - multiple levels, boats parked inside - but tucked into the south-east corner, so the walk out was long."],
+["The Shark","A","c2s2","C2 S2","North-west, B2","18-22","boss,mythic,vault","Skye's island fortress, with her Mythic Grappler as the prize - the best mobility mythic in the game. Ziplines everywhere and a vault underneath. Its problem was always that it sat on an island in the far north-west."],
+["The Yacht","A","c2s2","C2 S2","North-east corner, H1","18-22","boss,mythic","A henchman-packed boat with ziplines running the deck and dense loot below decks. Extremely fun to fight in, extremely far from everything - you were committing to a boat ride or a long swim."],
+["The Rig (S2)","B","c2s2","C2 S2","South-west ocean, A7","16-20","boss,mythic","Meowscles and his Peow Peow Rifle turned the oil rig into a boss POI. Better than the plain Rig, still marooned in the south-west ocean with the same escape problem."],
+["The Authority","A","c2s3","C2 S3","Dead centre, E5","18-22","hot,rotation","The Agency rebuilt as a tiered fortress on the island in the middle of the map. Highest ground at the exact centre with good loot - it was the most contested drop of the season by a wide margin."],
+["Catty Corner","B","c2s3","C2 S3 - S6","South-east, H7","16-20","vault","A petrol station and garage with a keycard vault behind it. The vault made it worth a visit; the corner position and modest chest count made it a second choice."],
+["The Fortilla","B","c2s3","C2 S3","South-west, B7","18-22","boss,mythic","A floating shanty town of lashed-together boats with Ocean as the boss. Genuinely inventive layout - fights across gangplanks over water - and a nightmare to rotate out of without a motorboat."],
+["Coral Castle","B","c2s3","C2 S3 - S7","North-west, B1","16-20","","Floating coral structures with a giant statue, added mid-season to fill the dead north-west. Odd, pretty, decent loot, and still in the corner it was built to fix."],
+["Rickety Rig","C","c2s3","C2 S3","South-west ocean","10-13","","A stripped-down rig with thin loot. It existed because the flood needed something out there, and it played like it."],
+["Doom's Domain","S","c2s4","C2 S4","North-west, C3","18-22","boss,mythic,hot","Pleasant Park replaced by Doctor Doom's castle, with two mythics - Arcane Gauntlets and the Mystical Bomb - plus henchmen and a moat of Doom. Two unique mobility-and-damage items from one boss is the highest reward density any POI has offered."],
+["Stark Industries","S","c2s4","C2 S4","North-east centre, F3","22-26","boss,mythic","Iron Man, his Repulsors and Unibeam, Stark robots patrolling, a hangar, a lab and a helipad. Huge chest count, central-north position, and the mythics turned close fights on their head. The best-designed POI of the chapter."],
+["Sentinel Graveyard","B","c2s4","C2 S4","North-west, C2","10-14","","Crashed Sentinel heads and hands in the sand. A landmark with enough chests to be worth a stop and a lot of large metal cover, which mattered in a season full of ranged mythics."],
+["Ant Manor","C","c2s4","C2 S4","South-east","6-9","","A giant ant-farm house. Visually great, mechanically a handful of chests in a corner. Pure set dressing."],
+["Salty Towers","S","c2s5","C2 S5","Centre-east, F5","28-32","hot,rotation","Tilted Towers dropped on top of Salty Springs by the Zero Point. Thirty chest spawns, tower blocks and houses tangled together, near the middle of the map. The hottest drop of Chapter 2 and the closest thing to original Tilted the game has managed."],
+["Colossal Coliseum","A","c2s5","C2 S5","Centre-south, E7","24-28","","A full Roman arena with tunnels underneath and an open floor in the middle. Excellent chest count and the underground ring gave you a safe loot route - but the open arena floor was a killing field."],
+["Stealthy Stronghold","B","c2s5","C2 S5 - S7","North-west, C2","22-26","","Jungle ruins inside a walled compound, with a genuinely high chest count. The walls meant you could not see out and nobody could see in, which made it safe to loot and dangerous to leave. Corner position caps it."],
+["Hunter's Haven","B","c2s5","C2 S5 - S6","South, E8","14-18","","A small settlement of hunters with NPCs to hire and bounties to take. Modest loot on its own; the NPC services were the real product, and that was a good use of a mid-size POI."],
+["Razor Crest","B","c2s5","C2 S5","North-west desert","5-8","mythic","A landmark, not a POI, but the Mandalorian sat next to it with the Amban Sniper Rifle and Beskar Armour. Two chests and one of the best rewards in the game - the risk-reward ratio was absurd."],
+["The Spire","S","c2s6","C2 S6","Dead centre, E5","26-30","boss,mythic,hot","A tower at the exact centre of the map with Raz at the top, Spire Assassins on the way up, and the Mythic Primal Flame Bow as the prize. Highest ground, best loot, hardest fight, perfect position. Textbook S."],
+["Boney Burbs","A","c2s6","C2 S6","Centre-north, E4","24-28","","Salty Towers weathered down into bone-and-ruin architecture. High chest count, tight streets, right next to the Spire so the fights bled into each other. The best non-boss drop of the season."],
+["Colossal Crops","B","c2s6","C2 S6","East-centre, G5","18-22","","The Coliseum turned into a farm with the arena walls still standing. Reasonable loot and animals to hunt for crafting, but the open fields around it were exposed."],
+["Believer Beach","B","c2s6","C2 S6 - S8","North-west coast, B3","20-24","","Sweaty Sands with a festival theme. Same good bones - hotel, boardwalk, boats - slightly less loot, and by this point the north-west was a quieter part of the map."],
+["Guardian Towers","B","c2s6","C2 S6","Five sites, map-wide","8-11 each","mythic","Small ruined towers, each guarded, each holding a Guardian Shield and a stronger-than-average loot pool. Individually B, collectively one of the smartest bits of map design in the chapter - a reason to fight over a spot with no buildings."],
+["Corny Complex","A","c2s7","C2 S7","Centre, F4","24-28","","A farm with alien crop circles carved into it and saucers overhead. The loot ceiling was the highest on the map, the position was central, and the abductors above it meant your rotation could be decided for you mid-loot."],
+["Holly Hatchery","B","c2s7","C2 S7","West, B5","20-24","","Holly Hedges swallowed by alien goo, with purple pods and bounce pads through the houses. Loot stayed strong and the pods made vertical movement free. The goo also made you very visible."],
+["The Mothership","B","c2s7","C2 S7","Above the island","-","event,mobility","Not a landing spot - you got abducted into it, played a low-gravity minigame for high-tier loot, and got spat back out over the map. Brilliant as a mid-match event, unrankable as a drop."],
+["IO Outposts","B","c2s7","C2 S7 - S8","Multiple sites","5-8 each","","Small IO installations with guards, a couple of chests and a rift. Their real function was as staging posts, and as a way to get high-tier weapons without contesting a major POI."],
+["Sludgy Swamp","B","c2s8","C2 S8","South-west, C6","18-22","","Slurpy Swamp corrupted by the cube - the slurp still healed, the architecture was more broken, and Sideways zones landed on it often. A downgrade on the best POI of the chapter, but still a strong drop."],
+["The Convergence","B","c2s8","C2 S8","Dead centre, E5","16-20","","A cube pyramid growing at the centre of the map with cube monsters around it. Centre position and steadily rising ground, but the loot never matched what The Spire had offered in the same spot."],
+["Sideways Zones","B","c2s8","C2 S8","Random, map-wide","varies","mythic","Purple bubbles that dropped onto a random POI each match, filled it with cube monsters, and rewarded you with Sideways weapons and a chrome-tier loot pool. A risk you chose, which is the right way to build a high-reward zone."],
+
+/* ---- CHAPTER 3 ---- */
+["Tilted Towers","S","c3s1","C3 S1 - S4","Dead centre, D5","30-34","hot,rotation","The third Tilted, and the closest to the original: same block layout, same central position, same thirty-plus chests, now with sliding and vaulted crossings. Chapter 3's centre of gravity from the day it returned."],
+["The Daily Bugle","S","c3s1","C3 S1 - S2","North-east, F2","26-30","mythic,hot","A skyscraper you fought up floor by floor, with Spider-Man's Mythic Web-Shooters guaranteed in chests around it. The web-shooters were the best movement item Fortnite has ever shipped, and this was where you got them. Hottest drop of the chapter."],
+["Sanctuary","A","c3s1","C3 S1 - S4","North-west coast, B2","22-26","mythic","The Seven's fortified base, with the Foundation's Mythic MK-Seven Assault Rifle and IO guards. Strong loot, strong reward, and a defensible layout - the far north-west coast is the only thing holding it back."],
+["Condo Canyon","A","c3s1","C3 S1 - S4","Centre-south, E6","22-26","","Apartment blocks stacked into a cliff face, so every fight was vertical and every rooftop was high ground over the next one. Right next to Tilted, which made it the smart alternative when Tilted was full."],
+["Covert Cavern","A","c3s1","C3 S1","North, F2","20-24","mythic,bunker","An IO facility built inside a hollow mountain with a Mythic Stinger SMG and a guarded interior. Underground POIs are rare and this one was excellent - enclosed, defensible, and hiding one of the best guns of the season."],
+["Chonker's Speedway","B","c3s1","C3 S1 - S4","South-east, F7","20-24","mobility","A racetrack ringed with cars and a service garage. Middling loot, best vehicle access on the map, and enough tarmac that you could always drive out of trouble. Mobility carried it."],
+["Camp Cuddle","B","c3s1","C3 S1 - S4","South-west, C6","18-22","","A campsite with a giant Cuddle Team Leader statue, cabins and tents. Fine loot, fine layout, unremarkable in every direction - a clean example of what a B drop is."],
+["Greasy Grove","B","c3s1","C3 S1 - S4","South, E7","18-22","","The Chapter 1 name on a bigger, taco-themed town. More chests than the original ever had, and a hot springs nearby, but it never recovered the tight geometry that made the first version work."],
+["Logjam Lumberyard","B","c3s1","C3 S1 - S3","North-west, C3","18-22","","A sawmill with log piles and warehouses. Big timber stacks gave unusually good natural cover and the loot was steady, but there was nothing here you could not get somewhere better positioned."],
+["Coney Crossroads","B","c3s1","C3 S1","North-east, F3","18-22","","A funfair and a diner at a junction. Serviceable loot spread over open fairground, with rides that looked like cover and were not."],
+["Rocky Reels","C","c3s1","C3 S1 - S3","North-east, G3","12-16","","A drive-in cinema again, in a canyon this time. Same problem as Risky Reels five years earlier: not enough chests, not enough buildings, too far out."],
+["The Joneses","B","c3s1","C3 S1 - S3","North, E2","16-20","","A cluster of outposts with Jonesy NPCs, bounties and services. The loot was thin but the NPC density made it a good place to convert bars into gear, which is a real function."],
+["Sleepy Sound","C","c3s1","C3 S1 - S3","North-west, C2","14-18","","A quiet coastal town on the north edge. Low pressure, low reward, long rotation - you could loot it in peace and then spend the next three minutes walking."],
+["Shifty Shafts","B","c3s1","C3 S1 - S3","West, C5","16-20","","The mineshafts returned with better lighting and more chests. Still the same good idea - cover from above, three-dimensional tunnels - just less surprising the second time."],
+["Command Cavern","A","c3s2","C3 S2","North, F2","22-26","mythic,bunker","Covert Cavern taken over by the Seven, with a Mythic Grenade Launcher and heavy guard presence. The same excellent hollow-mountain layout with a better reward and a war going on outside it."],
+["The Fortress","B","c3s2","C3 S2","South-east, F7","18-22","","An IO stronghold with turrets and blimps overhead. Defensible and well stocked, but it existed mainly as a war objective and the loot never rose above solid."],
+["Synapse Station","B","c3s2","C3 S2","North-east, F3","18-22","","Coney Crossroads rebuilt as an IO research site. Better cover than the funfair it replaced, similar loot, same slightly-off-centre position."],
+["Armored Battle Bus","A","c3s2","C3 S2","Roaming","12-16","mobility","A moving POI: a plated Battle Bus with mounted turrets, driving a route across the island. You could loot it, hold it, or steal it. Nothing before or since has made a rotation and a drop spot the same object."],
+["Reality Falls","A","c3s3","C3 S3","South-west, C6","24-28","mobility","The Reality Tree with a mushroom biome under it and Reality Saplings you planted to grow your own weapon over the match. High chest count, bouncy mushrooms for free vertical movement, and a reward that got better the longer you lived."],
+["Rave Cave","A","c3s3","C3 S3","North-west, B2","26-30","mobility","A party inside a hollowed-out mountain, with a huge chest count and bounce pads throughout. Loud, dense, and one of the few POIs where the interior fighting space was genuinely three-dimensional."],
+["Logjam Junction","B","c3s3","C3 S3","North-west, C3","18-22","","The lumberyard with a rail junction bolted on. More cover, same loot, slightly better rotation than the version it replaced."],
+["Herald's Sanctum","S","c3s4","C3 S4","North-east, F2","24-28","boss,mythic,hot","The Herald's chrome cathedral, with her Mythic EvoChrome Burst Rifle and a fully chromed structure you could phase straight through the walls of. The best boss fight of the chapter in the best-looking POI of the chapter."],
+["Fort Jonesy","B","c3s4","C3 S4","North-east, F3","18-22","","A frontier fort with NPCs and services. Good walls, good bars economy, mid loot. A place you used rather than a place you contested."],
+["Lustrous Lagoon","B","c3s4","C3 S4","South-west, C6","18-22","","Reality Falls chromed over. The mushrooms still bounced and the chrome let you phase through structures, which made holding any position here nearly impossible."],
+["Shimmering Shrine","B","c3s4","C3 S4","South-east, F7","18-22","","A chromed temple with good verticality and a decent chest spread. Attractive and perfectly fine - it just never had the mythic or the position to be more."],
+["Cloudy Condos","B","c3s4","C3 S4","Centre-south, airborne","16-20","mobility","Condo Canyon lifted off the ground by chrome and left floating. Landing on it was easy, leaving it meant a long fall or a glider redeploy, and the loot was thinner than the ground version had been."],
+
+/* ---- CHAPTER 4 ---- */
+["The Citadel","S","c4s1","C4 S1 - S3","Centre-north, E4","28-32","boss,mythic,hot","The biggest POI Epic had built to that point: a full castle with a keep, courtyards, outer walls and the Ageless Champion holding the Mythic Ex-Caliber Rifle. Oathbound chests, thirty-odd spawns, and a central-north position. Everything a flagship POI should be."],
+["Anvil Square","A","c4s1","C4 S1 - S4","Centre-south, E5","24-28","","A stone village with a chapel, a smithy and tight streets. Consistently the best pure gunfight on the Chapter 4 map - dense enough to loot fast, open enough to move, and close enough to the middle that you rarely had to leave."],
+["Shattered Slabs","A","c4s1","C4 S1 - S3","West, B5","24-28","mobility","A marble quarry cut into terraces, with ziplines between levels. Real verticality, high chest count, and a layout where holding the top shelf actually meant something. The most tactically interesting POI of the season."],
+["Brutal Bastion","B","c4s1","C4 S1 - S3","North, E2","22-26","","A snow fortress on a mountain with good loot and a commanding view. Cold, high and far north - you saw everyone coming and then had to walk a very long way to the circle."],
+["Faulty Splits","B","c4s1","C4 S1 - S3","East, G4","20-24","mobility","A town split by a canyon with Kinetic Ore scattered through it - hit the ore and it launched you. Free repeatable mobility inside the POI, average loot, awkward east position."],
+["Frenzy Fields","B","c4s1","C4 S1 - S4","Centre-east, F5","20-24","","A farm near the middle of the map. Good position, ordinary loot, big open fields between the buildings that made every rotation inside the POI a gamble."],
+["Slappy Shores","B","c4s1","C4 S1 - S2","South-east, G6","22-26","mobility","A coastal town built around a Slap Juice factory - unlimited stamina and sprint from the barrels. The mobility was excellent; the corner position meant you mostly used it to leave."],
+["Lonely Labs","B","c4s1","C4 S1 - S3","North-west, C2","18-22","","A snow research base with a good interior and a hangar. Well built, well stocked, and in the emptiest corner of a map that already had a cold north."],
+["Breakwater Bay","B","c4s1","C4 S1 - S4","South-west, C7","20-24","","A dock town with warehouses and boats. Loot was fine and the boats gave a water rotation, but the bay hemmed you in against the coast."],
+["MEGA City","S","c4s2","C4 S2 - S3","South-east, G6","36-42","hot,rotation","The best single POI Fortnite has ever built. Forty-odd chest spawns across neon high-rises, grind rails threading between rooftops so you could leave a fight at speed, and interiors stacked five storeys deep. Enormous, and still the map's hottest drop despite sitting in a corner."],
+["Kenjutsu Crossing","A","c4s2","C4 S2 - S3","East, H5","22-26","mythic","A dojo village with Kinetic Blades on the ground - a melee weapon with a dash attack that doubled as movement. Good loot, a genuinely unique reward, and grind rails running out toward MEGA City."],
+["Steamy Springs","B","c4s2","C4 S2 - S3","North-east, G3","18-22","shield","A hot-spring resort where the water healed you. Free sustain is always worth something, but the chest count was modest and the north-east was quiet that season."],
+["Knotty Nets","B","c4s2","C4 S2 - S3","South-east coast, H7","18-22","","A fishing village on stilts over the water. Charming, decent loot, and the walkways between platforms turned every fight into a choke point - which cut both ways."],
+["Rumble Ruins","A","c4s3","C4 S3 - S4","South jungle, F7","26-30","","A jungle temple complex with high chest density and a lot of verticality through the ruins. Grapple Gloves in the season made the tiered stonework a proper playground. The best new POI of the jungle season."],
+["Shady Stilts","B","c4s3","C4 S3","South-west jungle, E7","20-24","","Stilt houses over swamp water in the jungle. Reasonable loot, terrible ground movement below the platforms, and thick canopy that hid everyone from everyone."],
+["Creeky Compound","B","c4s3","C4 S3","South, F8","18-22","","A rundown farmstead at the jungle's edge with wildlife around it. Fine loot, real cover, nothing that made you choose it over Rumble Ruins nearby."],
+["Relentless Retreat","B","c4s3","C4 S3 - S4","South, E7","20-24","vault","A resort that later picked up one of the season's heist vaults. As a plain POI it was mid; the vault raised it, and the vault is the only reason to remember it."],
+["Sanguine Suites","A","c4s4","C4 S4","North-west, C2","24-28","vault,hot","A vampire mansion built as a heist target - laser grids, a keycard, a vault and a getaway. Strong loot on its own, and the vault run gave the POI a second act most locations never had."],
+["Eclipsed Estate","A","c4s4","C4 S4","North-east, G2","24-28","vault","A modernist mansion on a cliff with a heist vault underneath. Excellent interior architecture for fighting, good chest count, and the laser-grid puzzle made taking the vault a real commitment."],
+["The OG Island","S","c4og","OG","Whole map","-","event,rotation","The Chapter 1 map back in rotation, cycling through its old seasons week by week. Ranked as a whole because that is how it played: no mobility items, real map decisions, and every one of those old POIs suddenly mattering again."],
+
+/* ---- CHAPTER 5 ---- */
+["Lavish Lair","S","c5s1","C5 S1 - S4","North-east, H2","28-32","boss,mythic,medallion,hot","Montague's mansion: thirty chest spawns, a boss with the Mythic Huntress DMR, and a Medallion that regenerated your shield for the rest of the match. The richest POI of the season and the hottest drop - the medallion also painted your location on everyone's map, which was the point."],
+["Grand Glacier","A","c5s1","C5 S1 - S2","North-west, C1","24-28","boss,mythic,medallion","Oscar's snow chalet complex with the Mythic Frenzy Auto Shotgun and a Medallion. Great layout across multiple buildings and levels, dragged down only by the far north-west position."],
+["Ruined Reels","A","c5s1","C5 S1 - S2","South-west, C6","22-26","boss,mythic,medallion","Valeria's abandoned film studio with the Mythic Havoc Pump. Sound stages made unusual interior spaces to fight in, and the medallion made it worth crossing the map for."],
+["Snooty Steppes","A","c5s1","C5 S1 - S3","South, E7","22-26","boss,mythic,medallion","Peter Griffin's hilltop estate, complete with his shotgun and a Medallion. Ridiculous premise, genuinely good POI - layered terraces, good chest spread, and a boss most players actively wanted to fight."],
+["Reckless Railways","A","c5s1","C5 S1 - S4","Centre-east, F4","24-28","rotation","A rail town with a station, and the season's moving train passing through it. The train itself carried chests and a guarded carriage, so the POI came with a rotating second objective attached. Central and consistently busy."],
+["Fencing Fields","A","c5s1","C5 S1 - S2","Centre, E4","26-30","hot","A vineyard estate at the middle of the map with a high chest count and no boss - which made it the drop for people who wanted loot without a medallion fight. Most-landed non-boss POI of the season."],
+["Classy Courts","B","c5s1","C5 S1 - S4","East, H4","20-24","","A tennis-club resort with good buildings and unremarkable loot. Pleasant, playable, permanently in the shadow of Lavish Lair up the road."],
+["Pleasant Piazza","B","c5s1","C5 S1 - S4","North-east, G3","20-24","","An Italian town square with tight streets and rooftops. Better geometry than its chest count deserved - the fights here were good even when the loot was not."],
+["Ritzy Riviera","B","c5s1","C5 S1 - S4","South-east, G6","20-24","","A coastal resort with villas and a marina. Solid, spread out, and a long way from the middle."],
+["Hazy Hillside","B","c5s1","C5 S1 - S2","North-west, C3","18-22","","A hillside village in the fog. Cover for days, mediocre loot, and the mist cut both your sightlines and theirs."],
+["Rebel's Roost","B","c5s1","C5 S1 - S2","South-west, C7","18-22","","A hideout camp in the hills. Modest chest count with NPC services and a defensible position, but nothing worth contesting."],
+["Mount Olympus","S","c5s2","C5 S2","Centre-north, E3","28-32","boss,mythic,medallion,hot","Zeus at the top of a marble mountain with the Mythic Thunderbolt of Zeus - a weapon that let you slam down out of the sky - plus his Medallion and thirty chest spawns. Highest ground, best mythic in years, central position. The best POI of Chapter 5 without much argument."],
+["The Underworld","A","c5s2","C5 S2","West, B5","24-28","boss,mythic,medallion","Hades in a cavern of black rock and fire, dropping the Chains of Hades - a grapple that pulled you to enemies. Excellent enclosed layout and a mythic that changed how you closed distance."],
+["Grim Gate","A","c5s2","C5 S2","Centre-south, E6","22-26","boss,mythic,medallion","Cerberus guarding the gate to the underworld, with the Mythic Gatekeeper Shotgun. Good central-south position and a compact, aggressive fight - the most approachable of the four god POIs."],
+["Brawler's Battleground","A","c5s2","C5 S2","East, H4","22-26","boss,mythic,medallion","Ares in a war camp with the Mythic Warforged Assault Rifle and his Medallion. Straightforward and well built - an arena POI where the boss fight and the player fights happened in the same space."],
+["Restored Reels","B","c5s2","C5 S2","South-west, C6","20-24","","The film studio rebuilt and working again. Same good sound-stage interiors, no boss, no medallion, and therefore a much quieter drop than the season before."],
+["Brutal Beachhead","S","c5s3","C5 S3","South-west, C7","28-32","boss,mythic,medallion","Megalo Don's fortified coastal base - a siege POI, with walls, turrets and vehicles you had to break through. Thirty chests, a medallion, and the best sustained fight of the season. Attacking it felt like a real objective rather than a loot run."],
+["Nitrodrome","A","c5s3","C5 S3","East, H5","24-28","boss,mythic,medallion","Ringmaster Scarr's stunt arena with nitro barrels, ramps and cars everywhere. The vehicle combat rework made this the most kinetic POI on the map, and the medallion gave you nitro on demand."],
+["Redline Rig","A","c5s3","C5 S3","North-east, G2","22-26","boss,mythic,medallion","The Machinist's oil rig and workshop. Industrial, vertical, well stocked, and the medallion was one of the most useful of the season. Far north-east, which is the only mark against it."],
+["The Wastelands","B","c5s3","C5 S3","South-west quadrant","varies","mobility","The desert biome around Brutal Beachhead, dotted with fuel dumps, wrecks and nitro barrels. Not a POI in itself but it changed how the whole south-west played - you rotated by car or you did not rotate."],
+["Doom's Domain","S","c5s4","C5 S4","North-west, C2","26-30","boss,mythic,medallion,hot","Doctor Doom back with his own POI, his Mythic Gauntlets, a medallion and a castle. Doom's second appearance was better built than his first - more interior, more verticality, and mythics that rewarded aggression."],
+["Doomstadt","A","c5s4","C5 S4","Centre, E4","24-28","hot","Latveria's capital in the middle of the map - a proper European town square with dense buildings and no boss to complicate the fight. Central position and good loot made it the season's default hot drop."],
+["Castle Doom","A","c5s4","C5 S4","Centre-north, E3","22-26","mythic","The tower above Doomstadt, holding high-tier loot and Marvel mythics. Fighting up through it was the most vertical engagement of the season, and holding the top was worth real value."],
+["The Raft","B","c5s4","C5 S4","Coastal","14-18","","A floating prison off the coast. Interesting interior, cut off from everything, and the swim out was long enough to lose you the game."],
+["Doggpound","B","c5rmx","REMIX","North-east, H1","18-22","mythic","The Chapter 2 yacht reskinned as Snoop Dogg's base for the Remix event, with a themed mythic. Same ziplined deck layout that worked in Chapter 2, same isolation problem in the far north-east."],
+["Remixed Chapter 2 Map","A","c5rmx","REMIX","Whole map","-","event","Ranked as a whole: the Chapter 2 island returned with four artists reskinning corners of it week by week. The underlying POI spacing was still the best the game has had, and the reskins mostly left the geometry alone - correctly."],
+
+/* ---- CHAPTER 6 ---- */
+["Shogun's Solitude","S","c6s1","C6 S1 - S2","North, E2","26-30","boss,mythic,medallion","A castle on a mountain peak, visible from most of the island, with a boss, a mythic and a medallion at the top. The climb was the fight. Best silhouette and best vertical POI Epic has built - height, loot and reward all stacked in the same place."],
+["Seaport City","A","c6s1","C6 S1 - S3","South-east, G6","26-30","","The season's big urban drop - docks, cranes, tower blocks and dense interiors. Highest raw chest count on the map and the kind of layered concrete fighting space that rewards knowing the building."],
+["Masked Meadows","A","c6s1","C6 S1 - S3","Centre, E4","24-28","hot","A festival village at the middle of the island. No boss, high chest count, and the most central position on the map, which made it the default contested drop of the season."],
+["Demon's Dojo","A","c6s1","C6 S1","East, H4","22-26","boss,mythic","A mountainside dojo with an Oni boss and the Mythic Typhoon Blade - a sword with a dash and an air slam. Good tiered layout and a reward that made close-range fights winnable from a deficit."],
+["Foxy Floodgate","B","c6s1","C6 S1 - S4","North-west, C3","20-24","","A dam and control station. Solid industrial interiors, water rotation below, and a decent chest spread - held back by a quiet corner of the map."],
+["Hopeful Heights","B","c6s1","C6 S1 - S2","South-west, C6","20-24","","A hillside suburb with a lot of houses close together. Good honest fights, ordinary loot, ordinary position."],
+["Pumped Power","B","c6s1","C6 S1 - S4","North-east, G2","20-24","","A power plant with cooling towers and turbine halls. Big interior spaces, reasonable chests, and no reason to pick it over the bosses elsewhere."],
+["Rolling Blossoms Farm","B","c6s1","C6 S1 - S3","West, B4","18-22","","Terraced blossom fields with farm buildings. Beautiful, open, and exposed - the terraces looked like cover and mostly were not."],
+["Nightshift Forest","B","c6s1","C6 S1 - S2","South, E7","18-22","","A dark forest with logging structures and lantern-lit paths. The low light genuinely helped you disengage, which is rarer than it sounds."],
+["Martial Maneuvers","B","c6s1","C6 S1 - S2","East, G4","16-20","","A training compound with sparring grounds. Modest loot, good melee-weapon spawns, and a layout that suited the sword-heavy meta."],
+["Warrior's Watch","B","c6s1","C6 S1 - S2","North-west, C2","16-20","","A watchtower settlement on the north-west ridge. Good sightlines over the approach, thin loot, long rotation."],
+["Yacht Stop","C","c6s1","C6 S1 - S2","North-east coast","12-16","","A marina with a few moored boats. Thin chest count and a coastal position - useful for a water rotation, not much else."],
+["Night Night Nook","C","c6s1","C6 S1 - S2","South coast","12-16","","A small seaside hamlet. Quiet, safe, and consistently a landing spot for people who wanted to survive the first five minutes rather than win the game."],
+["Swarmy Stash","C","c6s1","C6 S1 - S2","South-east","12-16","","A smugglers' cache in the rocks. A handful of chests and a bar-purchase NPC. A stop, not a drop."],
+["Shining Span","B","c6s1","C6 S1 - S3","Centre, bridge","10-14","rotation","A lit suspension bridge crossing the middle of the map. Few chests, but it was the fastest way across the water and therefore one of the most contested pieces of ground in any given circle."],
+["Crime City","S","c6s2","C6 S2","Centre, E5","28-32","boss,mythic,vault,hot","The centre of the Lawless map: a full city block with a crime boss, a keycard vault, dense high-rise interiors and thirty-odd chests. Loot, position, a boss and a heist all in one POI - the strongest thing Chapter 6 built."],
+["Supernova Academy","A","c6s2","C6 S2 - S3","North, E2","24-28","boss,mythic,vault","Shogun's mountain rebuilt as an academy, with a boss, a vault and strong loot. Kept the height advantage of what it replaced and added a vault worth breaking into."],
+["Outlaw Oasis","A","c6s2","C6 S2 - S3","South-east desert, G6","22-26","vault","A desert town with a vault and a bar economy. Open ground between buildings made approaches dangerous, and the vault key had to be bought, which made the whole POI a plan rather than a scramble."],
+["Ranger's Ruin","A","c6s2","C6 S2 - S3","North-east, G2","22-26","vault","A ranger station turned outlaw hideout with a vault underneath. Good forest cover on the approach and a reward that justified the trip out east."],
+["Shiny Shafts","B","c6s2","C6 S2 - S3","West, B5","20-24","","Gold mines with tunnels and rail carts. The underground sections gave cover from above and the bars economy meant mining actually paid. A good B that never had a boss to lift it further."],
+["Demon's Debris","B","c6s2","C6 S2","East, H4","20-24","","The old dojo left in ruins. Same tiered stonework, no boss, no mythic - a decent drop living off the bones of a better one."],
+["Canyon Crossing","B","c6s2","C6 S2 - S3","South-west","18-22","rotation","A canyon settlement on a crossing point. Modest loot and a chokepoint position that mattered more in the late circles than at the drop."],
+["Vader Samurai's Solitude","S","c6s3","C6 S3","South-west of Canyon Crossing","-","boss,mythic","Darth Vader, stormtrooper samurai guards, and a Mythic Lightsaber for beating him. The single best reward-for-risk in modern Fortnite - a boss most squads could not take, holding a weapon that could carry a whole endgame."],
+["Resistance Base","A","c6s3","C6 S3","North-west corner","-","","A hidden Resistance command centre buried under foliage to stay off First Order scans, with X-Wings parked outside and an underground level below. Excellent theming, and finally a reason to visit the north-west corner."],
+["First Order Base","A","c6s3","C6 S3","Corner site","-","","A First Order facility with a utility shaft running through it that made the whole base breachable from below. Designing a POI around a structural weakness the attacker can exploit is smart, and it made this the most interesting fight of the four Star Wars sites."],
+["Outpost Enclave","B","c6s3","C6 S3","South-east corner","-","","A Tatooine-style desert outpost with a Sandcrawler. Good set piece, decent loot, and stuck in the far south-east corner with a long rotation ahead of you."],
+["The Hive","A","c6s4","C6 S4","Infestation zone","-","","A bug nest where the loot was gated behind a swarm rather than a boss. Genuinely different risk profile - you were not fighting a health bar, you were surviving a horde while looting, and the reward scaled with how long you stayed."],
+["O.X.R. HQ","A","c6s4","C6 S4","Military zone","-","","Barracks, a battle-ops hub with commanders, and an Armory where you bought weapons and items with bars. Being able to buy a loadout instead of praying at chests made this the most reliable drop of the season."],
+["Swarmy Stash (C6 S4)","B","c6s4","C6 S4","Between The Hive and O.X.R. HQ","-","","A smaller infested cache sitting between the season's two anchor POIs. Less loot than either neighbour, but the position between them meant you were never far from a real fight."],
+["Ranger's Run","B","c6s4","C6 S4","Former O.X.R. lab site","-","","A weapons lab lost to the infestation - overrun corridors and bug-damaged structures. A cautionary-tale POI with fair loot and a lot of unpleasant close quarters."],
+
+/* ---- CHAPTER 7 ---- */
+["Battle Boulevard","S","c7s1","C7 S1 - S4","Urban centre","-","hot","The Los-Angeles-inspired city and the biggest POI on the new island. Dense high-rise interiors, a real street grid, and the highest loot ceiling on the map. It has been the chapter's hot drop since launch and has survived every map revision since."],
+["Sandy Strip","A","c7s1","C7 S1 - S4","Desert biome","-","","A Las-Vegas-style desert city - casinos, a strip of frontage, big interiors. Strong loot and the only proper urban anchor the desert biome has ever had."],
+["Humble Hills","B","c7s1","C7 S1 - S4","Hills above the coast","-","","Hollywood-Hills mansions with pools and palm trees, spread along a ridge. Good individual buildings, long gaps between them, and high ground that is only useful if you own all of it."],
+["Fore Fields","B","c7s1","C7 S1 - S3","Green belt","-","mobility","A golf course with ATKs parked around it. The carts are the point - free rotation out of an otherwise wide-open POI with very little cover between the greens."],
+["Paws Inn","B","c7s1","C7 S1 - S4","Roadside","-","","A large roadside inn with plenty of rooms to clear and steady loot. Compact, honest, and a good landing spot for a first fight you can actually win."],
+["Espresso Experiment","B","c7s1","C7 S1 - S4","Forest biome","-","","A coffee house packed with loot for its size. Small footprint, high density - the classic profile of a POI that is great when nobody else lands and fatal when someone does."],
+["Storm Station","B","c7s1","C7 S1 - S4","Weather site","-","","A research station with a hidden Order audio log and solid loot. More interesting as lore than as a drop, but the chest spread is fair and the building interiors are defensible."],
+["Sunset Falls","B","c7s1","C7 S1 - S3","Waterfall, forest","-","","A waterfall settlement with tiered structures. Nice verticality, decent loot, and water below for a fast disengage."],
+["Ol' Stumpy","C","c7s1","C7 S1 - S3","Forest biome","-","","A giant tree stump with a small camp around it. A landmark-scale POI with landmark-scale loot - a stop on a rotation rather than a landing."],
+["Clawsy Lodge","B","c7s1","C7 S1","Northern mountains","-","","A mountain lodge in the north. Fine loot, cold isolated position, and replaced by Frigid Fortress the following season - which tells you how much it was missed."],
+["Frigid Fortress","A","c7s2","C7 S2 - S3","Below the northern mountains","-","boss","The Ice King's return, in a fortress below the northern peaks where Clawsy Lodge used to be. A proper boss POI with a defensible castle layout - the north finally had a reason to be contested."],
+["Dark Dominion","A","c7s2","C7 S2","Zero Point site","-","hot","The Zero Point turned into a contested POI, with corrupted architecture around it. Putting the chapter's central mystery on the ground where players could fight over it was the right call, and it drew traffic all season."],
+["New Sanctuary","A","c7s2","C7 S2","Central-west","-","","A rebuilt Seven-style stronghold with good walls and strong loot. Defensible in a way most modern POIs are not - taking it from a squad that had settled in was a genuine problem."],
+["Squibbly Shores","B","c7s2","C7 S2","Coastal","-","","A quirky coastal POI with reasonable loot and water rotations. Pleasant, unthreatening, and rarely decisive."],
+["Heatwave Harbor","A","c7s3","C7 S3 - S4","Industrial port","-","","The Shattered Coast's industrial anchor - high-rises over a working port, with cranes and container stacks. The most vertical fighting space on the new island and the closest thing it has to a second city."],
+["Wonkeeland","A","c7s3","C7 S3 - S4","Themed park","-","","A theme-park POI with strong loot and rides that double as structures. One of only two locations to survive from the Season 2 map into Season 3, which is the clearest verdict anyone can give it."],
+["Latte Landing","B","c7s3","C7 S3 - S4","Coastal town","-","","A small coastal town, and the other Season 2 survivor. Steady loot, tight streets, no headline feature - a reliable B that keeps earning its slot."],
+["Duck Mansion","B","c7s3","C7 S3 - S4","Estate","-","","A large themed mansion with dense interior loot. Great to fight inside, exposed on the approach across open grounds."],
+["Battlewoods","B","c7s3","C7 S3 - S4","Primal biome","-","","A forest arena in the primal biome. Heavy cover, scattered loot, and the kind of POI you win by hearing rather than seeing."],
+["Lifty Lodge","B","c7s3","C7 S3 - S4","Mountain lift","-","mobility","A ski-lift lodge where the lift is a working rotation line. Modest chests, real mobility - the lift is what keeps it out of C."],
+["Cluster Coast","B","c7s3","C7 S3 - S4","South-east edge","-","","A coastal POI themed around the Cluster outfit, on the south-east edge of Shattered Coast. Decent loot, edge-of-map position, and a long walk to most circles."],
+["Calamari Canyon","B","c7s3","C7 S3","Canyon","-","","A canyon POI with layered rock cover and fair loot. Removed in the Override update - a solid B that never found a reason to be more."],
+["Frosted Flats","B","c7s2","C7 S2 - S3","Snow flats","-","","A snowfield settlement, flat and exposed with reasonable chest spread. Replaced by Geno's HQ, which was a clear upgrade in both loot and interest."],
+["Sinister Strip","B","c7s3","C7 S3","Strip development","-","","A run-down commercial strip with tight shopfront interiors. Good close-quarters fighting, unremarkable loot, cut in the Override update."],
+["Geno's HQ","A","c7s4","C7 S4","Where Frosted Flats stood","-","boss","A villain lair built as the inside of a gaming PC - water-cooling pipes as corridors, GPUs as towers. The best-designed interior of the season and a genuine multi-level fight, on the site of one of the map's weakest POIs."],
+["Reality's Reign","A","c7s4","C7 S4","Centre of the island","-","hot","One of the largest POIs on the Override map: a futuristic industrial complex with elevated platforms and a green-lit core structure. Central, layered, and immediately the season's main contested drop."],
+["Green Hill Zone","A","c7s4","C7 S4","South","-","mobility","The Sonic crossover POI, with looping checkerboard rock formations you can actually run. The loops are functional movement, not decoration, which is what separates this from every other crossover set piece."],
+["Stone Sanctum","B","c7s4","C7 S4","Central-south","-","","A stone temple with wide stairways and elevated platforms. Good tiered geometry for fights, ordinary loot, and it sits close enough to Reality's Reign that it mostly catches the overflow."],
+["The Spire (Override)","B","c7s4","C7 S4","Former Zero Point site","-","","A landmark standing where the Zero Point was. Little loot, but it is the highest point in the middle of the map, and holding it in a late circle is worth more than anything you would have looted there."],
+["Pac-Man Island","B","c7s4","C7 S4","Island landmark","-","","A maze-shaped island landmark. Novelty first, loot second - but the maze walls are real cover, which makes it a surprisingly awkward place to be pushed."]
+];
+</script>
+<script>
+(function(){
+"use strict";
+
+const TIERS = [
+  ["S","Defined its season"],
+  ["A","Great, one weak leg"],
+  ["B","Solid and fair"],
+  ["C","You landed behind"],
+  ["D","Punished you"]
+];
+const TAGLABEL = {
+  hot:"Hot drop", mythic:"Mythic", medallion:"Medallion", vault:"Vault", boss:"Boss",
+  bunker:"Underground", rotation:"Rotation", mobility:"Mobility", shield:"Free shield",
+  event:"Event", nobuild:"No build"
+};
+const TAGCLASS = { hot:"hot", mythic:"myth", medallion:"med" };
+const FEATURES = ["mythic","medallion","vault","boss","mobility","hot","rotation","shield"];
+
+const eraById = {};
+ERAS.forEach(function(e,i){
+  eraById[e[0]] = { id:e[0], short:e[1], name:e[2], dates:e[3], verdict:e[4], order:i,
+                    chapter:(e[0]==="c4og"?"4":e[0]==="c5rmx"?"5":e[0].charAt(1)) };
+});
+
+const DATA = P.map(function(r,i){
+  const era = eraById[r[2]];
+  return { i:i, name:r[0], tier:r[1], era:era, span:r[3], pos:r[4], chests:r[5],
+           tags:(r[6]?r[6].split(","):[]), why:r[7],
+           hay:(r[0]+" "+r[3]+" "+r[4]+" "+r[6]+" "+r[7]+" "+era.name+" "+era.short).toLowerCase() };
+});
+
+const CHAPTERS = ["1","2","3","4","5","6","7"];
+const state = { view:"board", q:"", tiers:new Set(), chaps:new Set(), feats:new Set() };
+
+const $ = function(id){ return document.getElementById(id); };
+const esc = function(s){ return String(s).replace(/[&<>"]/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+
+/* ---------- tally ---------- */
+$("tally").innerHTML = TIERS.map(function(t){
+  const n = DATA.filter(function(d){ return d.tier===t[0]; }).length;
+  return '<li><b style="color:var(--'+t[0].toLowerCase()+')">'+t[0]+'</b><span>'+n+' locations</span></li>';
+}).join("") + '<li><b>'+DATA.length+'</b><span>total &middot; '+ERAS.length+' seasons</span></li>';
+
+/* ---------- filter chips ---------- */
+function chips(host, items, set, cls, attr){
+  items.forEach(function(it){
+    const b = document.createElement("button");
+    b.className = "chip" + (cls?" "+cls:"");
+    b.type = "button";
+    b.textContent = it.label;
+    b.setAttribute("aria-pressed","false");
+    if(attr) b.setAttribute(attr, it.value);
+    b.addEventListener("click", function(){
+      if(set.has(it.value)) set.delete(it.value); else set.add(it.value);
+      b.setAttribute("aria-pressed", set.has(it.value) ? "true" : "false");
+      render();
+    });
+    host.appendChild(b);
+  });
+}
+chips($("tierFilters"), TIERS.map(function(t){ return {label:t[0], value:t[0]}; }), state.tiers, "t", "data-t");
+chips($("chapFilters"), CHAPTERS.map(function(c){ return {label:"Ch "+c, value:c}; }), state.chaps);
+chips($("featFilters"), FEATURES.map(function(f){ return {label:TAGLABEL[f], value:f}; }), state.feats);
+
+$("q").addEventListener("input", function(e){ state.q = e.target.value.trim().toLowerCase(); render(); });
+
+$("clear").addEventListener("click", function(){
+  state.q=""; $("q").value="";
+  state.tiers.clear(); state.chaps.clear(); state.feats.clear();
+  document.querySelectorAll(".chip[aria-pressed='true']").forEach(function(c){ c.setAttribute("aria-pressed","false"); });
+  render();
+});
+
+function setView(v){
+  state.view = v;
+  $("vBoard").setAttribute("aria-pressed", v==="board" ? "true":"false");
+  $("vDoss").setAttribute("aria-pressed", v==="dossier" ? "true":"false");
+  $("board").hidden = v!=="board";
+  $("dossier").hidden = v!=="dossier";
+  render();
+}
+$("vBoard").addEventListener("click", function(){ setView("board"); });
+$("vDoss").addEventListener("click", function(){ setView("dossier"); });
+
+/* ---------- filtering ---------- */
+function matches(d){
+  if(state.q && d.hay.indexOf(state.q) === -1) return false;
+  if(state.tiers.size && !state.tiers.has(d.tier)) return false;
+  if(state.chaps.size && !state.chaps.has(d.era.chapter)) return false;
+  if(state.feats.size){
+    let hit = false;
+    state.feats.forEach(function(f){ if(d.tags.indexOf(f) !== -1) hit = true; });
+    if(!hit) return false;
+  }
+  return true;
+}
+
+/* ---------- renderers ---------- */
+function poiChip(d){
+  return '<button class="poi" data-t="'+d.tier+'" data-i="'+d.i+'" type="button">'+
+    '<span class="dot"></span><span class="pn">'+esc(d.name)+'</span>'+
+    '<span class="pe">'+esc(d.era.short)+'</span></button>';
+}
+
+function tagRow(d){
+  if(!d.tags.length) return "";
+  return '<div class="tags">'+d.tags.map(function(t){
+    return '<span class="tag '+(TAGCLASS[t]||"")+'">'+esc(TAGLABEL[t]||t)+'</span>';
+  }).join("")+'</div>';
+}
+
+function card(d){
+  return '<button class="card" data-t="'+d.tier+'" data-i="'+d.i+'" type="button">'+
+    '<div class="cardtop"><h4>'+esc(d.name)+'</h4><span class="badge">'+d.tier+'</span></div>'+
+    '<div class="stats"><span>Chests <b>'+esc(d.chests)+'</b></span>'+
+      '<span>Where <b>'+esc(d.pos)+'</b></span>'+
+      '<span>Ran <b>'+esc(d.span)+'</b></span></div>'+
+    '<p class="why">'+esc(d.why)+'</p>'+ tagRow(d) + '</button>';
+}
+
+function renderBoard(rows){
+  $("board").innerHTML = TIERS.map(function(t){
+    const list = rows.filter(function(d){ return d.tier === t[0]; });
+    const pool = list.length
+      ? '<div class="tierpool">'+list.map(poiChip).join("")+'</div>'
+      : '<div class="empty">Nothing in this tier matches the current filters.</div>';
+    return '<div class="tierrow" data-t="'+t[0]+'">'+
+      '<div class="tierplate"><span class="lt">'+t[0]+'</span>'+
+      '<span class="nm">'+t[1]+'</span><span class="ct">'+list.length+'</span></div>'+
+      pool + '</div>';
+  }).join("");
+}
+
+function renderDossier(rows){
+  if(!rows.length){
+    $("dossier").innerHTML = '<div class="empty">No locations match the current filters.</div>';
+    return;
+  }
+  const byEra = {};
+  rows.forEach(function(d){ (byEra[d.era.id] = byEra[d.era.id] || []).push(d); });
+
+  let html = "";
+  CHAPTERS.forEach(function(ch){
+    const eras = ERAS.map(function(e){ return eraById[e[0]]; })
+                     .filter(function(e){ return e.chapter === ch && byEra[e.id]; });
+    if(!eras.length) return;
+    const span = eras[0].dates.split(" - ")[0] + " - " + eras[eras.length-1].dates.split(" - ")[1];
+    html += '<div class="chapblock"><div class="chaphead"><h2>Chapter '+ch+'</h2>'+
+            '<span class="cdates">'+esc(span)+'</span></div>';
+    eras.forEach(function(e){
+      const list = byEra[e.id].slice().sort(function(a,b){
+        return "SABCD".indexOf(a.tier) - "SABCD".indexOf(b.tier) || a.name.localeCompare(b.name);
+      });
+      html += '<section class="season"><div class="shead"><span class="stag">'+esc(e.short)+'</span>'+
+              '<h3>'+esc(e.name)+'</h3><span class="sdate">'+esc(e.dates)+'</span></div>'+
+              '<p class="sverdict">'+esc(e.verdict)+'</p>'+
+              '<div class="cards">'+list.map(card).join("")+'</div></section>';
+    });
+    html += '</div>';
+  });
+  $("dossier").innerHTML = html;
+}
+
+function render(){
+  const rows = DATA.filter(matches);
+  const active = state.q || state.tiers.size || state.chaps.size || state.feats.size;
+  $("count").textContent = rows.length + " of " + DATA.length + " locations";
+  $("clear").hidden = !active;
+  if(state.view === "board") renderBoard(rows); else renderDossier(rows);
+}
+
+/* ---------- detail drawer ---------- */
+let lastFocus = null;
+function openSheet(d){
+  lastFocus = document.activeElement;
+  $("sheetHead").setAttribute("data-t", d.tier);
+  $("sheetTier").textContent = d.tier;
+  $("sheetTier").style.background = "var(--"+d.tier.toLowerCase()+")";
+  $("sheetEra").textContent = d.era.short + " · " + d.era.name;
+  $("sheetName").textContent = d.name;
+  $("sheetBody").innerHTML =
+    '<dl class="dl">'+
+      '<dt>Chests</dt><dd>'+esc(d.chests==="-" ? "Not documented" : d.chests)+'</dd>'+
+      '<dt>Position</dt><dd>'+esc(d.pos)+'</dd>'+
+      '<dt>On the map</dt><dd>'+esc(d.span)+'</dd>'+
+      '<dt>Features</dt><dd>'+(d.tags.length ? d.tags.map(function(t){ return esc(TAGLABEL[t]||t); }).join(", ") : "None of note")+'</dd>'+
+    '</dl>'+
+    '<div class="block"><h5>Why it lands in '+d.tier+'</h5><p>'+esc(d.why)+'</p></div>'+
+    '<div class="block"><h5>The season around it &mdash; '+esc(d.era.name)+'</h5><p>'+esc(d.era.verdict)+'</p></div>';
+  $("scrim").classList.add("on");
+  $("sheet").classList.add("on");
+  $("sheet").focus();
+}
+function closeSheet(){
+  $("scrim").classList.remove("on");
+  $("sheet").classList.remove("on");
+  if(lastFocus) lastFocus.focus();
+}
+$("scrim").addEventListener("click", closeSheet);
+$("closeSheet").addEventListener("click", closeSheet);
+document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeSheet(); });
+document.addEventListener("click", function(e){
+  const el = e.target.closest("[data-i]");
+  if(el) openSheet(DATA[+el.getAttribute("data-i")]);
+});
+
+render();
+})();
+</script>

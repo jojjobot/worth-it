@@ -23,6 +23,7 @@ To play any game: open the `.html` file directly in a browser.
 | `shooter_game.html` | 2D side-scrolling Canvas shooter (800×450px). Player: cyan. 3 enemy types. Physics with gravity, 6 platforms, particle effects. Game states: start → playing → gameover. |
 | `hoops/index.html` | 3D basketball quick match (Three.js, NBA-2K-style). 3v3 full court; you control one MyPlayer. Timing-based shot meter, dunking, AI teammates/opponents, 3:00 + 24s shot clock. Block-primitive models. |
 | `fortnite-org-sim/` | **Exception to the single-file rule** — a React + Vite + TypeScript + Tailwind app (esports org management **DUOS** sim). Run with `START.bat` or `npm start`. See its own README.md / TUNING.md / MATCH-SIM.md. |
+| `fortnite-drop-index/index.html` | Not a game — a reference page. Every named Fortnite POI from C1 S1 to C7 S4 (220 across 40 seasons), tier-ranked S–D on the loot-rarity palette. Board view (tier rows) + Dossier view (by season), filters, click-through detail drawer. Open via `Fortnite Drop Index.url`. |
 
 ## fortnite-org-sim (APEX ORG)
 
