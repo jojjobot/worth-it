@@ -198,10 +198,16 @@ export function OrgSheet({
         })
       }
     } else {
-      for (const d of state.rivalDuos.filter((r: RivalDuo) => r.orgName === orgName)) {
+      // A duo belongs to this org if one of ITS PLAYERS does - not if the duo
+      // happens to be labelled with the org name. That is what puts the
+      // CGN Esports / AIGHT pairing on both of those orgs' pages.
+      const theirs = state.rivalDuos.filter((r: RivalDuo) =>
+        r.playerIds.some((id) => state.players[id]?.orgName === orgName),
+      )
+      for (const d of theirs) {
         rows.push({
           key: d.id,
-          label: d.playerIds.map((id) => state.players[id]?.tag ?? '?').join(' + '),
+          label: d.orgName,
           players: d.playerIds.map((id) => state.players[id]).filter((p): p is Player => !!p),
           games: d.gamesTogether,
         })
@@ -235,7 +241,10 @@ export function OrgSheet({
         continue
       }
       for (const s of res.rivals ?? []) {
-        if (s.orgName !== orgName) continue
+        const theirs =
+          s.orgName === orgName ||
+          (s.playerIds ?? []).some((id) => state.players[id]?.orgName === orgName)
+        if (!theirs) continue
         out.push({
           week: res.week,
           event: res.name,
@@ -346,6 +355,9 @@ export function OrgSheet({
               {duos.map((d) => (
                 <div key={d.key} className="flex flex-wrap items-center gap-x-5 gap-y-2 border border-slate-800 bg-slate-950/40 p-2.5">
                   <div className="min-w-[12rem] flex-1">
+                    {d.label !== orgName && (
+                      <div className="label mb-1 text-[var(--text-faint)]">{d.label}</div>
+                    )}
                     <div className="flex flex-wrap items-center gap-2">
                       {d.players.map((p) => (
                         <span key={p.id} className="flex items-center gap-1.5 text-[12px]">

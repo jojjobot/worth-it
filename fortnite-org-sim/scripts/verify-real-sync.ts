@@ -12,7 +12,7 @@
 // ---------------------------------------------------------------------------
 
 import { createNewGame, syncRealScene } from '../src/engine/game'
-import { REAL, REAL_ORGS } from '../src/engine/realPlayers'
+import { REAL, realDuoDefs } from '../src/engine/realPlayers'
 import { playerOverall } from '../src/engine/players'
 import type { GameState } from '../src/engine/types'
 
@@ -20,8 +20,13 @@ import type { GameState } from '../src/engine/types'
 const ADDED_LATER = [
   'Rapid', 'Veno', 'Th0masHD', 'Darm', 'Demus',
   'Cold', 'Acorn', 'Clix', 'Ajerss', 'Ritual',
+  'Queasy', 'Merstach', 'TaySon', 'Setty', 'JannisZ',
+  'Cheatiin', 'Flickzy', 'Chap', 'Khanada', 'VicterV',
 ]
-const ORGS_ADDED_LATER = ['t1', 'xset', 'geng']
+const ORGS_ADDED_LATER = [
+  't1', 'xset', 'geng',
+  'godlike', 'dignitas', 'nigma', 'mates', 'cgn-aight',
+]
 
 let failures = 0
 function check(label: string, ok: boolean, detail = '') {
@@ -108,13 +113,13 @@ console.log('--- after syncRealScene() ---')
 const added = syncRealScene(state)
 console.log(`  added: ${added.join(', ') || '(none)'}`)
 
-const expectedDuos = REAL_ORGS.reduce((a, o) => a + o.duos.length, 0)
+const expectedDuos = realDuoDefs().length
 const tagsOf = (orgId: string, defId: string) =>
   state.rivalDuos
     .filter((d) => d.orgId === orgId && d.defId === defId)
     .flatMap((d) => d.playerIds.map((id) => state.players[id]?.tag))
 
-check('all ten missing players came back', ADDED_LATER.every((t) => !!findByTag(state, t)),
+check('all twenty missing players came back', ADDED_LATER.every((t) => !!findByTag(state, t)),
   ADDED_LATER.filter((t) => !findByTag(state, t)).join(', '))
 check('every player in the file is now live',
   (REAL.players as any[]).every((e) => !!findByTag(state, e.gamertag)))
@@ -140,6 +145,21 @@ check('the second Twisted Minds duo is Cold + Rapid',
 check('Gen.G arrived with Ajerss + Ritual',
   tagsOf('geng', 'geng-a').includes('Ajerss') && tagsOf('geng', 'geng-a').includes('Ritual'),
   tagsOf('geng', 'geng-a').join(' + '))
+check('the cross-org pairing exists as one duo',
+  tagsOf('cgn-aight', 'cgn-aight').includes('JannisZ') &&
+    tagsOf('cgn-aight', 'cgn-aight').includes('Cheatiin'),
+  tagsOf('cgn-aight', 'cgn-aight').join(' + '))
+check('its two players stayed at their own separate orgs',
+  findByTag(state, 'JannisZ')!.orgName === 'CGN Esports' &&
+    findByTag(state, 'Cheatiin')!.orgName === 'AIGHT')
+check('Dignitas arrived with Khanada + VicterV',
+  tagsOf('dignitas', 'dignitas-a').includes('Khanada') &&
+    tagsOf('dignitas', 'dignitas-a').includes('VicterV'),
+  tagsOf('dignitas', 'dignitas-a').join(' + '))
+check('the free agents are in no duo at all',
+  ['TaySon', 'Setty'].every(
+    (t) => !state.rivalDuos.some((d) => d.playerIds.includes(findByTag(state, t)!.id)),
+  ))
 check('the evicted stand-in is gone from players and market',
   !state.players['standin-tm'] && !state.marketIds.includes('standin-tm'))
 check('Clix is on XSET but in no duo (he has no fixed partner)',

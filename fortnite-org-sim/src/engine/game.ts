@@ -18,11 +18,11 @@ import {
 } from './players'
 import {
   REAL,
-  REAL_ORGS,
   backfillRivalDuo,
   buildRealPlayer,
   buildRealRoster,
   generateOrgFiller,
+  realDuoDefs,
   realSignReputationGate,
   refreshRealPlayer,
 } from './realPlayers'
@@ -171,79 +171,76 @@ export function syncRealScene(state: GameState): string[] {
     added.push(p.tag)
   }
 
-  for (const org of REAL_ORGS) {
-    // An org can field more than one duo, so match each authored duo to the one
-    // already in the save before creating anything. Saves written before that
-    // was possible carry no defId, so fall back to whichever existing duo
-    // already holds one of this duo's players.
-    const claimed = new Set<string>()
-    for (const def of org.duos) {
-      let duo =
-        state.rivalDuos.find((d) => d.defId === def.id) ??
-        state.rivalDuos.find(
-          (d) =>
-            d.orgId === org.id &&
-            !d.defId &&
-            !claimed.has(d.id) &&
-            d.playerIds.some((id) => {
-              const sitting = state.players[id]
-              return sitting && def.players.some((t) => t.toLowerCase() === sitting.tag.toLowerCase())
-            }),
-        ) ??
-        state.rivalDuos.find((d) => d.orgId === org.id && !d.defId && !claimed.has(d.id))
+  // An org can field more than one duo, and a duo can span two orgs, so match
+  // each authored duo to the one already in the save before creating anything.
+  // Saves written before that was possible carry no defId, so fall back to
+  // whichever existing duo already holds one of this duo's players.
+  const claimed = new Set<string>()
+  for (const def of realDuoDefs()) {
+    let duo =
+      state.rivalDuos.find((d) => d.defId === def.defId) ??
+      state.rivalDuos.find(
+        (d) =>
+          d.orgId === def.orgId &&
+          !d.defId &&
+          !claimed.has(d.id) &&
+          d.playerIds.some((id) => {
+            const sitting = state.players[id]
+            return sitting && def.players.some((t) => t.toLowerCase() === sitting.tag.toLowerCase())
+          }),
+      ) ??
+      state.rivalDuos.find((d) => d.orgId === def.orgId && !d.defId && !claimed.has(d.id))
 
-      if (!duo) {
-        duo = {
-          id: nextId('rival'),
-          orgId: org.id,
-          defId: def.id,
-          orgName: org.name,
-          region: def.region ?? org.region,
-          playerIds: ['', ''],
-          gamesTogether: rng.int(90, 260),
-          strategy: 'balanced',
-        }
-        state.rivalDuos.push(duo)
+    if (!duo) {
+      duo = {
+        id: nextId('rival'),
+        orgId: def.orgId,
+        defId: def.defId,
+        orgName: def.orgName,
+        region: def.region,
+        playerIds: ['', ''],
+        gamesTogether: rng.int(90, 260),
+        strategy: 'balanced',
       }
-      claimed.add(duo.id)
-      duo.defId = def.id
-      duo.orgName = org.name
-      duo.region = def.region ?? org.region
-
-      const seats: string[] = [duo.playerIds[0], duo.playerIds[1]]
-      for (const tag of def.players) {
-        const real = byTag.get(tag.toLowerCase())
-        if (!real || seats.includes(real.id)) continue
-        // A real player YOU signed stays yours - the org does not take them back.
-        if (real.joinedWeek !== null) continue
-        // Nor do they get pulled out of another duo they are already sitting in,
-        // which is what would happen if the file moved them between orgs.
-        if (state.rivalDuos.some((d) => d !== duo && d.playerIds.includes(real.id))) continue
-        // They may only take a seat that is empty or held by a generated
-        // stand-in you do not own.
-        const slot = seats.findIndex((id) => {
-          const sitting = id ? state.players[id] : null
-          return !sitting || (!sitting.isReal && !state.rosterIds.includes(id))
-        })
-        if (slot < 0) continue
-        const evicted = seats[slot] ? state.players[seats[slot]] : null
-        seats[slot] = real.id
-        real.orgName = org.name
-        if (evicted) {
-          delete state.players[evicted.id]
-          state.marketIds = state.marketIds.filter((id) => id !== evicted.id)
-        }
-      }
-
-      for (let i = 0; i < 2; i++) {
-        if (seats[i] && state.players[seats[i]]) continue
-        const filler = generateOrgFiller(rng, taken, org)
-        state.players[filler.id] = filler
-        state.marketIds.push(filler.id)
-        seats[i] = filler.id
-      }
-      duo.playerIds = [seats[0], seats[1]]
+      state.rivalDuos.push(duo)
     }
+    claimed.add(duo.id)
+    duo.defId = def.defId
+    duo.orgName = def.orgName
+    duo.region = def.region
+
+    const seats: string[] = [duo.playerIds[0], duo.playerIds[1]]
+    for (const tag of def.players) {
+      const real = byTag.get(tag.toLowerCase())
+      if (!real || seats.includes(real.id)) continue
+      // A real player YOU signed stays yours - the org does not take them back.
+      if (real.joinedWeek !== null) continue
+      // Nor do they get pulled out of another duo they are already sitting in,
+      // which is what would happen if the file moved them between orgs.
+      if (state.rivalDuos.some((d) => d !== duo && d.playerIds.includes(real.id))) continue
+      // They may only take a seat that is empty or held by a generated
+      // stand-in you do not own.
+      const slot = seats.findIndex((id) => {
+        const sitting = id ? state.players[id] : null
+        return !sitting || (!sitting.isReal && !state.rosterIds.includes(id))
+      })
+      if (slot < 0) continue
+      const evicted = seats[slot] ? state.players[seats[slot]] : null
+      seats[slot] = real.id
+      if (evicted) {
+        delete state.players[evicted.id]
+        state.marketIds = state.marketIds.filter((id) => id !== evicted.id)
+      }
+    }
+
+    for (let i = 0; i < 2; i++) {
+      if (seats[i] && state.players[seats[i]]) continue
+      const filler = generateOrgFiller(rng, taken, { name: def.orgName, region: def.region })
+      state.players[filler.id] = filler
+      state.marketIds.push(filler.id)
+      seats[i] = filler.id
+    }
+    duo.playerIds = [seats[0], seats[1]]
   }
 
   if (added.length > 0) {

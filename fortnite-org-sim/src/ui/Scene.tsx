@@ -36,7 +36,9 @@ export default function Scene({ state }: { state: GameState }) {
         .filter((p): p is Player => !!p)
       return {
         name: d.orgName,
-        orgName: d.orgName,
+        // A cross-org pairing is labelled "CGN Esports / AIGHT", which is not an
+        // org page. Open the org the first player actually plays for.
+        orgName: players[0]?.orgName ?? d.orgName,
         region: d.region,
         players,
         games: d.gamesTogether,

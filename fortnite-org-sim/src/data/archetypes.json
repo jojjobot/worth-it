@@ -8,14 +8,17 @@
     "Mechanical Carry": "mech_carry",
     "Aggressive All-Rounder": "all_rounder",
     "Complete Veteran": "all_rounder",
+    "Complete All-Rounder": "all_rounder",
     "Veteran Anchor": "anchor",
     "Anchor": "anchor",
     "IGL / Zone Anchor": "igl",
+    "Veteran IGL": "igl",
     "Support IGL": "support_igl",
     "Fragger": "fragger",
     "Mechanical Fragger": "mech_carry",
     "Prodigy": "prodigy",
-    "Legend": "legend"
+    "Legend": "legend",
+    "Declining Legend": "legend"
   },
 
   "archetypes": [

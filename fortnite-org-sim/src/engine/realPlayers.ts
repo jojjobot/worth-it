@@ -51,12 +51,68 @@ export interface RealOrgDef {
   duos: RealDuoDef[]
 }
 
+/**
+ * A duo whose two players are at DIFFERENT orgs. Fortnite duos are not bound by
+ * org - JannisZ (CGN Esports) and Cheatiin (AIGHT) ran FNCS 2026 Major 1
+ * together - so a pairing like that cannot live inside either org's `duos`.
+ * It gets its own entry, with its own name and colour for the board.
+ */
+export interface RealCrossDuoDef {
+  id: string
+  name: string
+  region: string
+  color: string
+  players: string[]
+}
+
 export const REAL_ORGS: RealOrgDef[] = (REAL.orgs as any[]).filter((o) => !o.id.startsWith('__'))
 
-/** Look up an org's brand colour by name, for the UI. */
+export const REAL_CROSS_DUOS: RealCrossDuoDef[] = ((REAL.crossOrgDuos ?? []) as any[]).filter(
+  (d) => !String(d.id).startsWith('__'),
+)
+
+/** Look up an org's - or a cross-org pairing's - brand colour by name, for the UI. */
 export function realOrgColor(name: string): string | null {
   const org = REAL_ORGS.find((o) => o.name === name)
-  return org ? org.color : null
+  if (org) return org.color
+  const cross = REAL_CROSS_DUOS.find((d) => d.name === name)
+  return cross ? cross.color : null
+}
+
+/** Every duo the real scene fields, org-internal and cross-org alike, flattened. */
+export interface ResolvedDuoDef {
+  /** Org id, or the cross-duo's own id when the pair spans two orgs. */
+  orgId: string
+  defId: string
+  /** What the board calls them: an org name, or "CGN Esports / AIGHT". */
+  orgName: string
+  region: string
+  players: string[]
+}
+
+export function realDuoDefs(): ResolvedDuoDef[] {
+  const out: ResolvedDuoDef[] = []
+  for (const org of REAL_ORGS) {
+    for (const def of org.duos ?? []) {
+      out.push({
+        orgId: org.id,
+        defId: def.id,
+        orgName: org.name,
+        region: def.region ?? org.region,
+        players: def.players,
+      })
+    }
+  }
+  for (const cd of REAL_CROSS_DUOS) {
+    out.push({
+      orgId: cd.id,
+      defId: cd.id,
+      orgName: cd.name,
+      region: cd.region,
+      players: cd.players,
+    })
+  }
+  return out
 }
 
 // --- Peak derivation -------------------------------------------------------
@@ -210,7 +266,11 @@ export function buildRealPlayer(rng: Rng, taken: Set<string>, entry: any): Playe
  * their real partner is not in the reference set, or because you signed one of
  * them away.
  */
-export function generateOrgFiller(rng: Rng, taken: Set<string>, org: RealOrgDef): Player {
+export function generateOrgFiller(
+  rng: Rng,
+  taken: Set<string>,
+  org: { name: string; region: string },
+): Player {
   const filler = generatePlayer(rng, taken, {
     region: org.region,
     baseRating: rng.gauss(84, 3),
@@ -290,30 +350,28 @@ export function buildRealRoster(rng: Rng, taken: Set<string>): RealRosterResult 
   }
 
   const rivalDuos: RivalDuo[] = []
-  for (const org of REAL_ORGS) {
-    for (const def of org.duos) {
-      const ids: string[] = []
-      for (const tag of def.players) {
-        const p = byTag.get(tag)
-        if (p) ids.push(p.id)
-      }
-      // Fill any empty seat with a generated player of a believable standard.
-      while (ids.length < 2) {
-        const filler = generateOrgFiller(rng, taken, org)
-        players.push(filler)
-        ids.push(filler.id)
-      }
-      rivalDuos.push({
-        id: nextId('rival'),
-        orgId: org.id,
-        defId: def.id,
-        orgName: org.name,
-        region: def.region ?? org.region,
-        playerIds: [ids[0], ids[1]],
-        gamesTogether: rng.int(90, 260),
-        strategy: 'balanced',
-      })
+  for (const def of realDuoDefs()) {
+    const ids: string[] = []
+    for (const tag of def.players) {
+      const p = byTag.get(tag)
+      if (p) ids.push(p.id)
     }
+    // Fill any empty seat with a generated player of a believable standard.
+    while (ids.length < 2) {
+      const filler = generateOrgFiller(rng, taken, { name: def.orgName, region: def.region })
+      players.push(filler)
+      ids.push(filler.id)
+    }
+    rivalDuos.push({
+      id: nextId('rival'),
+      orgId: def.orgId,
+      defId: def.defId,
+      orgName: def.orgName,
+      region: def.region,
+      playerIds: [ids[0], ids[1]],
+      gamesTogether: rng.int(90, 260),
+      strategy: 'balanced',
+    })
   }
 
   return { players, rivalDuos }
