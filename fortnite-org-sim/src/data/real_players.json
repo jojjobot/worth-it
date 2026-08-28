@@ -3,7 +3,7 @@
   "__DATA_SNAPSHOT": "Epic Power Rankings, August 2026.",
   "__PRIVACY_RULES": "Players are keyed by GAMERTAG - that is their competitive identity. `real_name` appears ONLY where the player is an adult and the name is publicly documented. Under-18 players have NO name and NO birthdate, only an age. No player in this file is given an `ego` or any other personality-defect rating; those are for generated fictional players only.",
   "__PEAK": "Only `peak_overall` is authored here. The engine derives a per-sub-stat ceiling from it (see realPlayers.ts -> derivePeak), so the peak of each individual sub-stat is a consequence of the design, not another number to maintain. Peak is hidden in the UI by exactly the same rule as every other player.",
-  "__FREE_AGENTS": "An entry with `org: null` is a FREE AGENT: it sits on the transfer market with no buyout and no contract, though the reputation gate still applies. Th0masHD is the only one left after the August 2026 research pass - 84.81% of his career earnings came as an independent, so no org is the accurate answer rather than a missing one.",
+  "__FREE_AGENTS": "An entry with `org: null` is a FREE AGENT: it sits on the transfer market with no buyout and no contract, though the reputation gate still applies. Th0masHD is the only one left after the August 2026 research pass, and it is his real status, not a gap in the data: he left Virtus.pro on 3 August 2026 (joined 21 January 2026, alongside FoCuS) and is listed teamless. An earlier version of this note justified it by his career earnings split, which was the wrong reason for the right answer - what makes him a free agent is the VP exit, three weeks before this snapshot.",
   "__POTENTIAL": "`peak_overall` IS the potential system - there is no second one. It was set in one pass on 2026-08-28 from verified ages plus each career record, on this ladder of remaining overall headroom: age 15 about +4.8, age 17 about +3.2, age 18 about +2.2, age 19 about +1.2, age 20 about +0.5, age 21 about +0.3, age 22 and over nothing. Each player is then adjusted for how much of their gap is Big Stage Nerve - earned only at LANs, never trainable - versus trainable skill, and every one carries a `potential_note` arguing their number. The ladder agrees with balance.json -> progression, which sets peakAge 20, declineStartAge 22 and retirementAgeMin 24.",
   "__SOURCES": "Ages, orgs, duos and real names verified August 2026 against Liquipedia, Esports Earnings, Esports Charts and the FNCS 2026 roster reporting. Every age in this file is sourced - no placeholders remain. The 29 sub-stat ratings are still estimates; no public source measures them.",
 
@@ -246,6 +246,7 @@
       "org": null, "region": "EU", "age": 24,
       "archetype": "Veteran Anchor",
       "duo": "FoCuS",
+      "__org": "TEAMLESS, verified. Team history: Singularity 2019, Atlantis 2019-20, Gamma 2020-21, Astralis 2021-22, G2 2023, Heroic Oct 2023 - Sep 2025, Virtus.pro 21 Jan 2026 - 3 Aug 2026. Nothing since. `duo` is FoCuS because that was the VP pairing he left with - he has no org duo right now, which is exactly why he is signable.",
       "current_overall": 89.6, "peak_overall": 89.8,
       "aim": { "tracking": 88, "flicks": 86, "accuracy": 91, "headshot": 90 },
       "mechanics": { "build_speed": 84, "build_efficiency": 93, "edit_speed": 85, "edit_accuracy": 91 },
