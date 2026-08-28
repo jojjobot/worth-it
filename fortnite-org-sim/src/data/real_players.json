@@ -3,7 +3,9 @@
   "__DATA_SNAPSHOT": "Epic Power Rankings, August 2026.",
   "__PRIVACY_RULES": "Players are keyed by GAMERTAG - that is their competitive identity. `real_name` appears ONLY where the player is an adult and the name is publicly documented. Under-18 players have NO name and NO birthdate, only an age. No player in this file is given an `ego` or any other personality-defect rating; those are for generated fictional players only.",
   "__PEAK": "Only `peak_overall` is authored here. The engine derives a per-sub-stat ceiling from it (see realPlayers.ts -> derivePeak), so the peak of each individual sub-stat is a consequence of the design, not another number to maintain. Peak is hidden in the UI by exactly the same rule as every other player.",
-  "__FREE_AGENTS": "Five entries (Rapid, Veno, Th0masHD, Darm, Demus) arrived as a ratings sheet with NO org, NO PR and NO age attached, so they are written with `org: null` = FREE AGENT. They sit on the transfer market with no buyout and no contract, but the reputation gate still applies. `region` and `age` on those five are flagged estimates - fill in the real org, PR and age here and they become signed players with a buyout automatically.",
+  "__FREE_AGENTS": "An entry with `org: null` is a FREE AGENT: it sits on the transfer market with no buyout and no contract, though the reputation gate still applies. Th0masHD is the only one left after the August 2026 research pass - 84.81% of his career earnings came as an independent, so no org is the accurate answer rather than a missing one.",
+  "__POTENTIAL": "`peak_overall` IS the potential system - there is no second one. It was set in one pass on 2026-08-28 from verified ages plus each career record, on this ladder of remaining overall headroom: age 15 about +4.8, age 17 about +3.2, age 18 about +2.2, age 19 about +1.2, age 20 about +0.5, age 21 about +0.3, age 22 and over nothing. Each player is then adjusted for how much of their gap is Big Stage Nerve - earned only at LANs, never trainable - versus trainable skill, and every one carries a `potential_note` arguing their number. The ladder agrees with balance.json -> progression, which sets peakAge 20, declineStartAge 22 and retirementAgeMin 24.",
+  "__SOURCES": "Ages, orgs, duos and real names verified August 2026 against Liquipedia, Esports Earnings, Esports Charts and the FNCS 2026 roster reporting. Every age in this file is sourced - no placeholders remain. The 29 sub-stat ratings are still estimates; no public source measures them.",
 
   "settings": {
     "__doc": "How the real reference players behave as signings. They are all under contract at their real orgs, so prising one loose costs a buyout on top of their wage. Tune these to make the top of the scene more or less reachable.",
@@ -28,13 +30,18 @@
     { "id": "aurora", "name": "Aurora Gaming", "region": "EU", "color": "#7d5cff", "roster": ["shxrk", "t3eny"] },
     { "id": "ag", "name": "AG", "region": "EU", "color": "#3ba7ff", "roster": ["Sky", "Scroll"] },
     { "id": "havok", "name": "HavoK by Vitality", "region": "EU", "color": "#f5d020", "roster": ["SwizzY", "Pixie"] },
+    { "id": "t1", "name": "T1", "region": "EU", "color": "#e2012d", "roster": ["Demus", "Darm"] },
     {
-      "id": "twisted", "name": "Twisted Minds", "region": "NAC", "color": "#ff7a1a", "roster": ["boltz"],
-      "__roster": "boltz duos with Acorn in real life. Acorn is not in this reference set, so the org fields boltz plus a generated fictional partner - we do not invent ratings for real players who are not in the file."
+      "id": "twisted", "name": "Twisted Minds", "region": "NAC", "color": "#ff7a1a", "roster": ["boltz", "Rapid"],
+      "__roster": "Twisted Minds field four players in real life (boltz, Acorn, Rapid, Cold). An org gets one duo here, so it fields the two who are in this reference set - both genuinely on the roster."
+    },
+    {
+      "id": "xset", "name": "XSET", "region": "EU", "color": "#00c2a8", "roster": ["Veno"],
+      "__roster": "Veno won Major 1 of 2026 alongside Curve, who is not in this reference set, so the second slot is a generated fictional player. We do not invent ratings for real players who are absent from the file."
     },
     {
       "id": "roc", "name": "ROC", "region": "EU", "color": "#b0b6c0", "roster": ["Kami"],
-      "__roster": "Kami duos with Charyy in real life. Same rule as Twisted Minds - Charyy is not in this set, so the second slot is a generated fictional player."
+      "__roster": "Kami duos with Charyy in real life. Same rule as XSET - Charyy is not in this set, so the second slot is a generated fictional player."
     }
   ],
 
@@ -46,7 +53,7 @@
       "pr": 37618, "pr_rank": 10,
       "archetype": "Mechanical Aggro Carry",
       "duo": "Pollo",
-      "current_overall": 92, "peak_overall": 92.8,
+      "current_overall": 92, "peak_overall": 93.6,
       "aim": { "tracking": 96, "flicks": 97, "accuracy": 95, "headshot": 96 },
       "mechanics": { "build_speed": 96, "build_efficiency": 85, "edit_speed": 97, "edit_accuracy": 93 },
       "fighting": { "edit_iq": 94, "piece_control": 97, "box_fighting": 98, "hg_retakes": 96, "reset_timing": 89, "movement": 96 },
@@ -54,7 +61,8 @@
       "offspawn": { "drop_accuracy": 94, "fifty_fifties": 97, "offspawn_fights": 97 },
       "mental": { "clutch": 97, "under_pressure": 95, "tilt_resistance": 87, "big_stage_nerve": 94, "consistency": 76 },
       "teamwork": { "communication": 90, "decision_making": 84, "adaptivity": 86 },
-      "note": "2024 World Champion. Highest ceiling in the game, lowest floor of the top tier. Consistency 76 is deliberate - he should have disaster nights and then win the tournament."
+      "note": "2024 World Champion. Highest ceiling in the game, lowest floor of the top tier. Consistency 76 is deliberate - he should have disaster nights and then win the tournament.",
+      "potential_note": "Consistency 76 is the lowest number attached to any elite player here, and consistency is trainable in a way nerve is not. That single stat is most of his remaining ceiling - the rest of him is close to maxed at 19."
     },
     {
       "gamertag": "vic0",
@@ -64,7 +72,7 @@
       "pr": 39285, "pr_rank": 4,
       "archetype": "Aggressive All-Rounder",
       "duo": "Malibuca",
-      "current_overall": 92, "peak_overall": 92,
+      "current_overall": 92, "peak_overall": 93,
       "aim": { "tracking": 92, "flicks": 90, "accuracy": 93, "headshot": 92 },
       "mechanics": { "build_speed": 92, "build_efficiency": 89, "edit_speed": 91, "edit_accuracy": 92 },
       "fighting": { "edit_iq": 93, "piece_control": 93, "box_fighting": 92, "hg_retakes": 92, "reset_timing": 93, "movement": 90 },
@@ -72,7 +80,8 @@
       "offspawn": { "drop_accuracy": 90, "fifty_fifties": 92, "offspawn_fights": 92 },
       "mental": { "clutch": 91, "under_pressure": 93, "tilt_resistance": 92, "big_stage_nerve": 95, "consistency": 92 },
       "teamwork": { "communication": 93, "decision_making": 91, "adaptivity": 88 },
-      "note": "Reigning FNCS Major 1 Summit champion (Dusseldorf, June 2026). At his peak right now. Note the alias - he competes under the tag 'tryon' as well."
+      "note": "Reigning FNCS Major 1 Summit champion (Dusseldorf, June 2026). At his peak right now. Note the alias - he competes under the tag 'tryon' as well.",
+      "potential_note": "The most complete player in the file: no sub-stat below 88, nerve already 95, EWC 2026 and the Major 1 Summit both won. Very little left to add, and at 19 about three years to add it."
     },
     {
       "gamertag": "Pollo",
@@ -81,7 +90,7 @@
       "pr": 39367, "pr_rank": 3,
       "archetype": "Aggressive All-Rounder",
       "duo": "Peterbot",
-      "current_overall": 91.4, "peak_overall": 92,
+      "current_overall": 91.4, "peak_overall": 93.4,
       "aim": { "tracking": 93, "flicks": 92, "accuracy": 94, "headshot": 93 },
       "mechanics": { "build_speed": 93, "build_efficiency": 88, "edit_speed": 92, "edit_accuracy": 90 },
       "fighting": { "edit_iq": 91, "piece_control": 94, "box_fighting": 94, "hg_retakes": 92, "reset_timing": 90, "movement": 91 },
@@ -89,7 +98,8 @@
       "offspawn": { "drop_accuracy": 92, "fifty_fifties": 94, "offspawn_fights": 94 },
       "mental": { "clutch": 94, "under_pressure": 92, "tilt_resistance": 89, "big_stage_nerve": 96, "consistency": 83 },
       "teamwork": { "communication": 91, "decision_making": 86, "adaptivity": 88 },
-      "note": "4 FNCS titles plus 2024 Globals. Six different orgs - high Adaptivity is earned."
+      "note": "4 FNCS titles plus 2024 Globals. Six different orgs - high Adaptivity is earned.",
+      "potential_note": "18 with a World Championship and Big Stage Nerve already at 96, so unusually little of his ceiling is nerve - it is real skill growth. The highest realistic ceiling in the file after shxrk."
     },
     {
       "gamertag": "SwizzY",
@@ -98,14 +108,15 @@
       "pr": 37713, "pr_rank": 9,
       "archetype": "Anchor",
       "duo": "Pixie",
-      "current_overall": 91, "peak_overall": 91.4,
+      "current_overall": 91, "peak_overall": 91.5,
       "aim": { "tracking": 91, "flicks": 90, "accuracy": 93, "headshot": 92 },
       "mechanics": { "build_speed": 90, "build_efficiency": 91, "edit_speed": 91, "edit_accuracy": 92 },
       "fighting": { "edit_iq": 92, "piece_control": 92, "box_fighting": 90, "hg_retakes": 91, "reset_timing": 92, "movement": 89 },
       "game_sense": { "positioning": 92, "rotation": 91, "fight_selection": 91, "resource_mgmt": 91 },
       "offspawn": { "drop_accuracy": 88, "fifty_fifties": 88, "offspawn_fights": 89 },
       "mental": { "clutch": 90, "under_pressure": 91, "tilt_resistance": 89, "big_stage_nerve": 93, "consistency": 88 },
-      "teamwork": { "communication": 91, "decision_making": 92, "adaptivity": 89 }
+      "teamwork": { "communication": 91, "decision_making": 92, "adaptivity": 89 },
+      "potential_note": "Peak age, nerve 93, no hole anywhere. A finished player - sign him for what he is today, because there is no version of him that is much better."
     },
     {
       "gamertag": "Malibuca",
@@ -115,7 +126,7 @@
       "pr": 39195, "pr_rank": 5,
       "archetype": "Veteran Anchor",
       "duo": "vic0",
-      "current_overall": 91, "peak_overall": 91,
+      "current_overall": 91, "peak_overall": 91.4,
       "aim": { "tracking": 89, "flicks": 86, "accuracy": 92, "headshot": 90 },
       "mechanics": { "build_speed": 85, "build_efficiency": 93, "edit_speed": 86, "edit_accuracy": 91 },
       "fighting": { "edit_iq": 95, "piece_control": 90, "box_fighting": 87, "hg_retakes": 89, "reset_timing": 94, "movement": 85 },
@@ -123,7 +134,8 @@
       "offspawn": { "drop_accuracy": 85, "fifty_fifties": 86, "offspawn_fights": 87 },
       "mental": { "clutch": 88, "under_pressure": 92, "tilt_resistance": 93, "big_stage_nerve": 96, "consistency": 94 },
       "teamwork": { "communication": 94, "decision_making": 95, "adaptivity": 91 },
-      "note": "Pro since 2019, 3 LAN titles. Raw mechanics declining, decision-making at its peak. The template for how a veteran should age in this game."
+      "note": "Pro since 2019, 3 LAN titles. Raw mechanics declining, decision-making at its peak. The template for how a veteran should age in this game.",
+      "potential_note": "20, exactly the model's peak age, and already the best decision-maker alive. What is left is maintenance, not growth. He is the ceiling other players are measured against, not a project."
     },
     {
       "gamertag": "boltz",
@@ -132,7 +144,7 @@
       "pr": 37819, "pr_rank": 7,
       "archetype": "Complete Veteran",
       "duo": "Acorn",
-      "current_overall": 90.7, "peak_overall": 91.0,
+      "current_overall": 90.7, "peak_overall": 91.9,
       "aim": { "tracking": 92, "flicks": 91, "accuracy": 93, "headshot": 92 },
       "mechanics": { "build_speed": 90, "build_efficiency": 90, "edit_speed": 90, "edit_accuracy": 91 },
       "fighting": { "edit_iq": 91, "piece_control": 91, "box_fighting": 91, "hg_retakes": 92, "reset_timing": 91, "movement": 89 },
@@ -140,7 +152,8 @@
       "offspawn": { "drop_accuracy": 89, "fifty_fifties": 89, "offspawn_fights": 90 },
       "mental": { "clutch": 93, "under_pressure": 90, "tilt_resistance": 88, "big_stage_nerve": 91, "consistency": 85 },
       "teamwork": { "communication": 89, "decision_making": 90, "adaptivity": 87 },
-      "note": "Solo DreamHack LAN winner - unusually strong individually for a duos player. No weakness below 87; also no elite peak."
+      "note": "Solo DreamHack LAN winner - unusually strong individually for a duos player. No weakness below 87; also no elite peak.",
+      "potential_note": "No weakness below 87 and no elite peak - the flat profile that grows slowly and declines slowly. Expect small steady gains rather than a jump."
     },
     {
       "gamertag": "shxrk",
@@ -148,7 +161,7 @@
       "pr": 38435, "pr_rank": 6,
       "archetype": "Prodigy",
       "duo": "t3eny",
-      "current_overall": 90.2, "peak_overall": 94,
+      "current_overall": 90.2, "peak_overall": 95,
       "aim": { "tracking": 95, "flicks": 97, "accuracy": 95, "headshot": 96 },
       "mechanics": { "build_speed": 97, "build_efficiency": 89, "edit_speed": 98, "edit_accuracy": 93 },
       "fighting": { "edit_iq": 92, "piece_control": 97, "box_fighting": 98, "hg_retakes": 96, "reset_timing": 88, "movement": 97 },
@@ -156,17 +169,15 @@
       "offspawn": { "drop_accuracy": 91, "fifty_fifties": 94, "offspawn_fights": 94 },
       "mental": { "clutch": 92, "under_pressure": 85, "tilt_resistance": 80, "big_stage_nerve": 72, "consistency": 79 },
       "teamwork": { "communication": 85, "decision_making": 80, "adaptivity": 89 },
-      "note": "Best pure fighter in the game and only 8th overall - that contrast is the point. Biggest current-to-peak gap in the roster. Should be the single most tempting and most dangerous signing available."
+      "note": "Best pure fighter in the game and only 8th overall - that contrast is the point. Biggest current-to-peak gap in the roster. Should be the single most tempting and most dangerous signing available.",
+      "potential_note": "Age 15 and already the best pure fighter alive - the largest ceiling in the file by a distance. Almost all of the headroom is Game Sense, Mental and Big Stage Nerve 72, none of which he has had time to earn. Signing him is a bet on four years of LANs happening before his mechanics slip."
     },
     {
       "gamertag": "Rapid",
-      "org": null, "region": "NAC", "age": 19,
-      "ageEstimated": true,
-      "__ageEstimated": "Added from the August 2026 ratings sheet, which carried no age, no PR and no org. Age is a placeholder chosen to fit the authored Big Stage Nerve so the progression model behaves - correct it if you know the real figure.",
-      "regionEstimated": true,
+      "org": "Twisted Minds", "region": "NAC", "age": 19,
       "archetype": "Aggressive All-Rounder",
-      "duo": null,
-      "current_overall": 90.1, "peak_overall": 91,
+      "duo": "boltz",
+      "current_overall": 90.1, "peak_overall": 91.6,
       "aim": { "tracking": 91, "flicks": 90, "accuracy": 92, "headshot": 91 },
       "mechanics": { "build_speed": 90, "build_efficiency": 90, "edit_speed": 90, "edit_accuracy": 91 },
       "fighting": { "edit_iq": 90, "piece_control": 91, "box_fighting": 90, "hg_retakes": 92, "reset_timing": 90, "movement": 89 },
@@ -174,7 +185,8 @@
       "offspawn": { "drop_accuracy": 89, "fifty_fifties": 89, "offspawn_fights": 90 },
       "mental": { "clutch": 91, "under_pressure": 89, "tilt_resistance": 87, "big_stage_nerve": 88, "consistency": 86 },
       "teamwork": { "communication": 89, "decision_making": 90, "adaptivity": 88 },
-      "note": "No sub-stat below 86 and none above 92 - the flattest profile in the file. Sign him if you want a duo partner who never loses you a tournament on his own."
+      "note": "No sub-stat below 86 and none above 92 - the flattest profile in the file. Sign him if you want a duo partner who never loses you a tournament on his own.",
+      "potential_note": "Prize money has climbed every year since 2022 ($1.2k to $164k) and he is now on Twisted Minds. The flattest profile in the file, which is what caps the ceiling - he improves everywhere at once and nowhere fast."
     },
     {
       "gamertag": "Kami",
@@ -183,7 +195,7 @@
       "pr": 37553, "pr_rank": 12,
       "archetype": "Legend",
       "duo": "Charyy",
-      "current_overall": 90.1, "peak_overall": 91.5,
+      "current_overall": 90.1, "peak_overall": 90.4,
       "aim": { "tracking": 88, "flicks": 85, "accuracy": 91, "headshot": 89 },
       "mechanics": { "build_speed": 85, "build_efficiency": 93, "edit_speed": 86, "edit_accuracy": 91 },
       "fighting": { "edit_iq": 94, "piece_control": 90, "box_fighting": 85, "hg_retakes": 88, "reset_timing": 94, "movement": 84 },
@@ -191,17 +203,16 @@
       "offspawn": { "drop_accuracy": 85, "fifty_fifties": 84, "offspawn_fights": 85 },
       "mental": { "clutch": 87, "under_pressure": 90, "tilt_resistance": 92, "big_stage_nerve": 93, "consistency": 92 },
       "teamwork": { "communication": 93, "decision_making": 94, "adaptivity": 89 },
-      "note": "Oldest in the set, $1.6M career earnings. Use him to calibrate the post-21 decline curve - raw speed dropping, IQ and Mental still climbing."
+      "note": "Oldest in the set, $1.6M career earnings. Use him to calibrate the post-21 decline curve - raw speed dropping, IQ and Mental still climbing.",
+      "potential_note": "21, one year from the decline curve. Raw speed is already going (Build Speed 85, Movement 84) while IQ and Mental keep climbing - the two cancel out, so his ceiling sits barely above his current rating."
     },
     {
       "gamertag": "Veno",
-      "org": null, "region": "EU", "age": 20,
-      "ageEstimated": true,
-      "__ageEstimated": "Added from the August 2026 ratings sheet, which carried no age, no PR and no org. Age is a placeholder chosen to fit the authored Big Stage Nerve so the progression model behaves - correct it if you know the real figure.",
-      "regionEstimated": true,
+      "real_name": "Harry Pearson",
+      "org": "XSET", "region": "EU", "age": 21,
       "archetype": "IGL / Zone Anchor",
       "duo": null,
-      "current_overall": 90, "peak_overall": 90.5,
+      "current_overall": 90, "peak_overall": 90.3,
       "aim": { "tracking": 88, "flicks": 85, "accuracy": 90, "headshot": 88 },
       "mechanics": { "build_speed": 86, "build_efficiency": 91, "edit_speed": 87, "edit_accuracy": 90 },
       "fighting": { "edit_iq": 93, "piece_control": 91, "box_fighting": 84, "hg_retakes": 89, "reset_timing": 93, "movement": 85 },
@@ -209,35 +220,33 @@
       "offspawn": { "drop_accuracy": 84, "fifty_fifties": 83, "offspawn_fights": 85 },
       "mental": { "clutch": 88, "under_pressure": 90, "tilt_resistance": 92, "big_stage_nerve": 94, "consistency": 91 },
       "teamwork": { "communication": 93, "decision_making": 94, "adaptivity": 89 },
-      "note": "Best rotation read in the set - the only player who tops a Game Sense sub-stat outright over Malibuca. Ratings came in without any org, so he sits on the market as a free agent."
+      "note": "Best rotation read in the set - the only player who tops a Game Sense sub-stat outright over Malibuca. Ratings came in without any org, so he sits on the market as a free agent.",
+      "potential_note": "Four FNCS titles including Major 1 of 2026, and the best Rotation read in the file. At 21 he is not going to get better - he is going to stay this good for two more seasons and then fall away."
     },
     {
       "gamertag": "Pixie",
       "real_name": "Wilmer Juriander",
-      "org": "HavoK by Vitality", "region": "EU", "age": 19,
-      "ageEstimated": true,
-      "__ageEstimated": "No age was given for Pixie in the source snapshot. 19 is a placeholder so the progression model has something to work with - correct it if you know the real figure.",
+      "org": "HavoK by Vitality", "region": "EU", "age": 18,
       "pr": 37777, "pr_rank": 8,
       "archetype": "Fragger",
       "duo": "SwizzY",
-      "current_overall": 89.9, "peak_overall": 90.5,
+      "current_overall": 89.9, "peak_overall": 92.3,
       "aim": { "tracking": 93, "flicks": 92, "accuracy": 93, "headshot": 94 },
       "mechanics": { "build_speed": 92, "build_efficiency": 88, "edit_speed": 92, "edit_accuracy": 90 },
       "fighting": { "edit_iq": 90, "piece_control": 92, "box_fighting": 94, "hg_retakes": 92, "reset_timing": 89, "movement": 92 },
       "game_sense": { "positioning": 88, "rotation": 87, "fight_selection": 86, "resource_mgmt": 86 },
       "offspawn": { "drop_accuracy": 90, "fifty_fifties": 92, "offspawn_fights": 92 },
       "mental": { "clutch": 90, "under_pressure": 87, "tilt_resistance": 85, "big_stage_nerve": 82, "consistency": 84 },
-      "teamwork": { "communication": 90, "decision_making": 86, "adaptivity": 88 }
+      "teamwork": { "communication": 90, "decision_making": 86, "adaptivity": 88 },
+      "potential_note": "Turned 18 in August 2026 - a year younger than the placeholder this file used to carry, which raises his ceiling. Nerve 82 and Game Sense in the 80s leave real room that a HavoK LAN run would unlock."
     },
     {
       "gamertag": "Th0masHD",
-      "org": null, "region": "EU", "age": 21,
-      "ageEstimated": true,
-      "__ageEstimated": "Added from the August 2026 ratings sheet, which carried no age, no PR and no org. Age is a placeholder chosen to fit the authored Big Stage Nerve so the progression model behaves - correct it if you know the real figure.",
-      "regionEstimated": true,
+      "real_name": "Thomas Høxbro Davidsen",
+      "org": null, "region": "EU", "age": 24,
       "archetype": "Veteran Anchor",
-      "duo": null,
-      "current_overall": 89.6, "peak_overall": 90.2,
+      "duo": "FoCuS",
+      "current_overall": 89.6, "peak_overall": 89.8,
       "aim": { "tracking": 88, "flicks": 86, "accuracy": 91, "headshot": 90 },
       "mechanics": { "build_speed": 84, "build_efficiency": 93, "edit_speed": 85, "edit_accuracy": 91 },
       "fighting": { "edit_iq": 93, "piece_control": 89, "box_fighting": 86, "hg_retakes": 87, "reset_timing": 93, "movement": 83 },
@@ -245,7 +254,8 @@
       "offspawn": { "drop_accuracy": 84, "fifty_fifties": 83, "offspawn_fights": 85 },
       "mental": { "clutch": 86, "under_pressure": 89, "tilt_resistance": 93, "big_stage_nerve": 92, "consistency": 94 },
       "teamwork": { "communication": 92, "decision_making": 93, "adaptivity": 88 },
-      "note": "Slowest hands in the set and the second-most consistent player in it. The pure endgame archetype: nothing to offer in a box fight, almost never dies out of position."
+      "note": "Slowest hands in the set and the second-most consistent player in it. The pure endgame archetype: nothing to offer in a box fight, almost never dies out of position.",
+      "potential_note": "The only player in the file with essentially NO ceiling left. 24 years old, $1.4M across 237 events, four years past the model's peak age and inside its retirement window. He is here as the end of the curve: what is left when all a player has is Consistency 94 and Tilt Resistance 93."
     },
     {
       "gamertag": "t3eny",
@@ -253,7 +263,7 @@
       "pr": 37602, "pr_rank": 11,
       "archetype": "Support IGL",
       "duo": "shxrk",
-      "current_overall": 89.2, "peak_overall": 92,
+      "current_overall": 89.2, "peak_overall": 92.4,
       "aim": { "tracking": 90, "flicks": 88, "accuracy": 91, "headshot": 90 },
       "mechanics": { "build_speed": 90, "build_efficiency": 90, "edit_speed": 90, "edit_accuracy": 91 },
       "fighting": { "edit_iq": 91, "piece_control": 91, "box_fighting": 89, "hg_retakes": 90, "reset_timing": 91, "movement": 88 },
@@ -261,17 +271,15 @@
       "offspawn": { "drop_accuracy": 87, "fifty_fifties": 87, "offspawn_fights": 88 },
       "mental": { "clutch": 86, "under_pressure": 86, "tilt_resistance": 86, "big_stage_nerve": 74, "consistency": 86 },
       "teamwork": { "communication": 92, "decision_making": 92, "adaptivity": 87 },
-      "note": "The calm half of Aurora. Exists to make shxrk work."
+      "note": "The calm half of Aurora. Exists to make shxrk work.",
+      "potential_note": "Turns 18 in September 2026. No weakness anywhere and no elite peak yet; the ceiling assumes the aim and mechanics catch up to the calling, which at 17 is the normal direction of travel."
     },
     {
       "gamertag": "Darm",
-      "org": null, "region": "EU", "age": 18,
-      "ageEstimated": true,
-      "__ageEstimated": "Added from the August 2026 ratings sheet, which carried no age, no PR and no org. Age is a placeholder chosen to fit the authored Big Stage Nerve so the progression model behaves - correct it if you know the real figure.",
-      "regionEstimated": true,
+      "org": "T1", "region": "EU", "age": 17,
       "archetype": "Fragger",
-      "duo": null,
-      "current_overall": 89, "peak_overall": 91.5,
+      "duo": "Demus",
+      "current_overall": 89, "peak_overall": 92.2,
       "aim": { "tracking": 91, "flicks": 92, "accuracy": 91, "headshot": 93 },
       "mechanics": { "build_speed": 91, "build_efficiency": 87, "edit_speed": 91, "edit_accuracy": 89 },
       "fighting": { "edit_iq": 88, "piece_control": 92, "box_fighting": 93, "hg_retakes": 91, "reset_timing": 87, "movement": 92 },
@@ -279,17 +287,15 @@
       "offspawn": { "drop_accuracy": 90, "fifty_fifties": 92, "offspawn_fights": 92 },
       "mental": { "clutch": 89, "under_pressure": 85, "tilt_resistance": 82, "big_stage_nerve": 83, "consistency": 82 },
       "teamwork": { "communication": 89, "decision_making": 86, "adaptivity": 88 },
-      "note": "Mechanically top-eight, Game Sense bottom-five. Same shape as Scroll and Demus - a fragger who has to be paired with a caller."
+      "note": "Mechanically top-eight, Game Sense bottom-five. Same shape as Scroll and Demus - a fragger who has to be paired with a caller.",
+      "potential_note": "17, freshly signed by T1 for FNCS 2026 after winning Mistrzostwa Polski #2. Mechanically top-eight already; the ceiling is bought entirely with Game Sense, which is his bottom-five category."
     },
     {
       "gamertag": "Demus",
-      "org": null, "region": "EU", "age": 18,
-      "ageEstimated": true,
-      "__ageEstimated": "Added from the August 2026 ratings sheet, which carried no age, no PR and no org. Age is a placeholder chosen to fit the authored Big Stage Nerve so the progression model behaves - correct it if you know the real figure.",
-      "regionEstimated": true,
+      "org": "T1", "region": "EU", "age": 17,
       "archetype": "Mechanical Carry",
-      "duo": null,
-      "current_overall": 88.9, "peak_overall": 91.5,
+      "duo": "Darm",
+      "current_overall": 88.9, "peak_overall": 92.1,
       "aim": { "tracking": 91, "flicks": 93, "accuracy": 91, "headshot": 92 },
       "mechanics": { "build_speed": 92, "build_efficiency": 86, "edit_speed": 92, "edit_accuracy": 88 },
       "fighting": { "edit_iq": 87, "piece_control": 92, "box_fighting": 94, "hg_retakes": 91, "reset_timing": 86, "movement": 92 },
@@ -297,7 +303,8 @@
       "offspawn": { "drop_accuracy": 91, "fifty_fifties": 91, "offspawn_fights": 93 },
       "mental": { "clutch": 89, "under_pressure": 85, "tilt_resistance": 81, "big_stage_nerve": 83, "consistency": 80 },
       "teamwork": { "communication": 88, "decision_making": 86, "adaptivity": 88 },
-      "note": "The lowest Fight Selection and Edit IQ in the set alongside the third-best Box Fighting. Wins every fight he takes and takes the wrong ones."
+      "note": "The lowest Fight Selection and Edit IQ in the set alongside the third-best Box Fighting. Wins every fight he takes and takes the wrong ones.",
+      "potential_note": "Same age, same org and same shape as Darm. Lowest Fight Selection in the file - if that ever reaches the mid-90s he is a top-three player, and he has five years to find it."
     },
     {
       "gamertag": "Sky",
@@ -305,7 +312,7 @@
       "pr": 39736, "pr_rank": 2,
       "archetype": "IGL / Zone Anchor",
       "duo": "Scroll",
-      "current_overall": 88.7, "peak_overall": 91.5,
+      "current_overall": 88.7, "peak_overall": 92.3,
       "aim": { "tracking": 86, "flicks": 85, "accuracy": 88, "headshot": 88 },
       "mechanics": { "build_speed": 90, "build_efficiency": 91, "edit_speed": 91, "edit_accuracy": 92 },
       "fighting": { "edit_iq": 91, "piece_control": 90, "box_fighting": 85, "hg_retakes": 88, "reset_timing": 91, "movement": 87 },
@@ -313,7 +320,8 @@
       "offspawn": { "drop_accuracy": 84, "fifty_fifties": 84, "offspawn_fights": 83 },
       "mental": { "clutch": 82, "under_pressure": 84, "tilt_resistance": 88, "big_stage_nerve": 76, "consistency": 88 },
       "teamwork": { "communication": 94, "decision_making": 95, "adaptivity": 82 },
-      "note": "World #2 by PR, best IGL in the game. Entire gap between his PR and his rating is Big Stage Nerve 76 - untouchable online, best LAN finish is 4th."
+      "note": "World #2 by PR, best IGL in the game. Entire gap between his PR and his rating is Big Stage Nerve 76 - untouchable online, best LAN finish is 4th.",
+      "potential_note": "Best caller in the game at 17. Nerve 76 is the whole gap between his rating and his PR, and nerve is the one stat that cannot be trained - he needs LAN appearances, which is exactly what a mid-table org can give him."
     },
     {
       "gamertag": "Scroll",
@@ -321,7 +329,7 @@
       "pr": 39894, "pr_rank": 1,
       "archetype": "Mechanical Carry",
       "duo": "Sky",
-      "current_overall": 88, "peak_overall": 91.5,
+      "current_overall": 88, "peak_overall": 91.8,
       "aim": { "tracking": 91, "flicks": 94, "accuracy": 90, "headshot": 90 },
       "mechanics": { "build_speed": 95, "build_efficiency": 86, "edit_speed": 96, "edit_accuracy": 91 },
       "fighting": { "edit_iq": 88, "piece_control": 94, "box_fighting": 93, "hg_retakes": 92, "reset_timing": 84, "movement": 93 },
@@ -329,7 +337,8 @@
       "offspawn": { "drop_accuracy": 90, "fifty_fifties": 90, "offspawn_fights": 91 },
       "mental": { "clutch": 91, "under_pressure": 86, "tilt_resistance": 82, "big_stage_nerve": 74, "consistency": 80 },
       "teamwork": { "communication": 87, "decision_making": 79, "adaptivity": 80 },
-      "note": "World #1 by PR. Ranked 11th here purely on Big Stage Nerve 74 and Decision Making 79 - he is carried on calls by Sky."
+      "note": "World #1 by PR. Ranked 11th here purely on Big Stage Nerve 74 and Decision Making 79 - he is carried on calls by Sky.",
+      "potential_note": "World #1 by PR at 17, so the mechanical growth is nearly spent - the remaining ceiling is almost entirely Big Stage Nerve 74 and Decision Making 79. He grows by playing LANs, not by training."
     }
   ]
 }

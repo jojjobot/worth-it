@@ -39,11 +39,15 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
   `current` (shown, used by the sim) and `peak` (hidden ceiling).
 - **Big Stage Nerve** applies only at LAN / Grand Finals, cannot be trained, and
   is earned per LAN appearance. It is the headline progression mechanic.
-- `src/data/real_players.json` holds 17 real reference players and their orgs.
-  Ratings there are ESTIMATES; real players never get an `ego`; under-18s have
-  no real name. Those rules are enforced in `src/engine/realPlayers.ts`. An
-  entry with `org: null` is a FREE AGENT — no buyout, no contract, in no rival
-  duo, but still behind the reputation gate. `npm run verify` checks all of it.
+- `src/data/real_players.json` holds 17 real reference players and 9 real orgs.
+  Ratings there are ESTIMATES; ages, orgs, duos and real names are SOURCED
+  (see `__SOURCES`). Real players never get an `ego`; under-18s have no real
+  name. Those rules are enforced in `src/engine/realPlayers.ts`. An entry with
+  `org: null` is a FREE AGENT — no buyout, no contract, in no rival duo, but
+  still behind the reputation gate. **Potential is `peak_overall` and nothing
+  else** — it is set off verified age on the ladder in `__POTENTIAL`, and each
+  player carries a `potential_note` arguing their number. `npm run verify`
+  checks all of it.
 - `src/engine/` — rng (seeded mulberry32, state serialises into the save),
   players (generation, current/peak, scouting fog, progression), realPlayers
   (the real roster + rival orgs), sim (5-phase match engine), tournament
