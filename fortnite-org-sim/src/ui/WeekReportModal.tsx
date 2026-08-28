@@ -7,9 +7,12 @@ import { TournamentBlock } from './Results'
 
 export default function WeekReportModal({
   report,
+  orgName,
   onClose,
 }: {
   report: WeekReport
+  /** Your org's name, so your row in the standings opens your org page. */
+  orgName?: string
   onClose: () => void
 }) {
   const [openKey, setOpenKey] = useState<string | null>(report.results[0]?.key ?? null)
@@ -45,6 +48,7 @@ export default function WeekReportModal({
                 result={r}
                 open={openKey === r.key}
                 onToggle={() => setOpenKey(openKey === r.key ? null : r.key)}
+                yourOrgName={orgName}
               />
             ))}
           </div>

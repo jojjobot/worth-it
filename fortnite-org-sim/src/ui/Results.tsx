@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { realOrgColor } from '../engine/realPlayers'
+import { OrgMark, useOrgSheet } from './OrgSheet'
 import { PlayerLink } from './PlayerSheet'
 import type { GameState, MatchResult, TournamentResult } from '../engine/types'
 import { EmptyState, money, ordinal, Panel } from './components'
@@ -43,6 +44,7 @@ export default function Results({ state }: { state: GameState }) {
           result={r}
           open={openKey === r.key}
           onToggle={() => setOpenKey(openKey === r.key ? null : r.key)}
+          yourOrgName={state.orgName}
         />
       ))}
     </div>
@@ -62,10 +64,13 @@ export function TournamentBlock({
   result,
   open,
   onToggle,
+  yourOrgName,
 }: {
   result: TournamentResult
   open: boolean
   onToggle: () => void
+  /** Your org's name, so your own row in the standings opens your org page too. */
+  yourOrgName?: string
 }) {
   return (
     <section className="panel overflow-hidden">
@@ -121,7 +126,7 @@ export function TournamentBlock({
               tone={result.reputation >= 0 ? 'text-emerald-300' : 'text-rose-400'}
             />
           </div>
-          <RivalStandings result={result} />
+          <RivalStandings result={result} yourOrgName={yourOrgName} />
 
           <ol className="space-y-1.5">
             {result.session.matches.map((m) => (
@@ -140,13 +145,21 @@ export function TournamentBlock({
  * like the rest of the field - so finishing above BIG genuinely means you
  * out-scored vic0 and Malibuca that night.
  */
-function RivalStandings({ result }: { result: TournamentResult }) {
+function RivalStandings({
+  result,
+  yourOrgName,
+}: {
+  result: TournamentResult
+  yourOrgName?: string
+}) {
+  const { openOrg } = useOrgSheet()
   const rivals = result.rivals ?? []
   if (rivals.length === 0) return null
 
   const rows = [
     ...rivals.map((r) => ({
       name: r.orgName,
+      orgName: r.orgName,
       tags: r.playerTags,
       ids: r.playerIds ?? [],
       points: r.points,
@@ -155,6 +168,7 @@ function RivalStandings({ result }: { result: TournamentResult }) {
     })),
     {
       name: result.duoName,
+      orgName: yourOrgName,
       tags: result.playerTags,
       ids: result.playerIds ?? [],
       points: result.points,
@@ -181,10 +195,18 @@ function RivalStandings({ result }: { result: TournamentResult }) {
               <span className="w-10 shrink-0 text-right text-slate-400">
                 {ordinal(row.rank)}
               </span>
-              <span className="w-40 shrink-0 truncate font-semibold" style={{ color }}>
-                {row.name}
-                {row.you && <span className="ml-1 text-[9px] text-cyan-500">YOU</span>}
-              </span>
+              <button
+                type="button"
+                disabled={!row.orgName}
+                onClick={() => row.orgName && openOrg(row.orgName)}
+                title={row.orgName ? `Open ${row.orgName}` : undefined}
+                className="flex w-44 shrink-0 items-center gap-1.5 truncate text-left font-semibold transition-opacity enabled:hover:opacity-80"
+                style={{ color }}
+              >
+                <OrgMark name={row.orgName ?? row.name} color={color} size={16} />
+                <span className="truncate">{row.name}</span>
+                {row.you && <span className="text-[9px] text-cyan-500">YOU</span>}
+              </button>
               <span className="flex flex-1 flex-wrap items-center gap-1 text-slate-500">
                 {row.tags.map((tag, i) =>
                   row.ids[i] ? (

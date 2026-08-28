@@ -18,6 +18,7 @@ import Finances from './ui/Finances'
 import FrontOffice from './ui/FrontOffice'
 import WeekReportModal from './ui/WeekReportModal'
 import { PlayerSheetProvider } from './ui/PlayerSheet'
+import { OrgSheetProvider } from './ui/OrgSheet'
 
 type ScreenId = (typeof HUB_ITEMS)[number]['id']
 
@@ -105,6 +106,7 @@ export default function App() {
 
   return (
     <PlayerSheetProvider state={state}>
+      <OrgSheetProvider state={state}>
       <div className="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-4 p-4 pb-24">
         {/* ---------- Header ---------- */}
         <header className="panel flex flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-3">
@@ -193,7 +195,13 @@ export default function App() {
           onToggle={() => setMenuOpen((o) => !o)}
         />
 
-        {report && <WeekReportModal report={report} onClose={() => setReport(null)} />}
+        {report && (
+          <WeekReportModal
+            report={report}
+            orgName={state.orgName}
+            onClose={() => setReport(null)}
+          />
+        )}
 
         {toast && (
           <div className="panel-raised fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 px-4 py-2 text-[12px] text-[var(--accent)]">
@@ -201,6 +209,7 @@ export default function App() {
           </div>
         )}
       </div>
+      </OrgSheetProvider>
     </PlayerSheetProvider>
   )
 }

@@ -24,6 +24,7 @@ import {
 } from '../engine/players'
 import { realOrgColor } from '../engine/realPlayers'
 import type { CategoryKey, GameState, Player, SubKey } from '../engine/types'
+import { OrgMark, useOrgSheet } from './OrgSheet'
 import {
   ArchetypeChip,
   money,
@@ -245,6 +246,7 @@ export function PlayerSheet({
   const duo = state.duos.find((d) => d.playerIds.includes(player.id))
   const rival = state.rivalDuos.find((d) => d.playerIds.includes(player.id))
   const orgColor = realOrgColor(player.orgName ?? '')
+  const { openOrg } = useOrgSheet()
 
   return (
     <div
@@ -281,10 +283,25 @@ export function PlayerSheet({
                 )}
                 <ArchetypeChip id={player.archetype} />
               </div>
-              <p className="mt-1 text-[12px] text-slate-400">
-                <span style={{ color: orgColor ?? undefined }}>
-                  {player.orgName ?? 'Free agent'}
-                </span>
+              <p className="mt-1 flex flex-wrap items-center gap-x-1 text-[12px] text-slate-400">
+                {player.orgName ? (
+                  <button
+                    type="button"
+                    onClick={() => openOrg(player.orgName as string)}
+                    title={`Open ${player.orgName}`}
+                    className="inline-flex items-center gap-1.5 transition-opacity hover:opacity-80"
+                    style={{ color: orgColor ?? undefined }}
+                  >
+                    <OrgMark
+                      name={player.orgName}
+                      color={orgColor ?? 'var(--accent)'}
+                      size={15}
+                    />
+                    {player.orgName}
+                  </button>
+                ) : (
+                  <span className="text-emerald-300">Free agent</span>
+                )}
                 {' · '}
                 {region.name} ({region.id}) · {player.age} years old
                 {duo && ` · plays in ${duo.name}`}

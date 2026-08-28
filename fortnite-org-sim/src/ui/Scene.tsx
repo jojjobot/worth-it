@@ -12,8 +12,10 @@ import { realOrgColor } from '../engine/realPlayers'
 import type { GameState, Player } from '../engine/types'
 import { ArchetypeChip, EmptyState, ratingColor } from './components'
 import { PlayerLink } from './PlayerSheet'
+import { OrgLink, useOrgSheet } from './OrgSheet'
 
 export default function Scene({ state }: { state: GameState }) {
+  const { openOrg } = useOrgSheet()
   const mine = useMemo(
     () =>
       state.duos
@@ -34,13 +36,19 @@ export default function Scene({ state }: { state: GameState }) {
         .filter((p): p is Player => !!p)
       return {
         name: d.orgName,
+        orgName: d.orgName,
         region: d.region,
         players,
         games: d.gamesTogether,
         mine: false,
       }
     })
-    const own = mine.map((d) => ({ ...d, region: state.region, name: `${state.orgName} — ${d.name}` }))
+    const own = mine.map((d) => ({
+      ...d,
+      region: state.region,
+      orgName: state.orgName,
+      name: `${state.orgName} - ${d.name}`,
+    }))
     return [...rivals, ...own]
       .map((r) => ({ ...r, strength: r.players.length === 2 ? duoStrength(r.players, r.games) : 0 }))
       .sort((a, b) => b.strength - a.strength)
@@ -60,7 +68,9 @@ export default function Scene({ state }: { state: GameState }) {
         <p className="mt-2 max-w-2xl text-[12px] text-[var(--text-dim)]">
           Ranked by team power. These duos are simulated with the same engine your duo is, on
           ratings you can scout — nothing about them is faked. Orgs outside your region only meet
-          you at tier 5 international events.
+          you at tier 5 international events. <strong className="text-[var(--text-dim)]">Click an
+          org's mark</strong> to open their page: full roster, every duo they field, and every
+          lobby you have shared with them.
         </p>
       </section>
 
@@ -84,14 +94,19 @@ export default function Scene({ state }: { state: GameState }) {
                   {i + 1}
                 </span>
 
+                <OrgLink name={r.orgName} color={color} size={30} className="shrink-0" />
+
                 <div className="min-w-[13rem] flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className="text-[15px] font-extrabold uppercase tracking-wide"
+                    <button
+                      type="button"
+                      onClick={() => openOrg(r.orgName)}
+                      className="text-[15px] font-extrabold uppercase tracking-wide transition-opacity hover:opacity-80"
                       style={{ color }}
+                      title={`Open ${r.orgName}`}
                     >
                       {r.name}
-                    </span>
+                    </button>
                     <span className="label">{r.region}</span>
                     {!home && !r.mine && (
                       <span className="label text-[var(--text-faint)]">international only</span>

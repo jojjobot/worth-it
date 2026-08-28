@@ -79,7 +79,11 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
   plus a bottom-left **hub menu** (`Hub.tsx`) for every other screen; there is
   no tab bar. `Season.tsx` is the home page and also handles tournament entry.
   `PlayerSheet.tsx` is the click-any-player full stat sheet, opened through a
-  context provider so any screen can trigger it.
+  context provider so any screen can trigger it. `OrgSheet.tsx` is the same
+  pattern for ORGS — click an org mark (Scene rows, results standings, the org
+  line on a player sheet) for their roster, every duo they field, and every
+  lobby you have shared with them. There are no image assets, so `OrgMark`
+  draws a logo from the org's brand colour and initials.
 - The look is broadcast-sports: near-black ground, one electric accent, hard
   edges, wide-tracked uppercase labels, tabular numbers. All tokens live at the
   top of `src/index.css` as CSS variables — restyle there, not per component.
