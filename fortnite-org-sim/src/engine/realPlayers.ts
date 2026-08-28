@@ -31,12 +31,24 @@ import {
 
 export const REAL = realJson as any
 
+/**
+ * One duo an org puts on the server. A real org can field several - Twisted
+ * Minds run boltz/Acorn and Cold/Rapid at the same time - so this is a list on
+ * the org rather than a single roster pair.
+ */
+export interface RealDuoDef {
+  id: string
+  players: string[]
+  /** Defaults to the org's region. Set it where a duo plays a different one. */
+  region?: string
+}
+
 export interface RealOrgDef {
   id: string
   name: string
   region: string
   color: string
-  roster: string[]
+  duos: RealDuoDef[]
 }
 
 export const REAL_ORGS: RealOrgDef[] = (REAL.orgs as any[]).filter((o) => !o.id.startsWith('__'))
@@ -263,9 +275,9 @@ export interface RealRosterResult {
  * `org: null` is a free agent - no buyout, no contract, in no rival duo, so
  * they simply sit on the market.
  *
- * An org whose real-life partner is not in the reference set (Twisted Minds,
- * ROC) gets a GENERATED fictional partner rather than an invented version of a
- * real person. See the __roster notes in real_players.json.
+ * An org whose real-life partner is not in the reference set (XSET, ROC) gets a
+ * GENERATED fictional partner rather than an invented version of a real person.
+ * See the __duos notes in real_players.json.
  */
 export function buildRealRoster(rng: Rng, taken: Set<string>): RealRosterResult {
   const players: Player[] = []
@@ -279,26 +291,29 @@ export function buildRealRoster(rng: Rng, taken: Set<string>): RealRosterResult 
 
   const rivalDuos: RivalDuo[] = []
   for (const org of REAL_ORGS) {
-    const ids: string[] = []
-    for (const tag of org.roster) {
-      const p = byTag.get(tag)
-      if (p) ids.push(p.id)
+    for (const def of org.duos) {
+      const ids: string[] = []
+      for (const tag of def.players) {
+        const p = byTag.get(tag)
+        if (p) ids.push(p.id)
+      }
+      // Fill any empty seat with a generated player of a believable standard.
+      while (ids.length < 2) {
+        const filler = generateOrgFiller(rng, taken, org)
+        players.push(filler)
+        ids.push(filler.id)
+      }
+      rivalDuos.push({
+        id: nextId('rival'),
+        orgId: org.id,
+        defId: def.id,
+        orgName: org.name,
+        region: def.region ?? org.region,
+        playerIds: [ids[0], ids[1]],
+        gamesTogether: rng.int(90, 260),
+        strategy: 'balanced',
+      })
     }
-    // Fill any empty seat with a generated player of a believable standard.
-    while (ids.length < 2) {
-      const filler = generateOrgFiller(rng, taken, org)
-      players.push(filler)
-      ids.push(filler.id)
-    }
-    rivalDuos.push({
-      id: nextId('rival'),
-      orgId: org.id,
-      orgName: org.name,
-      region: org.region,
-      playerIds: [ids[0], ids[1]],
-      gamesTogether: rng.int(90, 260),
-      strategy: 'balanced',
-    })
   }
 
   return { players, rivalDuos }

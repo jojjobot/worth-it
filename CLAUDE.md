@@ -39,7 +39,12 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
   `current` (shown, used by the sim) and `peak` (hidden ceiling).
 - **Big Stage Nerve** applies only at LAN / Grand Finals, cannot be trained, and
   is earned per LAN appearance. It is the headline progression mechanic.
-- `src/data/real_players.json` holds 17 real reference players and 9 real orgs.
+- `src/data/real_players.json` holds 22 real reference players and 10 real orgs
+  fielding 11 duos. An org carries a LIST of duos (`orgs[].duos[]`, each with a
+  stable `id`), because real orgs field more than one — Twisted Minds run
+  boltz/Acorn and Cold/Rapid. A real player can be signed to an org and in NO
+  duo (Clix). A seat naming somebody outside the file gets a generated
+  stand-in, never an invented version of a real person.
   Ratings there are ESTIMATES; ages, orgs, duos and real names are SOURCED
   (see `__SOURCES`). Real players never get an `ego`; under-18s have no real
   name. Those rules are enforced in `src/engine/realPlayers.ts`. An entry with

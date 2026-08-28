@@ -215,6 +215,13 @@ export interface Duo {
 export interface RivalDuo {
   id: string
   orgId: string
+  /**
+   * Which of the org's duos this is, from real_players.json -> orgs[].duos[].id.
+   * An org can field more than one (Twisted Minds run two), so orgId alone is
+   * not a key. Optional: saves written before orgs could field two duos have
+   * no defId, and syncRealScene matches those up by player instead.
+   */
+  defId?: string
   orgName: string
   region: string
   playerIds: [string, string]

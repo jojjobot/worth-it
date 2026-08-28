@@ -4,18 +4,18 @@
   "__PRIVACY_RULES": "Players are keyed by GAMERTAG - that is their competitive identity. `real_name` appears ONLY where the player is an adult and the name is publicly documented. Under-18 players have NO name and NO birthdate, only an age. No player in this file is given an `ego` or any other personality-defect rating; those are for generated fictional players only.",
   "__PEAK": "Only `peak_overall` is authored here. The engine derives a per-sub-stat ceiling from it (see realPlayers.ts -> derivePeak), so the peak of each individual sub-stat is a consequence of the design, not another number to maintain. Peak is hidden in the UI by exactly the same rule as every other player.",
   "__FREE_AGENTS": "An entry with `org: null` is a FREE AGENT: it sits on the transfer market with no buyout and no contract, though the reputation gate still applies. Th0masHD is the only one left after the August 2026 research pass, and it is his real status, not a gap in the data: he left Virtus.pro on 3 August 2026 (joined 21 January 2026, alongside FoCuS) and is listed teamless. An earlier version of this note justified it by his career earnings split, which was the wrong reason for the right answer - what makes him a free agent is the VP exit, three weeks before this snapshot.",
-  "__POTENTIAL": "`peak_overall` IS the potential system - there is no second one. It was set in one pass on 2026-08-28 from verified ages plus each career record, on this ladder of remaining overall headroom: age 15 about +4.8, age 17 about +3.2, age 18 about +2.2, age 19 about +1.2, age 20 about +0.5, age 21 about +0.3, age 22 and over nothing. Each player is then adjusted for how much of their gap is Big Stage Nerve - earned only at LANs, never trainable - versus trainable skill, and every one carries a `potential_note` arguing their number. The ladder agrees with balance.json -> progression, which sets peakAge 20, declineStartAge 22 and retirementAgeMin 24.",
+  "__POTENTIAL": "`peak_overall` IS the potential system - there is no second one. It was set on 2026-08-28, and again for the five players added later that day, from verified ages plus each career record, on this ladder of remaining overall headroom: age 15 about +4.8, age 17 about +3.2, age 18 about +2.2, age 19 about +1.2, age 20 about +0.5, age 21 about +0.3, age 22 and over nothing. Each player is then adjusted for how much of their gap is Big Stage Nerve - earned only at LANs, never trainable - versus trainable skill, and every one carries a `potential_note` arguing their number. The ladder agrees with balance.json -> progression, which sets peakAge 20, declineStartAge 22 and retirementAgeMin 24.",
   "__SOURCES": "Ages, orgs, duos and real names verified August 2026 against Liquipedia, Esports Earnings, Esports Charts and the FNCS 2026 roster reporting. Every age in this file is sourced - no placeholders remain. The 29 sub-stat ratings are still estimates; no public source measures them.",
 
   "settings": {
     "__doc": "How the real reference players behave as signings. They are all under contract at their real orgs, so prising one loose costs a buyout on top of their wage. Tune these to make the top of the scene more or less reachable.",
     "salaryMultiplier": 1.0,
-    "__salaryMultiplier": "Applied on top of the normal salary curve in balance.json. These are the 17 best players alive, so the curve already makes them expensive.",
+    "__salaryMultiplier": "Applied on top of the normal salary curve in balance.json. These are 22 of the best players alive, so the curve already makes them expensive.",
     "buyoutMultiplier": { "min": 26, "max": 44 },
     "__buyoutMultiplier": "Buyout = weekly salary * this. Much steeper than the 8-20 a generated player asks, because none of these orgs want to sell. Lower it if you want a superteam to be achievable early.",
     "contractWeeks": { "min": 30, "max": 78 },
     "minReputationToSign": 42,
-    "__minReputationToSign": "Your org must be at least this famous before a top-17 player will take the call at all. It applies to the free agents in this file too - no buyout to pay does not mean they will answer a nobody. Set to 0 to let a week-1 nobody sign the world champion.",
+    "__minReputationToSign": "Your org must be at least this famous before one of these players will take the call at all. It applies to the free agents in this file too - no buyout to pay does not mean they will answer a nobody. Set to 0 to let a week-1 nobody sign the world champion.",
     "minTierEntered": 2,
     "__minTierEntered": "The real orgs only bother entering events of this tier or above. Tier 1 is the Open Practice Cup - the best duos in the world are not playing that, so you get the lower rungs of the ladder to yourself.",
     "internationalFromTier": 5,
@@ -24,24 +24,55 @@
     "__scoutLevelAtStart": "These players are public figures - everyone already knows roughly how good they are, so they start partly scouted instead of totally unknown."
   },
 
+  "__ORG_DUOS": "An org fields a LIST of duos, not a single roster pair, because real orgs do. Twisted Minds run two at once. Each duo needs an `id` (any stable string - it is how a save recognises the same duo again) and two gamertags; a duo may override the org `region` if it plays a different one. A seat naming somebody outside this file gets a generated fictional stand-in, never an invented version of a real person. A real player can also be signed to an org and in NO duo at all - that is Clix, who has no fixed 2026 partner.",
+
   "orgs": [
-    { "id": "falcons", "name": "Team Falcons", "region": "NAC", "color": "#28e07a", "roster": ["Peterbot", "Pollo"] },
-    { "id": "big", "name": "BIG", "region": "EU", "color": "#e04a4a", "roster": ["vic0", "Malibuca"] },
-    { "id": "aurora", "name": "Aurora Gaming", "region": "EU", "color": "#7d5cff", "roster": ["shxrk", "t3eny"] },
-    { "id": "ag", "name": "AG", "region": "EU", "color": "#3ba7ff", "roster": ["Sky", "Scroll"] },
-    { "id": "havok", "name": "HavoK by Vitality", "region": "EU", "color": "#f5d020", "roster": ["SwizzY", "Pixie"] },
-    { "id": "t1", "name": "T1", "region": "EU", "color": "#e2012d", "roster": ["Demus", "Darm"] },
     {
-      "id": "twisted", "name": "Twisted Minds", "region": "NAC", "color": "#ff7a1a", "roster": ["boltz", "Rapid"],
-      "__roster": "Twisted Minds field four players in real life (boltz, Acorn, Rapid, Cold). An org gets one duo here, so it fields the two who are in this reference set - both genuinely on the roster."
+      "id": "falcons", "name": "Team Falcons", "region": "NAC", "color": "#28e07a",
+      "duos": [{ "id": "falcons-a", "players": ["Peterbot", "Pollo"] }]
     },
     {
-      "id": "xset", "name": "XSET", "region": "EU", "color": "#00c2a8", "roster": ["Veno"],
-      "__roster": "Veno won Major 1 of 2026 alongside Curve, who is not in this reference set, so the second slot is a generated fictional player. We do not invent ratings for real players who are absent from the file."
+      "id": "big", "name": "BIG", "region": "EU", "color": "#e04a4a",
+      "duos": [{ "id": "big-a", "players": ["vic0", "Malibuca"] }]
     },
     {
-      "id": "roc", "name": "ROC", "region": "EU", "color": "#b0b6c0", "roster": ["Kami"],
-      "__roster": "Kami duos with Charyy in real life. Same rule as XSET - Charyy is not in this set, so the second slot is a generated fictional player."
+      "id": "aurora", "name": "Aurora Gaming", "region": "EU", "color": "#7d5cff",
+      "duos": [{ "id": "aurora-a", "players": ["shxrk", "t3eny"] }]
+    },
+    {
+      "id": "ag", "name": "AG", "region": "EU", "color": "#3ba7ff",
+      "duos": [{ "id": "ag-a", "players": ["Sky", "Scroll"] }]
+    },
+    {
+      "id": "havok", "name": "HavoK by Vitality", "region": "EU", "color": "#f5d020",
+      "duos": [{ "id": "havok-a", "players": ["SwizzY", "Pixie"] }]
+    },
+    {
+      "id": "t1", "name": "T1", "region": "EU", "color": "#e2012d",
+      "duos": [{ "id": "t1-a", "players": ["Demus", "Darm"] }]
+    },
+    {
+      "id": "geng", "name": "Gen.G Esports", "region": "NAC", "color": "#aa8a00",
+      "duos": [{ "id": "geng-a", "players": ["Ajerss", "Ritual"] }],
+      "__duos": "Gen.G entered Fortnite for the 2026 FNCS season and signed Ajerss and Ritual on 8 January 2026. They debuted together in the first EWC 2026 qualifier and ran NA Central Major 1 as a duo."
+    },
+    {
+      "id": "twisted", "name": "Twisted Minds", "region": "NAC", "color": "#ff7a1a",
+      "duos": [
+        { "id": "twisted-a", "players": ["boltz", "Acorn"] },
+        { "id": "twisted-b", "players": ["Cold", "Rapid"] }
+      ],
+      "__duos": "Twisted Minds.NA field all four, in two duos: Acorn plays with boltz (they ran EWC 2026 together) and Cold plays with Rapid. An earlier version of this file paired boltz with Rapid, which was never a real duo - it was an artefact of only one duo per org being possible. Join dates: boltz 5 Nov 2025, Cold 29 Jan 2026, Acorn 7 Feb 2026, Rapid 1 Mar 2026."
+    },
+    {
+      "id": "xset", "name": "XSET", "region": "EU", "color": "#00c2a8",
+      "duos": [{ "id": "xset-a", "players": ["Veno"] }],
+      "__duos": "Veno won Major 1 of 2026 alongside Curve, who is not in this reference set, so the second slot is a generated fictional player. We do not invent ratings for real players who are absent from the file. Clix is ALSO an XSET player (and a co-owner) but has no fixed 2026 duo, so he is in the file with `org: XSET` and in no duo - signable, at a buyout, without breaking up a pairing."
+    },
+    {
+      "id": "roc", "name": "ROC", "region": "EU", "color": "#b0b6c0",
+      "duos": [{ "id": "roc-a", "players": ["Kami"] }],
+      "__duos": "Kami duos with Charyy in real life. Same rule as XSET - Charyy is not in this set, so the second slot is a generated fictional player."
     }
   ],
 
@@ -340,6 +371,97 @@
       "teamwork": { "communication": 87, "decision_making": 79, "adaptivity": 80 },
       "note": "World #1 by PR. Ranked 11th here purely on Big Stage Nerve 74 and Decision Making 79 - he is carried on calls by Sky.",
       "potential_note": "World #1 by PR at 17, so the mechanical growth is nearly spent - the remaining ceiling is almost entirely Big Stage Nerve 74 and Decision Making 79. He grows by playing LANs, not by training."
+    },
+    {
+      "gamertag": "Cold",
+      "real_name": "Joshua Butler",
+      "org": "Twisted Minds", "region": "NAC", "age": 19,
+      "__age": "Born 23 May 2007. Joined Twisted Minds 29 January 2026.",
+      "archetype": "Support IGL",
+      "duo": "Rapid",
+      "current_overall": 90.0, "peak_overall": 91.3,
+      "aim": { "tracking": 89, "flicks": 88, "accuracy": 91, "headshot": 90 },
+      "mechanics": { "build_speed": 89, "build_efficiency": 91, "edit_speed": 89, "edit_accuracy": 91 },
+      "fighting": { "edit_iq": 92, "piece_control": 91, "box_fighting": 87, "hg_retakes": 89, "reset_timing": 92, "movement": 87 },
+      "game_sense": { "positioning": 92, "rotation": 92, "fight_selection": 92, "resource_mgmt": 92 },
+      "offspawn": { "drop_accuracy": 86, "fifty_fifties": 86, "offspawn_fights": 87 },
+      "mental": { "clutch": 86, "under_pressure": 89, "tilt_resistance": 90, "big_stage_nerve": 88, "consistency": 89 },
+      "teamwork": { "communication": 92, "decision_making": 93, "adaptivity": 88 },
+      "note": "The caller of the second Twisted Minds duo. Decision Making 93 and Game Sense flat at 92 across all four sub-stats - he wins zones rather than fights, and hands Rapid the fights.",
+      "potential_note": "19 with Big Stage Nerve 88 and Game Sense already flat at 92 across all four sub-stats. The ladder gives 19 about +1.2; his is +1.3 because nerve at 88 is still earnable and Twisted Minds go to LANs. What is NOT in there is mechanical room - Build Speed 89 at 19 is roughly what he ends with."
+    },
+    {
+      "gamertag": "Acorn",
+      "real_name": "Abdullah Akhras",
+      "org": "Twisted Minds", "region": "NAC", "age": 22,
+      "__age": "Born 14 June 2004, Canadian. Joined Twisted Minds 7 February 2026.",
+      "archetype": "Fragger",
+      "duo": "boltz",
+      "current_overall": 89.8, "peak_overall": 90.0,
+      "aim": { "tracking": 91, "flicks": 91, "accuracy": 92, "headshot": 92 },
+      "mechanics": { "build_speed": 92, "build_efficiency": 88, "edit_speed": 92, "edit_accuracy": 90 },
+      "fighting": { "edit_iq": 89, "piece_control": 92, "box_fighting": 93, "hg_retakes": 91, "reset_timing": 88, "movement": 92 },
+      "game_sense": { "positioning": 88, "rotation": 87, "fight_selection": 87, "resource_mgmt": 87 },
+      "offspawn": { "drop_accuracy": 90, "fifty_fifties": 91, "offspawn_fights": 91 },
+      "mental": { "clutch": 90, "under_pressure": 88, "tilt_resistance": 86, "big_stage_nerve": 88, "consistency": 85 },
+      "teamwork": { "communication": 90, "decision_making": 86, "adaptivity": 88 },
+      "note": "boltz's partner and the fragger of the pair. Box Fighting 93 and Fifty Fifties 91 against Consistency 85 - the profile that wins a lobby and misses the next one.",
+      "potential_note": "22 is exactly where balance.json starts the decline, so the ladder gives him nothing and this +0.2 is Big Stage Nerve alone - 88 can still be earned at a LAN, and at 22 nothing else can. Buy the Box Fighting 93 he already has; there is no better version of him coming."
+    },
+    {
+      "gamertag": "Clix",
+      "real_name": "Cody Conrod",
+      "org": "XSET", "region": "NAC", "age": 21,
+      "__age": "Born 7 January 2005. On XSET since 10 October 2023, and a co-owner of the org. Misfits 2019-20, NRG 2020-23 before that.",
+      "archetype": "Mechanical Fragger",
+      "duo": null,
+      "__duo": "No fixed 2026 partner, so he is in no rival duo. That is why he is the cheapest route to an elite NAC player who does not cost somebody else their pairing.",
+      "current_overall": 89.5, "peak_overall": 89.9,
+      "aim": { "tracking": 92, "flicks": 93, "accuracy": 91, "headshot": 92 },
+      "mechanics": { "build_speed": 94, "build_efficiency": 86, "edit_speed": 94, "edit_accuracy": 90 },
+      "fighting": { "edit_iq": 89, "piece_control": 94, "box_fighting": 95, "hg_retakes": 92, "reset_timing": 85, "movement": 93 },
+      "game_sense": { "positioning": 86, "rotation": 85, "fight_selection": 84, "resource_mgmt": 84 },
+      "offspawn": { "drop_accuracy": 91, "fifty_fifties": 92, "offspawn_fights": 93 },
+      "mental": { "clutch": 90, "under_pressure": 87, "tilt_resistance": 83, "big_stage_nerve": 87, "consistency": 82 },
+      "teamwork": { "communication": 90, "decision_making": 84, "adaptivity": 86 },
+      "note": "Box Fighting 95 is the highest in the file after Peterbot. Consistency 82 and Tilt Resistance 83 are the lowest of any player rated this high - he loses lobbies to himself, not to the field.",
+      "potential_note": "21, one year into the ladder's dead zone, so +0.4 and almost all of it Big Stage Nerve 87. The argument is uncomfortable: his two worst stats, Consistency 82 and Tilt Resistance 83, are precisely the ones the model no longer grows at 21. The thing holding him back is now fixed."
+    },
+    {
+      "gamertag": "Ajerss",
+      "real_name": "Aidan Bernero",
+      "org": "Gen.G Esports", "region": "NAC", "age": 20,
+      "__age": "Born 19 November 2005. Signed by Gen.G 8 January 2026 for their entry into Fortnite.",
+      "archetype": "Fragger",
+      "duo": "Ritual",
+      "current_overall": 89.4, "peak_overall": 90.1,
+      "aim": { "tracking": 92, "flicks": 92, "accuracy": 92, "headshot": 93 },
+      "mechanics": { "build_speed": 92, "build_efficiency": 87, "edit_speed": 92, "edit_accuracy": 89 },
+      "fighting": { "edit_iq": 88, "piece_control": 92, "box_fighting": 93, "hg_retakes": 91, "reset_timing": 87, "movement": 92 },
+      "game_sense": { "positioning": 87, "rotation": 86, "fight_selection": 85, "resource_mgmt": 86 },
+      "offspawn": { "drop_accuracy": 90, "fifty_fifties": 91, "offspawn_fights": 92 },
+      "mental": { "clutch": 89, "under_pressure": 87, "tilt_resistance": 85, "big_stage_nerve": 85, "consistency": 84 },
+      "teamwork": { "communication": 89, "decision_making": 85, "adaptivity": 88 },
+      "note": "NAC's breakout of 2026 and the fragger of the Gen.G duo. The most even aim block in the file - nothing below 92 - carried by Ritual's calls.",
+      "potential_note": "20 is the model's peak age, so the ladder says +0.5; this is +0.7 because Big Stage Nerve 85 is the lowest of the five added in this pass and a 2026 breakout on a brand-new Gen.G roster has his LANs ahead of him. The aim block is finished - nothing below 92 and nothing left to add."
+    },
+    {
+      "gamertag": "Ritual",
+      "real_name": "Maguire Morton",
+      "org": "Gen.G Esports", "region": "NAC", "age": 20,
+      "__age": "Born 29 August 2005 - he turns 21 the day after this snapshot, which is why 20 is still the honest number here. XSET May 2024 to January 2026, then Gen.G with Ajerss.",
+      "archetype": "IGL / Zone Anchor",
+      "duo": "Ajerss",
+      "current_overall": 89.4, "peak_overall": 90.0,
+      "aim": { "tracking": 88, "flicks": 87, "accuracy": 90, "headshot": 89 },
+      "mechanics": { "build_speed": 89, "build_efficiency": 90, "edit_speed": 89, "edit_accuracy": 91 },
+      "fighting": { "edit_iq": 91, "piece_control": 90, "box_fighting": 87, "hg_retakes": 89, "reset_timing": 91, "movement": 87 },
+      "game_sense": { "positioning": 92, "rotation": 92, "fight_selection": 92, "resource_mgmt": 91 },
+      "offspawn": { "drop_accuracy": 86, "fifty_fifties": 85, "offspawn_fights": 86 },
+      "mental": { "clutch": 85, "under_pressure": 88, "tilt_resistance": 89, "big_stage_nerve": 86, "consistency": 88 },
+      "teamwork": { "communication": 92, "decision_making": 92, "adaptivity": 87 },
+      "note": "The other half of Gen.G. Slowest hands of the five added here and the best zone read - Clutch 85 says he is not the one you want left alone in a 1v2.",
+      "potential_note": "20, and the one of these five whose ceiling is worth planning around: more of his gap is Big Stage Nerve 86 and Clutch 85 than anyone else's here, and an IGL is at every LAN his org qualifies for. +0.65 rather than the ladder's +0.5 for that reason alone."
     }
   ]
 }
