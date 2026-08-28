@@ -184,7 +184,7 @@ export interface Player {
   joinedWeek: number | null
 
   // --- Real reference players only (see /src/data/real_players.json) --------
-  /** True for the 12 hand-authored real players. They are never given an ego. */
+  /** True for the hand-authored real players. They are never given an ego. */
   isReal?: boolean
   /** Optional, adults with a publicly documented name only. */
   realName?: string

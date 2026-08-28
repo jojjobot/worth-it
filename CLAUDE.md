@@ -48,6 +48,13 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
   else** — it is set off verified age on the ladder in `__POTENTIAL`, and each
   player carries a `potential_note` arguing their number. `npm run verify`
   checks all of it.
+- **The real roster is read only at `createNewGame`**, so adding a player to
+  `real_players.json` does NOT reach a save that already exists. `syncRealScene()`
+  (game.ts, called from `loadFromLocal`) re-reads the file into an old save on
+  every load — new names onto the market, new orgs get a rival duo, everyone
+  else brought back in line — instead of a SAVE_VERSION bump that would throw
+  the save away. It never touches a player you have signed. `npm run verify:sync`
+  proves it against a faked 12-player save.
 - `src/engine/` — rng (seeded mulberry32, state serialises into the save),
   players (generation, current/peak, scouting fog, progression), realPlayers
   (the real roster + rival orgs), sim (5-phase match engine), tournament

@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "calibrate": "tsx scripts/calibrate.ts",
-    "verify": "tsx scripts/verify-real-players.ts"
+    "verify": "tsx scripts/verify-real-players.ts",
+    "verify:sync": "tsx scripts/verify-real-sync.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

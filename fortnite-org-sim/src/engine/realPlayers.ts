@@ -111,7 +111,7 @@ export function derivePeak(current: Ratings, targetPeakOverall: number, age: num
 
 // --- Building the players --------------------------------------------------
 
-function ratingsFromEntry(entry: any): Ratings {
+export function ratingsFromEntry(entry: any): Ratings {
   const out = {} as Ratings
   for (const [cat, subs] of Object.entries(SUBS_BY_CATEGORY)) {
     const block = entry[cat] ?? {}
@@ -193,15 +193,75 @@ export function buildRealPlayer(rng: Rng, taken: Set<string>, entry: any): Playe
   }
 }
 
+/**
+ * The generated stand-in that fills a rival org's empty seat - either because
+ * their real partner is not in the reference set, or because you signed one of
+ * them away.
+ */
+export function generateOrgFiller(rng: Rng, taken: Set<string>, org: RealOrgDef): Player {
+  const filler = generatePlayer(rng, taken, {
+    region: org.region,
+    baseRating: rng.gauss(84, 3),
+    age: rng.int(17, 21),
+  })
+  filler.orgName = org.name
+  filler.contractWeeks = rng.int(30, 70)
+  filler.buyout = Math.round(filler.salary * rng.range(20, 34))
+  filler.scoutLevel = REAL.settings.scoutLevelAtStart
+  return filler
+}
+
+/**
+ * Bring a real player who is ALREADY in a save back in line with
+ * real_players.json. The roster is otherwise only read at createNewGame(), so
+ * a save started before a research pass carries the old numbers forever.
+ *
+ * Spends no rng draw, so a buyout and a contract already ticking are left
+ * exactly as they were.
+ *
+ * A player you have SIGNED keeps their live `current` ratings - they have been
+ * training and the file is behind them. An unsigned player has never
+ * progressed (only roster players do), so their ratings are just the stale file
+ * values and are safe to replace outright.
+ */
+export function refreshRealPlayer(player: Player, entry: any): void {
+  const signed = player.joinedWeek !== null
+
+  if (!signed) {
+    player.current = ratingsFromEntry(entry)
+    player.age = entry.age
+    player.lanAppearances = estimateLans(entry, player.current)
+    player.orgName = entry.org ?? null
+    // A player the file has since made a free agent loses the buyout with it.
+    if (!entry.org) {
+      player.buyout = 0
+      player.contractWeeks = 0
+    }
+  }
+
+  // Potential is re-derived off whatever `current` now is, so the ceiling can
+  // never land underneath somebody who has already trained past the old one.
+  player.peak = derivePeak(player.current, entry.peak_overall, player.age)
+  player.region = entry.region
+  player.archetype = resolveArchetypeId(entry.archetype)
+  player.realName = entry.real_name
+  player.aliases = entry.aliases
+  player.pr = entry.pr
+  player.prRank = entry.pr_rank
+  player.duo = entry.duo
+  player.note = entry.note
+  player.ego = null // RULE: real people never get one, not even by migration.
+}
+
 export interface RealRosterResult {
   players: Player[]
   rivalDuos: RivalDuo[]
 }
 
 /**
- * Build all 17 real players plus the rival duos their orgs field. Five of them
- * are free agents (`org: null`) - they get no buyout and no contract, and they
- * belong to no rival duo, so they simply sit on the market.
+ * Build all 17 real players plus the rival duos their orgs field. A player with
+ * `org: null` is a free agent - no buyout, no contract, in no rival duo, so
+ * they simply sit on the market.
  *
  * An org whose real-life partner is not in the reference set (Twisted Minds,
  * ROC) gets a GENERATED fictional partner rather than an invented version of a
@@ -226,15 +286,7 @@ export function buildRealRoster(rng: Rng, taken: Set<string>): RealRosterResult 
     }
     // Fill any empty seat with a generated player of a believable standard.
     while (ids.length < 2) {
-      const filler = generatePlayer(rng, taken, {
-        region: org.region,
-        baseRating: rng.gauss(84, 3),
-        age: rng.int(17, 21),
-      })
-      filler.orgName = org.name
-      filler.contractWeeks = rng.int(30, 70)
-      filler.buyout = Math.round(filler.salary * rng.range(20, 34))
-      filler.scoutLevel = REAL.settings.scoutLevelAtStart
+      const filler = generateOrgFiller(rng, taken, org)
       players.push(filler)
       ids.push(filler.id)
     }

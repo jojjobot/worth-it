@@ -3,7 +3,7 @@
 // or move to another computer.
 // ---------------------------------------------------------------------------
 
-import { SAVE_VERSION } from './game'
+import { SAVE_VERSION, syncRealScene } from './game'
 import type { GameState } from './types'
 
 const KEY = 'fortnite-org-sim.save.v1'
@@ -25,6 +25,10 @@ export function loadFromLocal(): GameState | null {
       console.warn('Save file is from a different version - starting fresh.')
       return null
     }
+    // The real reference roster is only built when a game is created, so a save
+    // made before a player was added to real_players.json would never see them.
+    // Pull the file back in on every load instead of throwing the save away.
+    syncRealScene(parsed)
     return parsed
   } catch (err) {
     console.warn('Could not read save', err)

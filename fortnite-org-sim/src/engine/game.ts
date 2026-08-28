@@ -16,7 +16,16 @@ import {
   progressPlayer,
   recordLanAppearance,
 } from './players'
-import { backfillRivalDuo, buildRealRoster, realSignReputationGate } from './realPlayers'
+import {
+  REAL,
+  REAL_ORGS,
+  backfillRivalDuo,
+  buildRealPlayer,
+  buildRealRoster,
+  generateOrgFiller,
+  realSignReputationGate,
+  refreshRealPlayer,
+} from './realPlayers'
 import { eventsForWeek, nextStageQualKey, runTournament } from './tournament'
 import { applyTraining, trainingCost, duoTrainingChemistry, type TrainingOutcome } from './training'
 import type {
@@ -102,7 +111,7 @@ export function createNewGame(orgName: string, region: string, seedLabel: string
     gamesTogether: 0,
   })
 
-  // The real scene: 12 hand-authored reference players in their real orgs,
+  // The real scene: every hand-authored reference player in their real org,
   // plus the duos those orgs field against you every week. They sit on the
   // transfer market from day one - you can try to sign any of them, but they
   // are under contract and the buyout is brutal.
@@ -120,6 +129,103 @@ export function createNewGame(orgName: string, region: string, seedLabel: string
   })
   state.rngState = rng.s
   return state
+}
+
+// --- Keeping an old save's real scene current ------------------------------
+
+/**
+ * Re-read real_players.json into a save that already exists.
+ *
+ * The reference roster is otherwise built ONLY inside createNewGame(), so a
+ * save started before a name was added to the file never sees that player: the
+ * file grew from 12 players to 17, and nobody already playing was given the
+ * other five. This runs on every load and closes that gap - new names go on
+ * the transfer market, an org added to the file gets a rival duo, and everyone
+ * already there is brought back in line with the file. It is a no-op once a
+ * save is current, which is why it can run unconditionally instead of behind a
+ * SAVE_VERSION bump that would throw the save away.
+ *
+ * Mutates `state` in place: it runs on a freshly parsed save that nothing else
+ * holds a reference to yet.
+ */
+export function syncRealScene(state: GameState): string[] {
+  const rng = new Rng(state.rngState)
+  const taken = takenTags(state)
+  const added: string[] = []
+
+  const byTag = new Map<string, Player>()
+  for (const p of Object.values(state.players)) {
+    if (p.isReal) byTag.set(p.tag.toLowerCase(), p)
+  }
+
+  for (const entry of REAL.players as any[]) {
+    const existing = byTag.get(String(entry.gamertag).toLowerCase())
+    if (existing) {
+      refreshRealPlayer(existing, entry)
+      continue
+    }
+    const p = buildRealPlayer(rng, taken, entry)
+    state.players[p.id] = p
+    state.marketIds.push(p.id)
+    byTag.set(p.tag.toLowerCase(), p)
+    added.push(p.tag)
+  }
+
+  for (const org of REAL_ORGS) {
+    let duo = state.rivalDuos.find((d) => d.orgId === org.id)
+    if (!duo) {
+      duo = {
+        id: nextId('rival'),
+        orgId: org.id,
+        orgName: org.name,
+        region: org.region,
+        playerIds: ['', ''],
+        gamesTogether: rng.int(90, 260),
+        strategy: 'balanced',
+      }
+      state.rivalDuos.push(duo)
+    }
+
+    const seats: string[] = [duo.playerIds[0], duo.playerIds[1]]
+    for (const tag of org.roster) {
+      const real = byTag.get(tag.toLowerCase())
+      if (!real || seats.includes(real.id)) continue
+      // A real player YOU signed stays yours - the org does not take them back.
+      if (real.joinedWeek !== null) continue
+      // They may only take a seat that is empty or held by a generated
+      // stand-in you do not own.
+      const slot = seats.findIndex((id) => {
+        const sitting = id ? state.players[id] : null
+        return !sitting || (!sitting.isReal && !state.rosterIds.includes(id))
+      })
+      if (slot < 0) continue
+      const evicted = seats[slot] ? state.players[seats[slot]] : null
+      seats[slot] = real.id
+      real.orgName = org.name
+      if (evicted) {
+        delete state.players[evicted.id]
+        state.marketIds = state.marketIds.filter((id) => id !== evicted.id)
+      }
+    }
+
+    for (let i = 0; i < 2; i++) {
+      if (seats[i] && state.players[seats[i]]) continue
+      const filler = generateOrgFiller(rng, taken, org)
+      state.players[filler.id] = filler
+      state.marketIds.push(filler.id)
+      seats[i] = filler.id
+    }
+    duo.playerIds = [seats[0], seats[1]]
+  }
+
+  if (added.length > 0) {
+    state.newsLog.push({
+      week: state.week,
+      text: `New names in the scene: ${added.join(', ')}. They are on the transfer market.`,
+    })
+  }
+  state.rngState = rng.s
+  return added
 }
 
 // --- Market ----------------------------------------------------------------
