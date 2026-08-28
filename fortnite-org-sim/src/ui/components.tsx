@@ -381,7 +381,7 @@ export function PlayerHeader({
           {player.isReal && (
             <span
               className="rounded border border-cyan-700/60 bg-cyan-500/10 px-1 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider text-cyan-300"
-              title="One of the 12 real reference players. Ratings are estimates calibrated to public results."
+              title="One of the 17 real reference players. Ratings are estimates calibrated to public results."
             >
               REAL
             </span>
@@ -417,7 +417,7 @@ export function PlayerHeader({
 }
 
 /**
- * The extra context strip shown for one of the 12 real reference players:
+ * The extra context strip shown for one of the 17 real reference players:
  * their org, their Power Ranking, who they duo with, and the author note that
  * explains why they are rated the way they are.
  *

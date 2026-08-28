@@ -76,7 +76,7 @@ export default function Scouting({
             <div className="label">Show</div>
             <select className="input mt-1" value={who} onChange={(e) => setWho(e.target.value as any)}>
               <option value="ALL">Everyone</option>
-              <option value="REAL">The real scene (top 12)</option>
+              <option value="REAL">The real scene (top 17)</option>
               <option value="FREE">Free agents only (no buyout)</option>
             </select>
           </div>

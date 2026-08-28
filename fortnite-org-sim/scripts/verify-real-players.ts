@@ -6,6 +6,7 @@
 //   2. No under-18 has a real name attached. Age only.
 //   3. Computed overalls stay close to the hand-authored ones.
 //   4. Every org fields a complete duo.
+//   5. A real player with no org is a clean free agent - no buyout, no contract.
 // Exits non-zero if any of the first two are violated.
 // ---------------------------------------------------------------------------
 import { overallOf, categoryScores } from '../src/engine/config'
@@ -74,3 +75,24 @@ for (const tag of ['Peterbot', 'shxrk', 'Kami']) {
   const p = byTag.get(tag)!
   console.log(`  ${tag.padEnd(9)} $${p.salary}/wk  buyout $${p.buyout.toLocaleString()}  contract ${p.contractWeeks}wk  scout ${p.scoutLevel}`)
 }
+
+// --- free agents ------------------------------------------------------------
+// The five entries added from the August 2026 ratings sheet have no org, so
+// they must cost nothing up front and belong to no rival duo.
+console.log('\n--- free agents (org: null) ---')
+const inDuo = new Set(rivalDuos.flatMap((d) => d.playerIds))
+let faBad = 0
+for (const e of REAL.players as any[]) {
+  const p = byTag.get(e.gamertag)!
+  if (p.orgName) continue
+  const problems: string[] = []
+  if (p.buyout !== 0) problems.push(`buyout ${p.buyout} should be 0`)
+  if (p.contractWeeks !== 0) problems.push(`contract ${p.contractWeeks}wk should be 0`)
+  if (inDuo.has(p.id)) problems.push('is in a rival duo')
+  faBad += problems.length
+  console.log(
+    `  ${p.tag.padEnd(9)} ${p.region.padEnd(4)} $${p.salary}/wk  ` +
+      (problems.length ? `FAIL: ${problems.join(', ')}` : 'free agent, no buyout, no contract'),
+  )
+}
+console.log(faBad === 0 ? '  OK - every unsigned real player is a clean free agent' : `  ${faBad} PROBLEM(S)`)

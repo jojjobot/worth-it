@@ -144,9 +144,15 @@ export function buildRealPlayer(rng: Rng, taken: Set<string>, entry: any): Playe
 
   const ovr = overallOf(current)
   const salary = Math.round(computeSalary(rng, ovr, overallOf(peak)) * s.salaryMultiplier)
-  const buyout = Math.round(
+
+  // A real player with no `org` in the file is a FREE AGENT: nobody to pay a
+  // buyout to and no contract to run down. Both draws still happen so the rng
+  // stream does not depend on who happens to be signed.
+  const freeAgent = !entry.org
+  const buyoutDraw = Math.round(
     salary * rng.range(s.buyoutMultiplier.min, s.buyoutMultiplier.max),
   )
+  const contractDraw = rng.int(s.contractWeeks.min, s.contractWeeks.max)
 
   taken.add(String(entry.gamertag).toLowerCase())
 
@@ -164,9 +170,9 @@ export function buildRealPlayer(rng: Rng, taken: Set<string>, entry: any): Playe
     ego: null,
 
     salary,
-    contractWeeks: rng.int(s.contractWeeks.min, s.contractWeeks.max),
-    buyout,
-    orgName: entry.org,
+    contractWeeks: freeAgent ? 0 : contractDraw,
+    buyout: freeAgent ? 0 : buyoutDraw,
+    orgName: entry.org ?? null,
 
     scoutLevel: s.scoutLevelAtStart,
     matchesPlayed: Math.max(0, Math.round((entry.age - 13) * rng.range(180, 320))),
@@ -193,7 +199,9 @@ export interface RealRosterResult {
 }
 
 /**
- * Build all 12 real players plus the rival duos their orgs field.
+ * Build all 17 real players plus the rival duos their orgs field. Five of them
+ * are free agents (`org: null`) - they get no buyout and no contract, and they
+ * belong to no rival duo, so they simply sit on the market.
  *
  * An org whose real-life partner is not in the reference set (Twisted Minds,
  * ROC) gets a GENERATED fictional partner rather than an invented version of a
@@ -273,7 +281,7 @@ export function backfillRivalDuo(
   return replacement
 }
 
-/** Reputation you need before a top-12 player will even take the call. */
+/** Reputation you need before a top-17 player will even take the call. */
 export function realSignReputationGate(): number {
   return REAL.settings.minReputationToSign ?? 0
 }
