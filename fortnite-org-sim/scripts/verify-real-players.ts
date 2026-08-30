@@ -63,6 +63,57 @@ for (const d of rivalDuos) {
   console.log(`  ${d.orgName.padEnd(20)} ${d.region.padEnd(4)} ${tags.join(' + ')}  (${d.gamesTogether} games together)`)
 }
 
+// WE DO NOT INVENT PARTNERS. Every duo must be two players who are really in
+// the file. An org whose pairing is unknown fields no duo at all, and because
+// an org may field more than one, a busy org is never a reason to make somebody
+// up. See real_players.json -> __NO_INVENTED_PARTNERS.
+console.log('\n--- no invented partners ---')
+const knownTags = new Set((REAL.players as any[]).map((e) => String(e.gamertag).toLowerCase()))
+const duoDefs: { where: string; id: string; players: string[] }[] = [
+  ...(REAL.orgs as any[]).flatMap((o) =>
+    (o.duos ?? []).map((d: any) => ({ where: o.name, id: d.id, players: d.players })),
+  ),
+  ...(((REAL.crossOrgDuos ?? []) as any[]).map((d) => ({ where: d.name, id: d.id, players: d.players }))),
+]
+
+const wrongSize = duoDefs.filter((d) => d.players.length !== 2)
+failures += wrongSize.length
+console.log(
+  `  ${wrongSize.length === 0 ? 'ok  ' : 'FAIL'}  every authored duo names exactly two players` +
+    (wrongSize.length ? '  -> ' + wrongSize.map((d) => `${d.id} has ${d.players.length}`).join(', ') : ''),
+)
+
+const unknownNames = duoDefs.flatMap((d) =>
+  d.players.filter((t) => !knownTags.has(String(t).toLowerCase())).map((t) => `${d.id}:${t}`),
+)
+failures += unknownNames.length
+console.log(
+  `  ${unknownNames.length === 0 ? 'ok  ' : 'FAIL'}  every name in a duo is a player in this file` +
+    (unknownNames.length ? '  -> ' + unknownNames.join(', ') : ''),
+)
+
+const fakeSeats = rivalDuos.flatMap((d) =>
+  d.playerIds
+    .map((id) => players.find((p) => p.id === id)!)
+    .filter((p) => !p.isReal)
+    .map((p) => p.tag),
+)
+failures += fakeSeats.length
+console.log(
+  `  ${fakeSeats.length === 0 ? 'ok  ' : 'FAIL'}  no duo has an invented seat-filler in it` +
+    (fakeSeats.length ? '  -> ' + fakeSeats.join(', ') : ''),
+)
+
+// Being signed to an org and in no duo is a normal, deliberate state.
+const pairedTags = new Set(duoDefs.flatMap((d) => d.players.map((t) => String(t).toLowerCase())))
+const unpaired = (REAL.players as any[]).filter(
+  (e) => e.org && !pairedTags.has(String(e.gamertag).toLowerCase()),
+)
+console.log(
+  `  ok    ${unpaired.length} signed but unpaired, on purpose  -> ` +
+    unpaired.map((e) => `${e.gamertag} (${e.org})`).join(', '),
+)
+
 console.log('\n--- shxrk vs Malibuca category profile ---')
 for (const tag of ['shxrk', 'Malibuca']) {
   const p = byTag.get(tag)!

@@ -24,7 +24,9 @@
     "__scoutLevelAtStart": "These players are public figures - everyone already knows roughly how good they are, so they start partly scouted instead of totally unknown."
   },
 
-  "__ORG_DUOS": "An org fields a LIST of duos, not a single roster pair, because real orgs do. Twisted Minds run two at once. Each duo needs an `id` (any stable string - it is how a save recognises the same duo again) and two gamertags; a duo may override the org `region` if it plays a different one. A seat naming somebody outside this file gets a generated fictional stand-in, never an invented version of a real person. A real player can also be signed to an org and in NO duo at all - that is Clix, who has no fixed 2026 partner.",
+  "__ORG_DUOS": "An org fields a LIST of duos, not a single roster pair, because real orgs do - Twisted Minds run two at once. Each duo needs an `id` (any stable string - it is how a save recognises the same duo again) and EXACTLY TWO gamertags, both of which must be players in this file; a duo may override the org `region` if it plays a different one.",
+
+  "__NO_INVENTED_PARTNERS": "A real player whose partner is unknown is left in NO DUO. We do not invent a teammate to fill the second seat. An org fielding no duo at all is perfectly normal - Clix, Queasy and Merstach are each signed to an org and in no pairing, because their real partners are not established in the source set. A one-player duo is now a HARD ERROR rather than something the engine quietly papers over. And because an org may field more than one duo, an org that already has a pairing is never a reason to invent anything: if you learn who somebody actually plays with, add that player to this file and add a second entry to the org's `duos` list.",
 
   "orgs": [
     {
@@ -86,13 +88,13 @@
     },
     {
       "id": "nigma", "name": "Nigma Galaxy", "region": "EU", "color": "#00b3a4",
-      "duos": [{ "id": "nigma-a", "players": ["Queasy"] }],
-      "__duos": "Queasy joined Nigma Galaxy on 25 April 2026. He is not in the confirmed FNCS 2026 Major 1 duo field, so his partner is unknown and the second seat is a generated fictional player rather than a guess."
+      "duos": [],
+      "__duos": "Queasy joined Nigma Galaxy on 25 April 2026, but he is not in the confirmed FNCS 2026 Major 1 duo field, so his partner is unknown. Nigma therefore field NO duo and Queasy sits signed to them and in no pairing, exactly like Clix at XSET. We do not invent a teammate for a real player just to fill a seat."
     },
     {
       "id": "mates", "name": "Gentle Mates", "region": "EU", "color": "#ff5c8a",
-      "duos": [{ "id": "mates-a", "players": ["Merstach"] }],
-      "__duos": "Merstach has been on Gentle Mates since 4 December 2024. Like Queasy he is absent from the confirmed Major 1 duo field, so the second seat is a generated fictional player."
+      "duos": [],
+      "__duos": "Merstach has been on Gentle Mates since 4 December 2024. Like Queasy he is absent from the confirmed Major 1 duo field, so Gentle Mates field no duo and he sits in no pairing."
     },
     {
       "id": "kos", "name": "KoS Esports", "region": "NAC", "color": "#f25c2a",

@@ -356,11 +356,17 @@ export function buildRealRoster(rng: Rng, taken: Set<string>): RealRosterResult 
       const p = byTag.get(tag)
       if (p) ids.push(p.id)
     }
-    // Fill any empty seat with a generated player of a believable standard.
-    while (ids.length < 2) {
-      const filler = generateOrgFiller(rng, taken, { name: def.orgName, region: def.region })
-      players.push(filler)
-      ids.push(filler.id)
+    // WE DO NOT INVENT PARTNERS. A duo must name two players who are
+    // really in the file. If somebody's partner is unknown, the answer is
+    // to leave them in no duo at all - an org fielding no duo is normal,
+    // and an org can field more than one, so a busy org is never a reason
+    // to make somebody up. See real_players.json -> __NO_INVENTED_PARTNERS.
+    if (ids.length !== 2) {
+      throw new Error(
+        `real_players.json: duo "${def.defId}" at ${def.orgName} names ` +
+          `${def.players.join(' + ')}, but only ${ids.length} of them are players in the ` +
+          'file. Give the duo two real gamertags, or delete the duo and leave them unpaired.',
+      )
     }
     rivalDuos.push({
       id: nextId('rival'),

@@ -267,6 +267,12 @@ export function syncRealScene(state: GameState): string[] {
       }
     }
 
+    // A seat can still be empty here for a reason that is NOT an invented
+    // partner: the real player who should be sitting in it is on YOUR
+    // roster, so the org cannot have them back. That seat gets a generated
+    // squad player, which is a different thing from inventing a teammate
+    // for a real duo - the authored duo itself always names two real
+    // players, because buildRealScene throws otherwise.
     for (let i = 0; i < 2; i++) {
       if (seats[i] && state.players[seats[i]]) continue
       const filler = generateOrgFiller(rng, taken, { name: def.orgName, region: def.region })
