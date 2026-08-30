@@ -248,6 +248,17 @@ export interface PlayerMatchLine {
   elims: number
   /** Still standing when the game ended for the duo. */
   survived: boolean
+
+  // --- Per-player match state (build step 4) -------------------------------
+  // All optional, so results saved before step 4 still load. The advanced
+  // stats tab is COMPUTED from these; nothing derived is stored.
+  hp?: number
+  shield?: number
+  /** Mats left when their game ended. */
+  matsLeft?: number
+  lootTier?: 'grey' | 'green' | 'blue' | 'purple' | 'gold'
+  damageTaken?: number
+  zonesSurvived?: number
 }
 
 export interface MatchResult {

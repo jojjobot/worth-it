@@ -139,7 +139,7 @@
       "clamp": "amount",
       "wiredIn": 5,
       "base": "Power lost by whichever side does not hold the piece.",
-      "calledFrom": "NOT YET. Piece advantage is per-player match state, which arrives at step 4."
+      "calledFrom": "NOT YET, but its data is ready: pieceAdvantage has been tracked per player since step 4."
     },
     {
       "id": "PIECE_STEAL_PROB",
@@ -163,7 +163,7 @@
       "clamp": "amount",
       "wiredIn": 5,
       "base": "Power lost while below the opponent.",
-      "calledFrom": "NOT YET. has_height is per-player match state, which arrives at step 4."
+      "calledFrom": "NOT YET, but its data is ready: hasHeight has been tracked per player since step 4."
     },
     {
       "id": "OUTNUMBERED_DROP_PENALTY",
@@ -179,7 +179,7 @@
       "clamp": "amount",
       "wiredIn": 5,
       "base": "Power lost fighting on worse loot. Scales with loot tier - grey through gold.",
-      "calledFrom": "NOT YET. loot_tier is per-player match state, which arrives at step 4."
+      "calledFrom": "NOT YET, but its data is ready: the loot tier has been tracked per player since step 4 and `loot.tiers.powerByTier` holds the numbers. Step 5 makes a fight read them."
     },
     {
       "id": "DUO_DECISION_SOURCE",

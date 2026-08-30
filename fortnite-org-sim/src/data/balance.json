@@ -243,6 +243,28 @@
       "uncontestedMatsBonus": 60
     },
 
+    "health": {
+      "__doc": "PER-PLAYER HP. Until build step 4 a player only had shield, and any damage past it simply vanished - you could take 40 chip damage in six zones running and walk into the endgame untouched. Now damage eats shield first and then HP, HP is carried from phase to phase, and a player who runs out of it goes down.",
+      "hpMax": 100,
+      "startHp": 100,
+      "healPerZone": {
+        "__doc": "What a duo puts back on out of minis and slurp in a zone they got through QUIETLY. A zone with a fight in it buys no healing at all - that is the whole point, and it is why a duo that takes every fight arrives in the endgame on low HP while a zone player arrives full. Measured first: damage runs about 37 a match on average and 85 at the 90th percentile, so healing much above this makes HP decorative.",
+        "hp": 9,
+        "shield": 15
+      },
+      "__healPerZone_history": "These were 14/22 and applied on EVERY zone including ones with a fight, which handed a duo roughly 216 free HP across a match against 37 average damage. The result was zero HP knockouts in 5400 test matches - the whole health system was decoration. Conditional and smaller is what makes it bite.",
+      "healAfterWonFight": {
+        "__doc": "Cracking somebody usually means their shield. This is the ONLY healing a fight zone gives, and it goes to the winner.",
+        "hp": 0,
+        "shield": 12
+      },
+      "fightDamage": {
+        "__doc": "YOU DO NOT WIN A BOX FIGHT FOR FREE. Damage taken in a fight the duo WON. Losing a fight is already paid for through RESET_DAMAGE and the casualty rules, but until this existed winning cost nothing at all, so a duo could take ten fights and reach the endgame untouched - which is why HP was decoration. This is the number that makes a W-key duo arrive in the endgame hurt and a zone duo arrive full.",
+        "won": 27
+      },
+      "__knock": "A player whose HP reaches zero is KNOCKED, exactly as if they had lost a fight - the partner plays the 1v2 and may rebuild them. That is a new way to lose a player as of step 4, and it is the point: chip damage now has to be respected."
+    },
+
     "loot": {
       "__doc": "PHASE 2. Drop Accuracy and Resource Mgmt turn into mats and shield. Positioning and Rotation decide the first rotate.",
       "matsBase": 180,
@@ -254,6 +276,18 @@
       "shieldBase": 30,
       "shieldPerLootStat": 0.7,
       "shieldCap": 100,
+
+      "tiers": {
+        "__doc": "THE GUN YOU ACTUALLY CAME AWAY WITH, carried from the drop through the whole match. The loot number below (drop accuracy, resource mgmt, fifty-fifties) picks the tier; winning a contested drop bumps it, losing one drops it. As of build step 4 the tier is TRACKED but does not yet change a fight - BAD_LOOT_PENALTY is wired in at step 5, and `powerByTier` is the number it will read.",
+        "thresholds": { "gold": 105, "purple": 88, "blue": 70, "green": 55 },
+        "__thresholds": "Loot number needed to reach each tier; anything under `green` is grey. Set against the MEASURED spread of the loot number across every standard of player - its 5th percentile is about 40, its median 75 and its 95th about 118 - so the tiers come out roughly 15/20/25/25/15 percent. The first guess at these (82/72/62/52) made two thirds of all drops gold and only 3% blue, which told you nothing.",
+        "contestWinBonus": 9,
+        "__contestWinBonus": "Added to the loot number when you clear a contested POI - you own everything on it.",
+        "contestLossPenalty": 14,
+        "__contestLossPenalty": "Taken off when you lose the fifty-fifty. Losing the chest race means a worse gun, not death.",
+        "powerByTier": { "grey": -7, "green": -3, "blue": 0, "purple": 2, "gold": 4 },
+        "__powerByTier": "STEP 5. Power a fight gains or loses from the loot in hand, blue being neutral. Nothing reads this yet."
+      },
       "rotatePower": {
         "__doc": "No `fighting` set: a rotate is a map decision, not a fight. Fighting cannot save you from a bad route.",
         "raw": { "rotation": 0.4, "positioning": 0.28, "decision_making": 0.2, "resource_mgmt": 0.12 }
@@ -361,8 +395,15 @@
       "__matsPerCircle": "Per player, per circle.",
       "matsSavedByBuildEfficiency": 0.35,
       "__matsSavedByBuildEfficiency": "Mats per circle saved per point of team Build Efficiency above 50. This is the sub-stat that decides whether a duo is still building in zone 9.",
-      "outOfMatsPenalty": 26,
-      "__outOfMatsPenalty": "Brutal power loss when a player hits 0 mats in a final circle. This is what kills greedy duos.",
+      "matsPressure": {
+        "__doc": "RUNNING OUT OF MATS IN THE FINAL ZONES SHOULD KILL YOU. This used to be a cliff: no penalty at all until a player hit exactly zero, then a big one. That let a duo walk into the endgame on 40 mats and feel nothing until the very last circle. It is now a RAMP - the penalty grows the further below `comfortable` you are, so arriving short is punished from the first circle.",
+        "comfortable": 100,
+        "__comfortable": "Mats per player entering a closing circle that count as enough. At or above this there is no penalty at all. The design brief asks that entering zone 8 under 100 mats usually kills you, and this is that number - `npm run verify:state` measures whether it actually does.",
+        "penaltyAtZero": 34,
+        "__penaltyAtZero": "Power lost by a player on ZERO mats. Between 0 and `comfortable` the penalty scales straight down to nothing.",
+        "curve": 1.35,
+        "__curve": "Above 1 the penalty bites harder as you approach empty - 60 mats hurts a little, 10 mats hurts a lot. Set to 1 for a straight line."
+      },
       "lowShieldPenalty": 7,
       "lowShieldThreshold": 50,
       "elimChancePerCircle": 0.34,

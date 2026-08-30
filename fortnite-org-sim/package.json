@@ -13,7 +13,8 @@
     "verify:sync": "tsx scripts/verify-real-sync.ts",
     "snapshot:sim": "tsx scripts/sim-snapshot.ts write",
     "verify:sim": "tsx scripts/sim-snapshot.ts",
-    "verify:modifiers": "tsx scripts/verify-modifiers.ts"
+    "verify:modifiers": "tsx scripts/verify-modifiers.ts",
+    "verify:state": "tsx scripts/verify-state.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

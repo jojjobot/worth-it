@@ -73,10 +73,12 @@ export type ModifierKey =
  * by reading this - "only in the endgame", "only on a contested drop", "only
  * while outnumbered".
  *
- * Fields marked STEP 4 are declared but not populated yet: the engine does not
- * carry that state through the phases until build step 4. A modifier must
- * therefore treat `undefined` as "not known here" and decline to apply, which
- * is what triggerMatches() below does for it.
+ * As of build step 4 the engine CARRIES all of this through the phases and
+ * populates it on every roll - hp, loot tier, height, piece advantage and the
+ * rest are real per-player state now, not placeholders. A field can still come
+ * through undefined where the moment genuinely does not have one (there is no
+ * zone number during the drop), so a modifier must treat `undefined` as "not
+ * known here" and decline to apply, which is what triggerMatches() does for it.
  */
 export interface ModifierContext {
   /** Which phase asked. */
@@ -102,7 +104,7 @@ export interface ModifierContext {
   /** The player this roll is about, where it is about one player. */
   playerId?: string
 
-  // --- STEP 4: per-player state the engine does not carry yet -------------
+  // --- Per-player state, carried through every phase since build step 4 ----
   hp?: number
   lootTier?: 'grey' | 'green' | 'blue' | 'purple' | 'gold'
   hasHeight?: boolean
