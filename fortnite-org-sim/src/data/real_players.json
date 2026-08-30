@@ -5,7 +5,7 @@
   "__PEAK": "Only `peak_overall` is authored here. The engine derives a per-sub-stat ceiling from it (see realPlayers.ts -> derivePeak), so the peak of each individual sub-stat is a consequence of the design, not another number to maintain. Peak is hidden in the UI by exactly the same rule as every other player.",
   "__FREE_AGENTS": "An entry with `org: null` is a FREE AGENT: it sits on the transfer market with no buyout and no contract, though the reputation gate still applies. Th0masHD is the only one left after the August 2026 research pass, and it is his real status, not a gap in the data: he left Virtus.pro on 3 August 2026 (joined 21 January 2026, alongside FoCuS) and is listed teamless. An earlier version of this note justified it by his career earnings split, which was the wrong reason for the right answer - what makes him a free agent is the VP exit, three weeks before this snapshot.",
   "__POTENTIAL": "`peak_overall` IS the potential system - there is no second one. It was set on 2026-08-28, and again for the five players added later that day, from verified ages plus each career record, on this ladder of remaining overall headroom: age 15 about +4.8, age 17 about +3.2, age 18 about +2.2, age 19 about +1.2, age 20 about +0.5, age 21 about +0.3, age 22 and over nothing. Each player is then adjusted for how much of their gap is Big Stage Nerve - earned only at LANs, never trainable - versus trainable skill, and every one carries a `potential_note` arguing their number. The ladder agrees with balance.json -> progression, which sets peakAge 20, declineStartAge 22 and retirementAgeMin 24.",
-  "__SOURCES": "Ages, orgs, duos and real names verified August 2026 against Liquipedia, Esports Earnings, Esports Charts and the FNCS 2026 roster reporting. Every age in this file is sourced - no placeholders remain. The 29 sub-stat ratings are still estimates; no public source measures them.",
+  "__SOURCES": "Ages, orgs, duos and real names verified August 2026 against Liquipedia, Esports Earnings, Esports Charts and the FNCS 2026 roster reporting. Every age in this file is sourced - no placeholders remain. The 29 sub-stat ratings are still estimates; no public source measures them. 2026-08-30 pass added charyy (born 11 Nov 2007, ROC with Kami since 11 March 2026) and Curve (15, KoS Esports), and corrected Veno from EU to NAC: he and Curve won the FNCS 2026 Major 1 Grand Finals in NA CENTRAL, so the whole XSET Fortnite roster is NAC. That correction is what makes the region split come out at the briefed EU 21 / NAC 11 / NAW 2.",
 
   "settings": {
     "__doc": "How the real reference players behave as signings. They are all under contract at their real orgs, so prising one loose costs a buyout on top of their wage. Tune these to make the top of the scene more or less reachable.",
@@ -65,14 +65,14 @@
       "__duos": "Twisted Minds.NA field all four, in two duos: Acorn plays with boltz (they ran EWC 2026 together) and Cold plays with Rapid. An earlier version of this file paired boltz with Rapid, which was never a real duo - it was an artefact of only one duo per org being possible. Join dates: boltz 5 Nov 2025, Cold 29 Jan 2026, Acorn 7 Feb 2026, Rapid 1 Mar 2026."
     },
     {
-      "id": "xset", "name": "XSET", "region": "EU", "color": "#00c2a8",
-      "duos": [{ "id": "xset-a", "players": ["Veno"] }],
-      "__duos": "Veno won Major 1 of 2026 alongside Curve, who is not in this reference set, so the second slot is a generated fictional player. We do not invent ratings for real players who are absent from the file. Clix is ALSO an XSET player (and a co-owner) but has no fixed 2026 duo, so he is in the file with `org: XSET` and in no duo - signable, at a buyout, without breaking up a pairing."
+      "id": "xset", "name": "XSET", "region": "NAC", "color": "#00c2a8",
+      "duos": [],
+      "__duos": "XSET fields no duo of its own. Veno won Major 1 of 2026 alongside Curve, who is at KoS Esports - that pairing is real and now in the file, so it lives in `crossOrgDuos` and shows up on both org pages instead of on a made-up XSET seat. Clix is ALSO an XSET player (and a co-owner) but has no fixed 2026 duo, so he is in the file with `org: XSET` and in no duo - signable, at a buyout, without breaking up a pairing."
     },
     {
       "id": "roc", "name": "ROC", "region": "EU", "color": "#b0b6c0",
-      "duos": [{ "id": "roc-a", "players": ["Kami"] }],
-      "__duos": "Kami duos with Charyy in real life. Same rule as XSET - Charyy is not in this set, so the second slot is a generated fictional player."
+      "duos": [{ "id": "roc-a", "players": ["Kami", "charyy"] }],
+      "__duos": "Kami and charyy both joined ROC on 11 March 2026 and play as a duo, so this seat no longer needs a generated stand-in. They are the file's cleanest fragger/thinker split: charyy Box Fighting 94 / Fight Selection 86, Kami Box Fighting 85 / Fight Selection 94."
     },
     {
       "id": "godlike", "name": "GodLike Esports", "region": "EU", "color": "#ffd60a",
@@ -95,6 +95,11 @@
       "__duos": "Merstach has been on Gentle Mates since 4 December 2024. Like Queasy he is absent from the confirmed Major 1 duo field, so the second seat is a generated fictional player."
     },
     {
+      "id": "kos", "name": "KoS Esports", "region": "NAC", "color": "#f25c2a",
+      "duos": [],
+      "__duos": "Curve's org. Like XSET it fields no duo of its own here, because Curve's real partner Veno is at XSET - see `crossOrgDuos`."
+    },
+    {
       "id": "cgn", "name": "CGN Esports", "region": "EU", "color": "#e2483c",
       "duos": [],
       "__duos": "EMPTY ON PURPOSE. JannisZ is CGN's player but his duo partner Cheatiin is at AIGHT, so the pairing lives in crossOrgDuos below rather than in either org."
@@ -113,6 +118,14 @@
       "id": "cgn-aight", "name": "CGN Esports / AIGHT", "region": "EU", "color": "#e2483c",
       "players": ["JannisZ", "Cheatiin"],
       "__note": "JannisZ (CGN Esports) and Cheatiin (AIGHT), both German, ran the FNCS 2026 Major 1 Summit together. Two orgs, one duo."
+    },
+    {
+      "id": "xset-kos",
+      "name": "XSET / KoS",
+      "region": "NAC",
+      "color": "#00c2a8",
+      "players": ["Veno", "Curve"],
+      "__note": "Veno (XSET) and Curve (KoS Esports) won the FNCS 2026 Major 1 Grand Finals in NA Central together with 727 points. Two orgs, one duo - and the reason Veno is filed under NAC despite being British."
     }
   ],
 
@@ -265,7 +278,7 @@
       "org": "ROC", "region": "EU", "age": 21,
       "pr": 37553, "pr_rank": 12,
       "archetype": "Legend",
-      "duo": "Charyy",
+      "duo": "charyy",
       "current_overall": 90.1, "peak_overall": 90.4,
       "aim": { "tracking": 88, "flicks": 85, "accuracy": 91, "headshot": 89 },
       "mechanics": { "build_speed": 85, "build_efficiency": 93, "edit_speed": 86, "edit_accuracy": 91 },
@@ -278,11 +291,47 @@
       "potential_note": "21, one year from the decline curve. Raw speed is already going (Build Speed 85, Movement 84) while IQ and Mental keep climbing - the two cancel out, so his ceiling sits barely above his current rating."
     },
     {
+      "gamertag": "charyy",
+      "__real_name": "18, so a name would be allowed under __PRIVACY_RULES - but none is recorded here because the August 2026 research pass did not turn up a publicly documented one. An absent name is not the same as a withheld one.",
+      "org": "ROC", "region": "EU", "age": 18,
+      "__age": "Born 11 November 2007 (Liquipedia), so 18 at this snapshot. Polish, like his partner Kami.",
+      "archetype": "Fragger",
+      "duo": "Kami",
+      "current_overall": 89.9, "peak_overall": 92.1,
+      "aim": { "tracking": 92, "flicks": 92, "accuracy": 92, "headshot": 92 },
+      "mechanics": { "build_speed": 93, "build_efficiency": 88, "edit_speed": 93, "edit_accuracy": 90 },
+      "fighting": { "edit_iq": 89, "piece_control": 93, "box_fighting": 94, "hg_retakes": 92, "reset_timing": 88, "movement": 93 },
+      "game_sense": { "positioning": 88, "rotation": 87, "fight_selection": 86, "resource_mgmt": 86 },
+      "offspawn": { "drop_accuracy": 90, "fifty_fifties": 92, "offspawn_fights": 92 },
+      "mental": { "clutch": 90, "under_pressure": 88, "tilt_resistance": 85, "big_stage_nerve": 86, "consistency": 84 },
+      "teamwork": { "communication": 89, "decision_making": 85, "adaptivity": 88 },
+      "note": "Joined ROC with Kami on 11 March 2026. The fragger half of the file's cleanest complementary duo: he is Box Fighting 94 / Fight Selection 86, Kami is 85 / 94. Consistency 84 is the give-away - he wins the fights Kami avoids and loses the games Kami saves.",
+      "potential_note": "18, so the ladder gives about +2.2. Big Stage Nerve 86 is respectable but not finished, so part of that budget is still earnable at LANs and the rest is trainable hands. Sits between Pollo (18, nerve 96, +2.0) and Pixie (18, nerve 82, +2.4), which is exactly where a nerve of 86 belongs."
+    },
+    {
+      "gamertag": "Curve",
+      "__real_name": "DELIBERATELY ABSENT. Curve is 15. __PRIVACY_RULES gives under-18 players an age and nothing else - no name, no birthdate - and that rule outranks the fact that his name is easy to find. A name was supplied with his ratings and was dropped on the way in.",
+      "org": "KoS Esports", "region": "NAC", "age": 15,
+      "__age": "15 at this snapshot. Sourced, not derived - unlike VicterV, whose age is the one soft number in this file.",
+      "archetype": "Fragger",
+      "duo": "Veno",
+      "current_overall": 89.5, "peak_overall": 93.5,
+      "aim": { "tracking": 91, "flicks": 91, "accuracy": 91, "headshot": 92 },
+      "mechanics": { "build_speed": 92, "build_efficiency": 88, "edit_speed": 92, "edit_accuracy": 90 },
+      "fighting": { "edit_iq": 88, "piece_control": 92, "box_fighting": 93, "hg_retakes": 91, "reset_timing": 88, "movement": 92 },
+      "game_sense": { "positioning": 88, "rotation": 87, "fight_selection": 86, "resource_mgmt": 86 },
+      "offspawn": { "drop_accuracy": 90, "fifty_fifties": 90, "offspawn_fights": 91 },
+      "mental": { "clutch": 89, "under_pressure": 87, "tilt_resistance": 85, "big_stage_nerve": 86, "consistency": 85 },
+      "teamwork": { "communication": 89, "decision_making": 85, "adaptivity": 89 },
+      "note": "Won the FNCS 2026 Major 1 Grand Finals in NA Central with Veno on 727 points, at 15. American, plays NAC, and his partner is at a different org - see `crossOrgDuos`. The fragger to Veno's caller: Box Fighting 93 against Veno's 84, Fight Selection 86 against Veno's 93.",
+      "potential_note": "The second-biggest ceiling in the file after shxrk. At 15 the ladder gives about +4.8, but almost none of Curve's gap is Big Stage Nerve - he is already on 86 because he has won a Grand Final, where shxrk sits on 72. Untrainable nerve eats little of the budget, so the remainder is trainable skill and the number lands at +4.0. Compare VicterV: 16, nerve 86, +3.4. A year younger with the same nerve is worth about half a point more."
+    },
+    {
       "gamertag": "Veno",
       "real_name": "Harry Pearson",
-      "org": "XSET", "region": "EU", "age": 21,
+      "org": "XSET", "region": "NAC", "age": 21,
       "archetype": "IGL / Zone Anchor",
-      "duo": null,
+      "duo": "Curve",
       "current_overall": 90, "peak_overall": 90.3,
       "aim": { "tracking": 88, "flicks": 85, "accuracy": 90, "headshot": 88 },
       "mechanics": { "build_speed": 86, "build_efficiency": 91, "edit_speed": 87, "edit_accuracy": 90 },
@@ -291,7 +340,7 @@
       "offspawn": { "drop_accuracy": 84, "fifty_fifties": 83, "offspawn_fights": 85 },
       "mental": { "clutch": 88, "under_pressure": 90, "tilt_resistance": 92, "big_stage_nerve": 94, "consistency": 91 },
       "teamwork": { "communication": 93, "decision_making": 94, "adaptivity": 89 },
-      "note": "Best rotation read in the set - the only player who tops a Game Sense sub-stat outright over Malibuca. Ratings came in without any org, so he sits on the market as a free agent.",
+      "note": "Best rotation read in the set - the only player who tops a Game Sense sub-stat outright over Malibuca. British, but he competes in NA CENTRAL: he and Curve won the FNCS 2026 Major 1 Grand Finals there with 727 points, which is also why an earlier version of this file had his region wrong.",
       "potential_note": "Four FNCS titles including Major 1 of 2026, and the best Rotation read in the file. At 21 he is not going to get better - he is going to stay this good for two more seasons and then fall away."
     },
     {

@@ -31,6 +31,7 @@ import { applyTraining, trainingCost, duoTrainingChemistry, type TrainingOutcome
 import type {
   GameState,
   Player,
+  RivalDuo,
   TournamentResult,
   Duo,
   WeeklyFinance,
@@ -175,7 +176,12 @@ export function syncRealScene(state: GameState): string[] {
   // each authored duo to the one already in the save before creating anything.
   // Saves written before that was possible carry no defId, so fall back to
   // whichever existing duo already holds one of this duo's players.
+  // PASS 1: match every authored duo to one already in the save, creating any
+  // that is genuinely new. No seats are filled yet - a player cannot move into
+  // his authored duo while a stale one still has hold of him, so the duos the
+  // file no longer authors have to be cleared out in between.
   const claimed = new Set<string>()
+  const pairs: { def: ReturnType<typeof realDuoDefs>[number]; duo: RivalDuo }[] = []
   for (const def of realDuoDefs()) {
     let duo =
       state.rivalDuos.find((d) => d.defId === def.defId) ??
@@ -208,7 +214,35 @@ export function syncRealScene(state: GameState): string[] {
     duo.defId = def.defId
     duo.orgName = def.orgName
     duo.region = def.region
+    pairs.push({ def, duo })
+  }
 
+  // PASS 2: retire the duos the file no longer authors. An org really does stop
+  // fielding a pairing - XSET's own duo went away when Veno's partner Curve was
+  // added at KoS and the two of them moved into `crossOrgDuos`. Left alone the
+  // stale duo keeps its grip on Veno, and the authored duo can then never seat
+  // him: it fills his chair with a generated stand-in instead, and you end up
+  // looking at both. A duo holding one of YOUR players is never touched.
+  const retired = state.rivalDuos.filter(
+    (d) => !claimed.has(d.id) && !d.playerIds.some((id) => state.rosterIds.includes(id)),
+  )
+  for (const dead of retired) {
+    for (const id of dead.playerIds) {
+      const sitting = state.players[id]
+      // Real players are simply freed - they stay on the market. Only the
+      // generated stand-in that was filling the other chair is deleted.
+      if (!sitting || sitting.isReal || sitting.joinedWeek !== null) continue
+      delete state.players[id]
+      state.marketIds = state.marketIds.filter((x) => x !== id)
+    }
+  }
+  if (retired.length > 0) {
+    const dead = new Set(retired.map((d) => d.id))
+    state.rivalDuos = state.rivalDuos.filter((d) => !dead.has(d.id))
+  }
+
+  // PASS 3: seat everybody.
+  for (const { def, duo } of pairs) {
     const seats: string[] = [duo.playerIds[0], duo.playerIds[1]]
     for (const tag of def.players) {
       const real = byTag.get(tag.toLowerCase())

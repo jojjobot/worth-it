@@ -22,10 +22,12 @@ const ADDED_LATER = [
   'Cold', 'Acorn', 'Clix', 'Ajerss', 'Ritual',
   'Queasy', 'Merstach', 'TaySon', 'Setty', 'JannisZ',
   'Cheatiin', 'Flickzy', 'Chap', 'Khanada', 'VicterV',
+  'charyy', 'Curve',
 ]
 const ORGS_ADDED_LATER = [
   't1', 'xset', 'geng',
   'godlike', 'dignitas', 'nigma', 'mates', 'cgn-aight',
+  'kos', 'xset-kos',
 ]
 
 let failures = 0
@@ -159,6 +161,39 @@ check('Dignitas arrived with Khanada + VicterV',
 check('the free agents are in no duo at all',
   ['TaySon', 'Setty'].every(
     (t) => !state.rivalDuos.some((d) => d.playerIds.includes(findByTag(state, t)!.id)),
+  ))
+// The XSET regression. XSET used to field its own duo, Veno plus a generated
+// stand-in, because Veno's real partner Curve was not in the file. Adding Curve
+// moved the pairing into `crossOrgDuos` and deleted the XSET duo - and an old
+// save has to follow. The first version of this sync did not retire a duo the
+// file had stopped authoring, so the stale XSET duo kept its grip on Veno and
+// the new XSET/KoS duo seated Curve next to a second stand-in. You saw both on
+// the Scene screen, and Veno was never in the duo he actually plays in.
+check('Veno + Curve are ONE duo, at XSET / KoS',
+  tagsOf('xset-kos', 'xset-kos').includes('Veno') &&
+    tagsOf('xset-kos', 'xset-kos').includes('Curve'),
+  tagsOf('xset-kos', 'xset-kos').join(' + '))
+check('they stayed at their own separate orgs',
+  findByTag(state, 'Veno')!.orgName === 'XSET' &&
+    findByTag(state, 'Curve')!.orgName === 'KoS Esports')
+check('the duo XSET stopped fielding was retired, not left behind',
+  !state.rivalDuos.some((d) => d.defId === 'xset-a'))
+check('no duo survives that the file no longer authors',
+  (() => {
+    const authored = new Set(realDuoDefs().map((d) => d.defId))
+    return state.rivalDuos.every((d) => !d.defId || authored.has(d.defId))
+  })(),
+  `${state.rivalDuos.length} duos, all authored`)
+check('ROC seated charyy next to Kami instead of a stand-in',
+  tagsOf('roc', 'roc-a').includes('Kami') && tagsOf('roc', 'roc-a').includes('charyy'),
+  tagsOf('roc', 'roc-a').join(' + '))
+check('no generated player was orphaned by the retirement',
+  Object.values(state.players).every(
+    (p) =>
+      p.isReal ||
+      state.marketIds.includes(p.id) ||
+      state.rosterIds.includes(p.id) ||
+      state.rivalDuos.some((d) => d.playerIds.includes(p.id)),
   ))
 check('the evicted stand-in is gone from players and market',
   !state.players['standin-tm'] && !state.marketIds.includes('standin-tm'))
