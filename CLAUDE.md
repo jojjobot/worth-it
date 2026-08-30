@@ -71,6 +71,15 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
 - **The match engine is sub-stat native.** sim.ts reads the 29 sub-stats
   directly; `legacyAttrs`/`legacyBridge` survive ONLY for training.json's
   program list (build step 6) and must die with it.
+- **No phase computes an outcome inline.** Every probability, penalty and cost
+  goes through `resolve(key, base, ctx)` in `src/engine/modifiers.ts`; the 23
+  keys live in `src/data/modifiers.json` with a clamp shape and the build step
+  that wires each one in. Badges and playstyles are ONLY ever modifiers on a
+  key — never a flat stat boost. They do not stack: strongest applicable wins.
+  `npm run verify:modifiers` runs 2160 matches and fails if a key claiming to
+  be live is never reached. `npm run verify:sim` diffs the whole engine against
+  a committed 270-session baseline — **after a DELIBERATE sim change, re-run
+  `npm run snapshot:sim`** so the new baseline lands in that same commit.
 - A lobby is **50 duos** (`balance.json` → simulation.lobby). Placements come
   from a tracked survivor curve, not random bands, and the scoring table in
   tournaments.json is written for 50 teams.
