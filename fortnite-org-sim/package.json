@@ -10,13 +10,17 @@
     "preview": "vite preview",
     "calibrate": "tsx scripts/calibrate.ts",
     "verify": "tsx scripts/verify-real-players.ts",
-    "verify:sync": "tsx scripts/verify-real-sync.ts"
+    "verify:sync": "tsx scripts/verify-real-sync.ts",
+    "snapshot:sim": "tsx scripts/sim-snapshot.ts write",
+    "verify:sim": "tsx scripts/sim-snapshot.ts",
+    "verify:modifiers": "tsx scripts/verify-modifiers.ts"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^26.4.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

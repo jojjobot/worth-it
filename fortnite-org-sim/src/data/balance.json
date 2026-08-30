@@ -270,6 +270,8 @@
 
     "midGame": {
       "__doc": "PHASE 3. One pass per zone (see lobby.survivors.afterZones): the fights you CHOOSE, then the pressure you cannot avoid, then a chance to rebuild.",
+      "disengageShieldCost": 40,
+      "__disengageShieldCost": "Shield lost when a lost mid-game fight ends in breaking contact rather than a knock. This used to be hard-coded in sim.ts; it moved here when the modifier pipeline went in, with the same value, so nothing changed.",
       "optionalFightChance": { "contest": 0.62, "balanced": 0.4, "safe": 0.2 },
       "__optionalFightChance": "Base chance per zone that the duo goes looking for a fight.",
       "aggroFightBonus": 0.11,

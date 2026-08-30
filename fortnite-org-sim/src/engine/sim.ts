@@ -27,11 +27,19 @@
 // always a bottom-ten finish and surviving to zone 6 is always a top-25 one.
 //
 // Every weight, chance and penalty below is read from balance.json.
+//
+// AND EVERY ONE OF THEM GOES THROUGH resolve(). No phase computes an outcome
+// inline any more: the engine works a value out of the sub-stats exactly as it
+// always did, then hands it to the modifier pipeline in modifiers.ts under a
+// named key. Nothing is registered yet, so resolve() hands it straight back -
+// but badges and playstyles now have something to hook into, which they would
+// not if a fight were settled by one opaque calculation.
 // ---------------------------------------------------------------------------
 
 import trainingJson from '../data/training.json'
 import namesJson from '../data/names.json'
 import { BAL, pointsFor } from './config'
+import { resolve, type ModifierContext } from './modifiers'
 import { Rng, clamp, winChance } from './rng'
 import {
   CATEGORY_OF,
@@ -223,7 +231,12 @@ function buildStates(players: Player[], ctx: MatchContext, rng: Rng): PlayerStat
   const mental = S.mental
 
   return players.map((p) => {
-    const sigma = cm.baseSigma * (1 - (p.current.consistency / 99) * cm.consistencyScale)
+    // How wide this player's night is. Consistency, inverted.
+    const sigma = resolve(
+      'VARIANCE_WIDTH',
+      cm.baseSigma * (1 - (p.current.consistency / 99) * cm.consistencyScale),
+      { phase: 'global', isLan: ctx.isLan, matchNumber: ctx.matchIndex, playerId: p.id },
+    )
     const form = rng.gauss(0, sigma)
     const fatigue = fatigueAmount(p, ctx.matchIndex)
     const burn = (p.burnout / 100) * BAL_TRAIN_BURNOUT_PENALTY
@@ -233,7 +246,11 @@ function buildStates(players: Player[], ctx: MatchContext, rng: Rng): PlayerStat
       : 0
     // Big Stage Nerve is ignored everywhere except LAN and Grand Finals.
     const nerve = ctx.isLan
-      ? (p.current.big_stage_nerve - mental.bigStageNerve.anchor) * mental.bigStageNerve.perPoint
+      ? resolve(
+          'LAN_PENALTY',
+          (p.current.big_stage_nerve - mental.bigStageNerve.anchor) * mental.bigStageNerve.perPoint,
+          { phase: 'global', isLan: true, matchNumber: ctx.matchIndex, playerId: p.id },
+        )
       : 0
 
     const eff = {} as Ratings
@@ -280,6 +297,8 @@ function checkPower(states: PlayerState[], def: CheckDef): number {
 interface Situation {
   /** A moment where Under Pressure is read: closing games, final circles. */
   pressure?: boolean
+  /** Where in the match this is being asked, for the modifier pipeline. */
+  mctx: ModifierContext
 }
 
 /**
@@ -293,7 +312,11 @@ function situationalMod(states: PlayerState[], sit: Situation): number {
 
   if (ups.length === 1 && states.length > 1) {
     // Playing the 1v2. This is the ONLY place Clutch is read.
-    mod -= S.downedPartner.powerPenalty
+    mod -= resolve('OUTNUMBERED_FIGHT_PENALTY', S.downedPartner.powerPenalty, {
+      ...sit.mctx,
+      teammatesAlive: 1,
+      outnumberedBy: 2,
+    })
     mod += (ups[0].eff.clutch - S.mental.clutch.anchor) * S.mental.clutch.perPoint
   }
   if (sit.pressure && ups.length > 0) {
@@ -324,9 +347,21 @@ function opponentPower(rng: Rng, lobbyRating: number, bonus = 0): number {
   return lobbyRating + bonus + rng.gauss(0, BAL.simulation.lobbySigma)
 }
 
-function contest(rng: Rng, myPower: number, oppPower: number): { win: boolean; chance: number } {
+/**
+ * Every contested roll in the game. The win chance is worked out from the two
+ * powers and then resolved under a NAMED key, so a badge can reach exactly one
+ * kind of contest - the chest race, the opening exchange, the zone rotate -
+ * instead of every roll in the match at once.
+ */
+function contest(
+  rng: Rng,
+  myPower: number,
+  oppPower: number,
+  key: 'OPENING_EXCHANGE_PROB' | 'CHEST_RACE_PROB' | 'NEXT_ZONE_POSITION_PROB',
+  mctx: ModifierContext,
+): { win: boolean; chance: number } {
   const jitter = rng.gauss(0, BAL.simulation.consistencyModel.perCheckJitter)
-  const chance = winChance(myPower + jitter, oppPower, BAL.simulation.duelScale)
+  const chance = resolve(key, winChance(myPower + jitter, oppPower, BAL.simulation.duelScale), mctx)
   return { win: rng.next() < chance, chance }
 }
 
@@ -340,7 +375,11 @@ function pct(x: number): string {
  *   'downed'  - one player is on the floor, the other plays the 1v2
  *   'escaped' - broke contact, chip damage only
  */
-function takeCasualty(states: PlayerState[], rng: Rng): 'wiped' | 'downed' | 'escaped' {
+function takeCasualty(
+  states: PlayerState[],
+  rng: Rng,
+  mctx: ModifierContext,
+): 'wiped' | 'downed' | 'escaped' {
   const dp = BAL.simulation.downedPartner
   const ups = states.filter((s) => s.status === 'up')
   if (ups.length === 0) return 'wiped'
@@ -358,10 +397,12 @@ function takeCasualty(states: PlayerState[], rng: Rng): 'wiped' | 'downed' | 'es
   // Reset Timing and Movement are what turn a lost fight into a lost player
   // instead of a lost game.
   const escapeSkill = teamWeighted(states, dp.wipeReducedBy)
-  const wipeChance = clamp(
-    dp.wipeChanceOnLoss * (1 - ((escapeSkill - 50) / 50) * dp.wipeSkillScale),
-    0.05,
-    0.92,
+  // The opponent's chance of turning your disengage into a dead duo rather
+  // than a knocked player.
+  const wipeChance = resolve(
+    'RESET_CHASE_CONVERSION',
+    clamp(dp.wipeChanceOnLoss * (1 - ((escapeSkill - 50) / 50) * dp.wipeSkillScale), 0.05, 0.92),
+    mctx,
   )
   if (rng.chance(wipeChance)) {
     for (const s of states) s.status = 'dead'
@@ -397,7 +438,12 @@ function addShield(states: PlayerState[], amount: number): void {
 }
 
 /** Try to rebuild the duo. Returns the tag of whoever came back, if anyone. */
-function tryReboot(states: PlayerState[], teamsAlive: number, rng: Rng): string | null {
+function tryReboot(
+  states: PlayerState[],
+  teamsAlive: number,
+  rng: Rng,
+  mctx: ModifierContext,
+): string | null {
   const r = BAL.simulation.downedPartner.reboot
   if (teamsAlive <= r.notBelowPlacement) return null
   const downed = states.find((s) => s.status === 'down')
@@ -405,11 +451,16 @@ function tryReboot(states: PlayerState[], teamsAlive: number, rng: Rng): string 
   if (!downed || !survivor) return null
 
   const power = teamWeighted(states, r.power)
-  const chance = clamp(r.baseChance * (1 + ((power - 50) / 50) * r.skillScale), 0.02, 0.95)
+  const chance = resolve(
+    'PARTNER_SAVE_PROB',
+    clamp(r.baseChance * (1 + ((power - 50) / 50) * r.skillScale), 0.02, 0.95),
+    mctx,
+  )
   if (!rng.chance(chance)) return null
-  if (survivor.mats < r.matsCost) return null
+  const cost = resolve('MAT_COST', r.matsCost, mctx)
+  if (survivor.mats < cost) return null
 
-  survivor.mats -= r.matsCost
+  survivor.mats -= cost
   downed.status = 'up'
   // They come back with nothing. That is the point of losing a player.
   downed.mats = 0
@@ -435,6 +486,30 @@ export function simulateMatch(
 
   const ctx: MatchContext = { matchIndex, synergy, tilted, isLan: !!opts.isLan, opts }
   const states = buildStates(players, ctx, rng)
+
+  /**
+   * The match state handed to the modifier pipeline on every roll. A badge or
+   * playstyle reads this to decide whether it applies - "only in the endgame",
+   * "only on a contested drop", "only while a man down".
+   *
+   * Build step 4 widens it: hp, loot tier, height and piece advantage are
+   * declared on ModifierContext but the engine does not carry them yet.
+   */
+  const mctx = (
+    phase: ModifierContext['phase'],
+    extra: Partial<ModifierContext> = {},
+  ): ModifierContext => ({
+    phase,
+    teamsAlive,
+    teammatesAlive: states.filter((s) => s.status === 'up').length,
+    mats: avgMats(states),
+    shield: avgShield(states),
+    contested,
+    isLan: !!opts.isLan,
+    matchNumber: matchIndex,
+    closingGame,
+    ...extra,
+  })
 
   const detail: string[] = []
   const fragments: string[] = []
@@ -502,9 +577,11 @@ export function simulateMatch(
   const bandDeath = (from: number, to: number): number => rng.int(Math.min(from, to), Math.max(from, to))
 
   if (contested) {
-    const my = checkPower(states, d.power) + situationalMod(states, { pressure: closingGame })
+    const dropCtx = mctx('offspawn')
+    const my = checkPower(states, d.power) + situationalMod(states, { pressure: closingGame, mctx: dropCtx })
     const opp = opponentPower(rng, opts.lobbyRating)
-    const res = contest(rng, my, opp)
+    // The race for the first gun.
+    const res = contest(rng, my, opp, 'CHEST_RACE_PROB', dropCtx)
     detail.push(
       `DROP · contested ${poi} · power ${my.toFixed(1)} vs ${opp.toFixed(1)} (${pct(res.chance)})`,
     )
@@ -517,14 +594,14 @@ export function simulateMatch(
       fragments.push(`Dropped ${poi} contested, won the fight (${gained} elims).`)
       detail.push(`  won the drop fight, +${gained} elims, +${d.winMats} mats each`)
     } else {
-      const cost = takeCasualty(states, rng)
+      const cost = takeCasualty(states, rng, dropCtx)
       if (cost === 'wiped') {
         fragments.push(`Dropped ${poi} contested and lost the fight.`)
         detail.push('  lost the drop fight and got cleaned up instantly')
         return finish(bandDeath(surv.afterDrop + 1, teams), 'drop')
       }
-      spendMats(states, d.loseMatsPenalty)
-      addShield(states, -d.loseShieldPenalty)
+      spendMats(states, resolve('MAT_COST', d.loseMatsPenalty, dropCtx))
+      addShield(states, -resolve('RESET_DAMAGE', d.loseShieldPenalty, dropCtx))
       if (cost === 'downed') {
         partnerDowns++
         const downTag = states.find((s) => s.status === 'down')!.p.tag
@@ -552,20 +629,28 @@ export function simulateMatch(
       `LOOT · loot quality ${lootStat.toFixed(0)} → ${Math.round(avgMats(states))} mats, ${Math.round(avgShield(states))} shield each`,
     )
 
-    const my = checkPower(states, l.rotatePower) + situationalMod(states, { pressure: closingGame })
+    const rotCtx = mctx('rotate')
+    const my = checkPower(states, l.rotatePower) + situationalMod(states, { pressure: closingGame, mctx: rotCtx })
     const opp = opponentPower(rng, opts.lobbyRating, l.rotateDifficultyBonus)
-    const res = contest(rng, my, opp)
+    const res = contest(rng, my, opp, 'NEXT_ZONE_POSITION_PROB', rotCtx)
     detail.push(`ROTATE · read ${my.toFixed(1)} vs ${opp.toFixed(1)} (${pct(res.chance)})`)
     if (res.win) {
       detail.push('  clean rotate, took the zone early')
-    } else if (rng.chance(l.failDeathChance)) {
+    } else if (rng.chance(resolve('THIRD_PARTY_CHANCE', l.failDeathChance, rotCtx))) {
       // A blown rotate is a fight you did not pick, so Fight Selection is no
       // help here - it runs on the mid-game weights at full opponent strength.
-      const fightPower = checkPower(states, S.midGame.power) + situationalMod(states, { pressure: closingGame })
-      const fightRes = contest(rng, fightPower, opponentPower(rng, opts.lobbyRating, 2))
+      const fightPower =
+        checkPower(states, S.midGame.power) + situationalMod(states, { pressure: closingGame, mctx: rotCtx })
+      const fightRes = contest(
+        rng,
+        fightPower,
+        opponentPower(rng, opts.lobbyRating, 2),
+        'OPENING_EXCHANGE_PROB',
+        rotCtx,
+      )
       const how = rng.chance(0.5) ? 'Storm-blocked on the rotate' : 'Third-partied mid-rotate'
       if (!fightRes.win) {
-        const cost = takeCasualty(states, rng)
+        const cost = takeCasualty(states, rng, rotCtx)
         if (cost === 'wiped') {
           fragments.push(`${how}.`)
           detail.push('  caught out of position and killed')
@@ -580,17 +665,17 @@ export function simulateMatch(
           fragments.push(`${how} but broke contact.`)
           detail.push('  broke contact, chip damage only')
         }
-        spendMats(states, l.failMatsPenalty)
-        addShield(states, -l.failShieldPenalty)
+        spendMats(states, resolve('MAT_COST', l.failMatsPenalty, rotCtx))
+        addShield(states, -resolve('STORM_DAMAGE', l.failShieldPenalty, rotCtx))
       } else {
         awardElims(states, 1, rng)
         fragments.push(`${how} but won the fight on the way in.`)
         detail.push('  fought through it, +1 elim')
-        spendMats(states, l.failMatsPenalty)
+        spendMats(states, resolve('MAT_COST', l.failMatsPenalty, rotCtx))
       }
     } else {
-      spendMats(states, l.failMatsPenalty)
-      addShield(states, -l.failShieldPenalty)
+      spendMats(states, resolve('MAT_COST', l.failMatsPenalty, rotCtx))
+      addShield(states, -resolve('STORM_DAMAGE', l.failShieldPenalty, rotCtx))
       if (rng.chance(l.thirdPartyElimChance)) {
         awardElims(states, 1, rng)
         fragments.push('Messy rotate but traded one on the way in.')
@@ -602,7 +687,7 @@ export function simulateMatch(
   }
   teamsAlive = surv.afterRotate
   {
-    const back = tryReboot(states, teamsAlive, rng)
+    const back = tryReboot(states, teamsAlive, rng, mctx('rotate'))
     if (back) {
       reboots++
       fragments.push(`Rebuilt ${back}.`)
@@ -637,12 +722,13 @@ export function simulateMatch(
         detail.push(`ZONE ${zoneNumber} · saw a fight and turned it down`)
         break
       }
-      let my = checkPower(states, m.power) + situationalMod(states, { pressure })
+      const fightCtx = mctx('midgame', { zone: zoneNumber })
+      let my = checkPower(states, m.power) + situationalMod(states, { pressure, mctx: fightCtx })
       if (avgMats(states) < m.lowMatsThreshold) my -= m.lowMatsPenalty
       const softer = Math.max(0, fightSelection - 50) * m.fightSelectionScale
       const opp = opponentPower(rng, opts.lobbyRating, rampBonus - softer)
-      const res = contest(rng, my, opp)
-      spendMats(states, m.matsPerFight)
+      const res = contest(rng, my, opp, 'OPENING_EXCHANGE_PROB', fightCtx)
+      spendMats(states, resolve('MAT_COST', m.matsPerFight, fightCtx))
       if (res.win) {
         const gained = rng.int(m.winElims.min, m.winElims.max)
         awardElims(states, gained, rng)
@@ -651,7 +737,7 @@ export function simulateMatch(
         addShield(states, m.healOffShield)
         detail.push(`ZONE ${zoneNumber} · took a fight and won (${pct(res.chance)}), +${gained} elims`)
       } else {
-        const cost = takeCasualty(states, rng)
+        const cost = takeCasualty(states, rng, fightCtx)
         if (cost === 'wiped') {
           if (midElims > 0)
             fragments.push(`Won a mid-game fight for ${midElims} more, then lost the next.`)
@@ -664,7 +750,8 @@ export function simulateMatch(
           const downTag = states.find((s) => s.status === 'down')!.p.tag
           detail.push(`ZONE ${zoneNumber} · lost the fight (${pct(res.chance)}), ${downTag} down`)
         } else {
-          addShield(states, -40)
+          // Broke contact instead of dying for it.
+          addShield(states, -resolve('RESET_DAMAGE', m.disengageShieldCost, fightCtx))
           detail.push(`ZONE ${zoneNumber} · lost the fight (${pct(res.chance)}) but disengaged`)
         }
         fightChance = 0 // one beating per zone is enough
@@ -674,11 +761,12 @@ export function simulateMatch(
 
     // 3b) The pressure they CANNOT avoid. This is the gate on reaching top 15.
     {
-      let my = checkPower(states, m.zonePower) + situationalMod(states, { pressure })
+      const zoneCtx = mctx('midgame', { zone: zoneNumber })
+      let my = checkPower(states, m.zonePower) + situationalMod(states, { pressure, mctx: zoneCtx })
       if (avgMats(states) < m.lowMatsThreshold) my -= m.lowMatsPenalty
       const opp = opponentPower(rng, opts.lobbyRating, rampBonus)
-      const res = contest(rng, my, opp)
-      spendMats(states, m.zoneMatsCost)
+      const res = contest(rng, my, opp, 'NEXT_ZONE_POSITION_PROB', zoneCtx)
+      spendMats(states, resolve('MAT_COST', m.zoneMatsCost, zoneCtx))
       if (res.win) {
         if (rng.chance(m.zoneElimChance)) {
           awardElims(states, 1, rng)
@@ -686,7 +774,7 @@ export function simulateMatch(
         }
         detail.push(`ZONE ${zoneNumber} · held the position (${pct(res.chance)})`)
       } else if (rng.chance(m.zoneDeathChance)) {
-        const cost = takeCasualty(states, rng)
+        const cost = takeCasualty(states, rng, zoneCtx)
         const how = rng.chance(0.5)
           ? 'Got squeezed out of the zone'
           : 'Third-partied moving into the circle'
@@ -700,11 +788,11 @@ export function simulateMatch(
           const downTag = states.find((s) => s.status === 'down')!.p.tag
           detail.push(`ZONE ${zoneNumber} · broken (${pct(res.chance)}), ${downTag} down`)
         } else {
-          addShield(states, -m.zoneShieldCost)
+          addShield(states, -resolve('STORM_DAMAGE', m.zoneShieldCost, zoneCtx))
           detail.push(`ZONE ${zoneNumber} · broken (${pct(res.chance)}), survived on low HP`)
         }
       } else {
-        addShield(states, -m.zoneShieldCost)
+        addShield(states, -resolve('STORM_DAMAGE', m.zoneShieldCost, zoneCtx))
         detail.push(`ZONE ${zoneNumber} · lost ground (${pct(res.chance)}), took damage getting in`)
       }
     }
@@ -713,7 +801,7 @@ export function simulateMatch(
     teamsAlive = zones[z]
 
     // 3c) Rebuild, if there is anyone to rebuild.
-    const back = tryReboot(states, teamsAlive, rng)
+    const back = tryReboot(states, teamsAlive, rng, mctx('midgame', { zone: zoneNumber }))
     if (back) {
       reboots++
       detail.push(`ZONE ${zoneNumber} · rebooted ${back}`)
@@ -744,7 +832,8 @@ export function simulateMatch(
   for (let c = 0; c < circles.length; c++) {
     const nextAlive = circles[c]
     const pressure = closingGame || alive <= S.mental.pressure.endgameFromPlacement
-    let my = checkPower(states, e.power) + situationalMod(states, { pressure })
+    const endCtx = mctx('endgame', { teamsAlive: alive })
+    let my = checkPower(states, e.power) + situationalMod(states, { pressure, mctx: endCtx })
     if (avgMats(states) <= 0) {
       my -= e.outOfMatsPenalty
       if (!outOfMatsCalled) {
@@ -755,7 +844,7 @@ export function simulateMatch(
     if (avgShield(states) < e.lowShieldThreshold) my -= e.lowShieldPenalty
     const circlesSurvived = c
     const opp = opponentPower(rng, opts.lobbyRating, circlesSurvived * e.difficultyRamp)
-    const res = contest(rng, my, opp)
+    const res = contest(rng, my, opp, 'OPENING_EXCHANGE_PROB', endCtx)
 
     if (!res.win) {
       // The last-man clutch save. Only a player who is actually alone gets it.
@@ -765,11 +854,11 @@ export function simulateMatch(
         S.mental.clutch.saveChance * clamp((clutchStat - S.mental.clutch.anchor) / 49, 0, 1)
       if (rng.chance(saveChance)) {
         detail.push(`  top ${alive}: lost the piece but clutched out of it`)
-        spendMats(states, matsPerCircle * 1.5)
+        spendMats(states, resolve('MAT_COST', matsPerCircle * 1.5, endCtx))
         alive = nextAlive
         continue
       }
-      const cost = takeCasualty(states, rng)
+      const cost = takeCasualty(states, rng, endCtx)
       if (cost !== 'wiped' && teamAlive(states)) {
         if (cost === 'downed') {
           partnerDowns++
@@ -778,7 +867,7 @@ export function simulateMatch(
         } else {
           detail.push(`  top ${alive}: lost the piece but survived the reset`)
         }
-        spendMats(states, matsPerCircle)
+        spendMats(states, resolve('MAT_COST', matsPerCircle, endCtx))
         alive = nextAlive
         continue
       }
@@ -796,7 +885,7 @@ export function simulateMatch(
     if (rng.chance(e.elimChancePerCircle)) {
       awardElims(states, rng.int(e.elimsPerCircle.min, e.elimsPerCircle.max), rng)
     }
-    spendMats(states, matsPerCircle)
+    spendMats(states, resolve('MAT_COST', matsPerCircle, endCtx))
     alive = nextAlive
     if (alive <= 1) break
   }

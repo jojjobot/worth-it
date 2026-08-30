@@ -1,0 +1,201 @@
+{
+  "__doc": "THE MODIFIER KEY REGISTRY. Every probability, penalty and cost the match engine works out passes through one function - resolve(key, base, context) in src/engine/modifiers.ts - and this file is the list of keys it accepts. Badges and playstyles are nothing more than modifiers registered against a key here. If a key does not exist, any badge hooking into it is dead code, which is exactly what this file exists to prevent.",
+
+  "__how_it_works": "The engine computes a BASE value out of the player's sub-stats, exactly as it always did, then hands it to resolve(). With nothing registered, resolve() hands it straight back - that is why build step 3 changes no numbers at all. Once badges and playstyles arrive they register against a key, declare which situations they care about, and reshape the value on its way through.",
+
+  "__no_stacking": "Modifiers on the same key DO NOT STACK. If three of them apply at once, the strongest single one wins and the other two do nothing. That is deliberate: it stops a player stacking six badges onto one number and breaking the game, and it means every badge is worth having on its own rather than only in combination.",
+
+  "__clamping": "Each key declares a `clamp` shape. `probability` is held inside 0.01-0.99, so nothing is ever certain or impossible. `substat` never exceeds 99. `amount` never goes below zero. `signed` is left alone, for the one value that is meaningfully negative: LAN_PENALTY is a swing, minus for a player who shrinks on stage and plus for one who grows, so clamping it at zero would delete stage fright entirely. IMPORTANT: the clamp is applied ONLY when a modifier actually changed the value. An untouched base value passes through exactly as the engine computed it, which is what keeps build step 3 a true no-op refactor.",
+
+  "__wired_in": "`wiredIn` says which build step actually calls resolve() for this key. `3` means it is live now. A later number means the key is DECLARED and resolvable, but the engine has no such concept yet - the phases gain it at that step. `npm run verify:modifiers` prints the ledger and fails if a key claiming to be live is never called during a real session, so a key cannot quietly rot.",
+
+  "keys": [
+    {
+      "id": "OPENING_EXCHANGE_PROB",
+      "phase": "fight",
+      "clamp": "probability",
+      "wiredIn": 3,
+      "base": "The chance of winning a fight the duo chose to take. Comes from the mid-game weight set in balance.json - flicks and tracking lead it - run through the Fighting multiplier.",
+      "calledFrom": "sim.ts - the optional mid-game fight, the drop fight, and the fight a blown rotate forces on you."
+    },
+    {
+      "id": "CHEST_RACE_PROB",
+      "phase": "offspawn",
+      "clamp": "probability",
+      "wiredIn": 3,
+      "base": "The chance of winning the contested drop - the race for the first gun. Driven by the offspawn weight set, fifty_fifties above all.",
+      "calledFrom": "sim.ts - PHASE 1, when the drop is contested."
+    },
+    {
+      "id": "NEXT_ZONE_POSITION_PROB",
+      "phase": "rotate",
+      "clamp": "probability",
+      "wiredIn": 3,
+      "base": "The chance of getting into the next zone in a position worth having. Positioning and rotation.",
+      "calledFrom": "sim.ts - the first rotate, and the unavoidable pressure check in every mid-game zone."
+    },
+    {
+      "id": "MAT_COST",
+      "phase": "any build",
+      "clamp": "amount",
+      "wiredIn": 3,
+      "base": "Mats burned. Build Efficiency already cuts the endgame per-circle cost; every other spend is a flat number out of balance.json.",
+      "calledFrom": "sim.ts - every call to spendMats, plus the mats a reboot costs."
+    },
+    {
+      "id": "STORM_DAMAGE",
+      "phase": "rotate",
+      "clamp": "amount",
+      "wiredIn": 3,
+      "base": "Damage taken getting into the circle when the rotate goes wrong. Rotation quality against the zone timer.",
+      "calledFrom": "sim.ts - the shield lost on a failed rotate and on losing ground in a zone."
+    },
+    {
+      "id": "RESET_DAMAGE",
+      "phase": "fight",
+      "clamp": "amount",
+      "wiredIn": 3,
+      "base": "Damage taken breaking off a fight rather than committing to it. Reset Timing and Movement.",
+      "calledFrom": "sim.ts - the shield lost when a lost fight ends in a disengage instead of a death."
+    },
+    {
+      "id": "RESET_CHASE_CONVERSION",
+      "phase": "fight",
+      "clamp": "probability",
+      "wiredIn": 3,
+      "base": "The opponent's chance of turning your disengage into a dead duo instead of a knocked player. Cut by the duo's Reset Timing and Movement.",
+      "calledFrom": "sim.ts - takeCasualty, the wipe chance on a lost fight."
+    },
+    {
+      "id": "OUTNUMBERED_FIGHT_PENALTY",
+      "phase": "any",
+      "clamp": "amount",
+      "wiredIn": 3,
+      "base": "Power lost while a man down. Scales with how outnumbered you are - a 1v2 costs less than a 1v3.",
+      "calledFrom": "sim.ts - situationalMod, whenever one player is on the floor."
+    },
+    {
+      "id": "THIRD_PARTY_CHANCE",
+      "phase": "fight",
+      "clamp": "probability",
+      "wiredIn": 3,
+      "base": "The chance a bad rotate turns into a fight you did not choose. Rises with how long you are exposed and how poor your positioning is.",
+      "calledFrom": "sim.ts - the death chance on a failed rotate."
+    },
+    {
+      "id": "PARTNER_SAVE_PROB",
+      "phase": "fight",
+      "clamp": "probability",
+      "wiredIn": 3,
+      "base": "The chance of getting a downed partner back into the game. Communication and Movement.",
+      "calledFrom": "sim.ts - tryReboot.",
+      "__note": "In this engine saving a partner IS the reboot: you break off, survive, and rebuild them. If a later step adds a separate mid-fight save, it hooks the same key."
+    },
+    {
+      "id": "LAN_PENALTY",
+      "phase": "global",
+      "clamp": "signed",
+      "wiredIn": 3,
+      "base": "The Big Stage Nerve swing, read ONLY at events flagged lan:true. Negative for a player who shrinks on stage, positive for one who grows.",
+      "calledFrom": "sim.ts - buildStates, once per player per match.",
+      "__note": "Build step 5 turns this from a flat points shift into the multiplier the brief asks for. The key does not change, only what feeds it."
+    },
+    {
+      "id": "VARIANCE_WIDTH",
+      "phase": "global",
+      "clamp": "amount",
+      "wiredIn": 3,
+      "base": "How wide this player's random roll is. Consistency, inverted - a consistent player has a narrow spread.",
+      "calledFrom": "sim.ts - buildStates, the per-match form roll."
+    },
+
+    {
+      "id": "UNDER_FIRE_PENALTY",
+      "phase": "fight",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Accuracy lost while firing and being fired at. Flat penalty, cut by composure.",
+      "calledFrom": "NOT YET. The engine resolves a fight in one exchange - there is no notion of shooting while being shot at until the phases are rewritten."
+    },
+    {
+      "id": "DISTANCE_FALLOFF_PENALTY",
+      "phase": "fight",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Power lost at range. Rises with engagement distance.",
+      "calledFrom": "NOT YET. Fights have no range yet."
+    },
+    {
+      "id": "EDIT_WHIFF_CHANCE",
+      "phase": "fight",
+      "clamp": "probability",
+      "wiredIn": 5,
+      "base": "The chance of missing the edit you meant. Edit Accuracy, made worse by pressure.",
+      "calledFrom": "NOT YET. Edits are folded into the fight roll rather than being their own moment."
+    },
+    {
+      "id": "PIECE_DISADVANTAGE_PENALTY",
+      "phase": "fight",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Power lost by whichever side does not hold the piece.",
+      "calledFrom": "NOT YET. Piece advantage is per-player match state, which arrives at step 4."
+    },
+    {
+      "id": "PIECE_STEAL_PROB",
+      "phase": "fight",
+      "clamp": "probability",
+      "wiredIn": 5,
+      "base": "The chance of taking the opponent's piece. Piece Control and Edit IQ.",
+      "calledFrom": "NOT YET."
+    },
+    {
+      "id": "PIECE_STEAL_PUNISH",
+      "phase": "fight",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Damage taken when a piece steal fails.",
+      "calledFrom": "NOT YET."
+    },
+    {
+      "id": "LOW_GROUND_PENALTY",
+      "phase": "fight",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Power lost while below the opponent.",
+      "calledFrom": "NOT YET. has_height is per-player match state, which arrives at step 4."
+    },
+    {
+      "id": "OUTNUMBERED_DROP_PENALTY",
+      "phase": "offspawn",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Power lost dropping into more players than you brought. Scales with how many are contesting.",
+      "calledFrom": "NOT YET. A contested drop is currently a coin-weighted fight with no count of who else landed."
+    },
+    {
+      "id": "BAD_LOOT_PENALTY",
+      "phase": "offspawn",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Power lost fighting on worse loot. Scales with loot tier - grey through gold.",
+      "calledFrom": "NOT YET. loot_tier is per-player match state, which arrives at step 4."
+    },
+    {
+      "id": "DUO_DECISION_SOURCE",
+      "phase": "rotate",
+      "clamp": "substat",
+      "wiredIn": 5,
+      "base": "Which partner's Decision Making the duo actually rotates on. Currently the engine blends both.",
+      "calledFrom": "NOT YET. Needs a caller to be a real, named thing rather than an average."
+    },
+    {
+      "id": "SAVE_DAMAGE",
+      "phase": "fight",
+      "clamp": "amount",
+      "wiredIn": 5,
+      "base": "Damage taken while saving a partner.",
+      "calledFrom": "NOT YET. A reboot currently costs mats and nothing else."
+    }
+  ]
+}
