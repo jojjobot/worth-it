@@ -81,8 +81,13 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
 - `src/ui/` — one file per screen. The shell is a **season calendar home page**
   plus a bottom-left **hub menu** (`Hub.tsx`) for every other screen; there is
   no tab bar. `Season.tsx` is the home page and also handles tournament entry.
-  `PlayerSheet.tsx` is the click-any-player full stat sheet, opened through a
-  context provider so any screen can trigger it. `OrgSheet.tsx` is the same
+  `PlayerSheet.tsx` is the click-any-player profile, opened through a
+  context provider so any screen can trigger it. It is a TABBED page (design
+  brief Part 7): a header that never shows peak, then eight tabs of which only
+  the open one renders. Tab 1 (Attributes, with the hand-drawn SVG radar in
+  `Radar.tsx`) is live; tabs 2-8 name the build step that delivers them.
+  Profile colour bands and the radar scale are in `attributes.json` ->
+  `displayBands` / `radar`. `OrgSheet.tsx` is the same
   pattern for ORGS — click an org mark (Scene rows, results standings, the org
   line on a player sheet) for their roster, every duo they field, and every
   lobby you have shared with them. There are no image assets, so `OrgMark`

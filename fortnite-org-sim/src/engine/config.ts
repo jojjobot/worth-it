@@ -63,6 +63,37 @@ export const CATEGORY_WEIGHTS: Record<CategoryKey, number> = Object.fromEntries(
     .map(([k, v]) => [k, v as number]),
 ) as Record<CategoryKey, number>
 
+// --- Profile colour bands (attributes.json -> displayBands) ----------------
+
+export interface RatingBand {
+  /** Lowest rating that still counts as this band. */
+  from: number
+  label: string
+  hex: string
+}
+
+const FALLBACK_BAND: RatingBand = { from: 0, label: 'Unrated', hex: '#8ea0b5' }
+
+/** Bands sorted best-first, so the first match wins. */
+export const RATING_BANDS: RatingBand[] = (
+  ((ATTRS.displayBands?.bands ?? []) as RatingBand[]).slice()
+).sort((a, b) => b.from - a.from)
+
+/**
+ * Which colour band a rating falls in, for the player profile ONLY. Tune the
+ * thresholds in attributes.json -> displayBands; nothing here is hard-coded.
+ */
+export function ratingBand(v: number): RatingBand {
+  return RATING_BANDS.find((b) => v >= b.from) ?? RATING_BANDS[RATING_BANDS.length - 1] ?? FALLBACK_BAND
+}
+
+/** attributes.json -> radar. Scale of the seven-sided chart on the profile. */
+export const RADAR = {
+  min: (ATTRS.radar?.min ?? 0) as number,
+  max: (ATTRS.radar?.max ?? 100) as number,
+  rings: (ATTRS.radar?.rings ?? 4) as number,
+}
+
 /**
  * One category score: the weighted average of its sub-stats.
  * DISPLAY ONLY. The match engine must never read this - it reads sub-stats.

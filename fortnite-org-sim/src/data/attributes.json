@@ -8,6 +8,27 @@
     "offset": 0.3
   },
 
+  "displayBands": {
+    "__doc": "COLOUR BANDS for the sub-stat and category numbers on the PLAYER PROFILE - the Attributes tab, the radar chart and its legend. Top band first; `from` is the lowest value that still counts as that band, and `hex` is the colour it is drawn in. Only the profile uses these, so changing them cannot make a tournament lobby rating turn red.",
+    "__scale_note": "These are ELITE-ROSTER bands, straight from the design brief: at the top of the world an 80 really is a weakness. That means a freshly generated academy player will look almost entirely red, because next to Peterbot they are. If you would rather see shades of progress on your own young roster, add bands underneath, for example a Developing band from 65 and a Raw band from 0, and change the last band below to start at 72.",
+    "bands": [
+      { "from": 90, "label": "Elite", "hex": "#35e0ff" },
+      { "from": 85, "label": "Good", "hex": "#3ddc84" },
+      { "from": 80, "label": "Average", "hex": "#e8c445" },
+      { "from": 0, "label": "Weakness", "hex": "#ff4d63" }
+    ]
+  },
+
+  "radar": {
+    "__doc": "The seven-sided radar chart at the top of the ATTRIBUTES tab. It plots the seven CATEGORY scores, which are display-only rollups of the sub-stats - the match engine never reads them.",
+    "min": 30,
+    "__min": "The value at the centre of the web. Anything at or below this sits ON the centre point, so set it below the worst category you expect to look at - a rookie can have an Offspawn of 45, and at min 60 that category would vanish. Raise it toward 80 ONLY if you are comparing world-top players to each other, where everything sits between 78 and 96 and a radar drawn from 0 shows seven near-identical blobs.",
+    "max": 100,
+    "__max": "The value at the outer ring.",
+    "rings": 4,
+    "__rings": "How many guide rings are drawn between min and max."
+  },
+
   "categoryWeights": {
     "__doc": "How much each CATEGORY counts toward the single OVR number. Only the ratios matter - they get normalised. Raising `fighting` makes fighters look better on paper; it does NOT change how the match engine behaves (that is balance.json).",
     "aim": 1.15,
