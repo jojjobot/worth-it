@@ -45,9 +45,14 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
   boltz/Acorn and Cold/Rapid. A duo can also span two orgs (JannisZ at CGN
   Esports + Cheatiin at AIGHT): those live in top-level `crossOrgDuos`, and an
   org page finds its duos by which org each PLAYER belongs to, never by the
-  duo's label. A real player can be signed to an org and in NO duo (Clix), or
-  be a free agent in none (`org: null`). A seat naming somebody outside the
-  file gets a generated stand-in, never an invented version of a real person.
+  duo's label. **A duo names exactly TWO players who are
+  really in the file — never invent a partner to fill a seat.** A real player
+  whose partner is unknown is left in NO duo (Clix, Queasy and Merstach are all
+  signed to an org and unpaired), or is a free agent in none (`org: null`). An
+  org fielding no duo is normal, and since an org can field more than one duo,
+  a busy org is never a reason to make somebody up. A one-player duo THROWS in
+  `buildRealScene`. The one legitimate generated seat-filler is a real seat
+  whose player YOU signed — the org cannot have them back.
   Ratings there are ESTIMATES; ages, orgs, duos and real names are SOURCED
   (see `__SOURCES`). Real players never get an `ego`; under-18s have no real
   name. Those rules are enforced in `src/engine/realPlayers.ts`. An entry with
