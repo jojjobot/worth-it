@@ -76,6 +76,15 @@ tune the game without touching code. Never hard-code balance in `src/engine/`.
 - **The match engine is sub-stat native.** sim.ts reads the 29 sub-stats
   directly; `legacyAttrs`/`legacyBridge` survive ONLY for training.json's
   program list (build step 6) and must die with it.
+- **A match carries real per-player state** (step 4): hp, shield, mats, loot
+  tier, height, piece advantage, in-fight, damage taken, zones survived — all
+  carried phase to phase and put on the modifier context. Damage eats shield
+  then HP, and a player who runs out is knocked. Healing is only paid in a zone
+  with no fight in it, so a W-key duo reaches the endgame hurt (78 HP) and a
+  zone duo full (94). Running short of mats in the closing circles is a ramp,
+  not a cliff at zero: `npm run verify:state` measures that entering under 100
+  mats means median placement 11 vs 8. Tune it all in `balance.json` →
+  `simulation.health`, `loot.tiers` and `endGame.matsPressure`.
 - **No phase computes an outcome inline.** Every probability, penalty and cost
   goes through `resolve(key, base, ctx)` in `src/engine/modifiers.ts`; the 23
   keys live in `src/data/modifiers.json` with a clamp shape and the build step
